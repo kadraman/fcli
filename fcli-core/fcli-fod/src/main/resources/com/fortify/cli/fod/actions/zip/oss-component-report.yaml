@@ -1,0 +1,188 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev.json
+
+author: Fortify
+usage:
+  header: (PREVIEW) Generate Open Source Component Report. 
+  description: |
+    This action generates a report on vulnerable open source components and their security
+    issues for a given release. Based on user feedback on this initial version of this action, 
+    parameters and output of this action may change in the next couple of fcli releases.
+
+defaults:
+  requestTarget: fod
+  
+parameters:
+  - name: file
+    cliAliases: f
+    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: stdout"
+    required: false
+    defaultValue: stdout
+  - name: release
+    cliAliases: rel
+    description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
+    type: release_single
+  - name: scanTool
+    cliAliases: st
+    description: "Limit results to a particular Open Source scan tool, e.g. Debricked, CycloneDX. Default is all engines."
+    required: false
+    defaultValue: 'Debricked'
+  - name: allComponents
+    cliAliases: all
+    description: "Include all Open Source components in the results. Default is to show vulnerable components only."
+    required: false
+    defaultValue: false
+
+steps:
+  - set: 
+      # Add short alias for release object, as we reference it a lot
+    - name: r 
+      value: ${parameters.release}
+      # Define output date format
+    - name: dateFmt
+      value: YYYY-MM-dd HH:mm
+      # Number of vulnerable components
+    - name: vulnComps
+      value: ${0}                    
+  - progress: Processing Components
+  - requests:
+    - name: components
+      uri: /api/v3/applications/open-source-components?limit=50
+      query:
+        openSourceScanType: ${parameters.scanTool}
+        orderBy: componentName
+        filters: releaseId:${r.releaseId}
+      type: paged
+      onResponse:
+        - if: ${components_raw.totalCount>10000}
+          throw: There are too many components to show.
+      forEach:
+        name: component
+        do:
+          - set:
+            - name: licensesUsed
+              value: ${component.licenses.size()>0?#join(', ', component.licenses.![name]):'No licenses found'}
+            - name: criticalCount
+              value: ${component.vulnerabilityCounts?.^[severity=='Critical']?.count?:0}
+            - name: highCount
+              value: ${component.vulnerabilityCounts?.^[severity=='High']?.count?:0}
+            - name: mediumCount
+              value: ${component.vulnerabilityCounts?.^[severity=='Medium']?.count?:0}
+            - name: lowCount
+              value: ${component.vulnerabilityCounts?.^[severity=='Low']?.count?:0}
+            - name: vulnComps
+              value: ${vulnComps + 1}
+              if: ${(criticalCount+highCount+mediumCount+lowCount) > 0 || parameters.allComponents}
+          - append:
+            - name: mdComponents
+              valueTemplate: mdComponentListItem
+              if: ${(criticalCount+highCount+mediumCount+lowCount) > 0 || parameters.allComponents}
+
+  - progress: Processing Issues
+  - requests:
+    - name: vulnerabilities
+      uri: /api/v3/releases/${r.releaseId}/vulnerabilities?limit=50
+      query:
+        filters: "category:Open Source"
+        orderBy: severity
+      type: paged
+      onResponse:
+        - if: ${vulnerabilities_raw.totalCount>10000}
+          throw: There are too many security issues to show.
+      forEach:
+        name: vulnerability
+        # TODO: embed more information if anything else decided to be shown?
+        #embed:
+        #  - name: details
+        #    uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
+        #  - name: recommendations
+        #    uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
+        do:
+          - append:
+            - name: mdCriticalVulnerabilities
+              valueTemplate: mdVulnerabilitiesListItem         
+              if: ${vulnerability.severityString=='Critical'}
+          - append:
+            - name: mdHighVulnerabilities
+              valueTemplate: mdVulnerabilitiesListItem         
+              if: ${vulnerability.severityString=='High'}   
+          - append:
+            - name: mdMediumVulnerabilities
+              valueTemplate: mdVulnerabilitiesListItem         
+              if: ${vulnerability.severityString=='Medium'}
+          - append:
+            - name: mdLowVulnerabilities
+              valueTemplate: mdVulnerabilitiesListItem         
+              if: ${vulnerability.severityString=='Low'}   
+
+  - write:
+    - to: ${parameters['file']}
+      valueTemplate: report
+    - if: ${parameters.file!='stdout'}
+      to: stdout
+      value: |
+        Report written to ${parameters['file']}
+
+valueTemplates:
+  - name: report
+    contents: |
+      ## Fortify on Demand Open Source Component Report
+
+      ## [${r.applicationName}${#isNotBlank(r.microserviceName)?'- '+r.microserviceName:''} - ${r.releaseName}](${#fod.releaseBrowserUrl(r)})
+
+      Report generated on: ${#formatDateTime(dateFmt)}
+
+      ### Open Source Components
+
+      ${mdComponents==null
+        ? "* No components detected."
+        : ("| Component   | Version | Type | Critical | High | Medium | Low | License | Scan Tool | \n" +
+          "| -------------| ------- | ---- | :------: | :--: | :----: | :-: | ------- | --------- |\n" +
+           #join('\n', mdComponents))}
+
+      Showing ${vulnComps} of ${components_raw.totalCount} components in this release
+
+      ### Security Issues
+
+      #### Critical
+
+      ${mdCriticalVulnerabilities==null
+        ? "* No Critical Security Issues detected."
+        : ("| CVE         | Component Name | Component Version | Status | Introduced Date | Details |\n" +
+          "| -------------| -------------- | ----------------- | ------ | --------------- | ------- |\n" +
+          #join('\n', mdCriticalVulnerabilities))}
+
+      #### High
+
+      ${mdHighVulnerabilities==null
+        ? "* No High Security Issues detected."
+        : ("| CVE         | Component Name | Component Version | Status | Introduced Date | Details |\n" +
+          "| -------------| -------------- | ----------------- | ------ | --------------- | ------- |\n" +
+          #join('\n', mdHighVulnerabilities))}
+
+      #### Medium
+
+      ${mdMediumVulnerabilities==null
+        ? "* No Medium Security Issues detected."
+        : ("| CVE         | Component Name | Component Version | Status | Introduced Date | Details |\n" +
+          "| -------------| -------------- | ----------------- | ------ | --------------- | ------- |\n" +
+          #join('\n', mdMediumVulnerabilities))}
+
+      #### Low
+
+      ${mdLowVulnerabilities==null
+        ? "* No Low Security Issues detected."
+        : ("| CVE         | Component Name | Component Version | Status | Introduced Date | Details |\n" +
+          "| -------------| -------------- | ----------------- | ------ | --------------- | ------- |\n" +
+          #join('\n', mdLowVulnerabilities))}
+
+      There are a total of ${vulnerabilities_raw.totalCount} security issues in this release
+
+      ${#copyright()}
+
+  - name: mdComponentsList
+    contents: "${mdComponents}"           
+  - name: mdComponentListItem
+    contents: "| ${component.componentName} | ${component.componentVersionName} | ${#substringAfter(component.packageUrl.split('/')[0], ':')} | ${criticalCount} | ${highCount} | ${mediumCount} | ${lowCount} | ${licensesUsed} | ${component.scanTool} | |"
+  - name: mdVulnerabilitiesListItem   
+    contents: "| [${vulnerability.checkId}](https://www.cve.org/CVERecord?id=${vulnerability.checkId}) | ${vulnerability.primaryLocation.split('@')[0]} | ${vulnerability.primaryLocation.split('@')[1]} | ${vulnerability.status} | ${#formatDateTime(\"yyyy-MM-dd\", vulnerability.introducedDate)} | [Details](${#fod.issueBrowserUrl(vulnerability)}) |"
+                
