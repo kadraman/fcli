@@ -1,0 +1,160 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev.json
+
+author: Fortify
+usage:
+  header: (PREVIEW) Generate Fortify Aviator Recommendations Report. 
+  description: |
+    This action generates a report on the use of Fortify Aviator to audit issues and
+    provide remediation guidance. Based on user feedback on this initial version of this action, 
+    parameters and output of this action may change in the next couple of fcli releases.
+
+defaults:
+  requestTarget: fod
+  
+parameters:
+  - name: file
+    cliAliases: f
+    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: stdout"
+    required: false
+    defaultValue: stdout
+  - name: release
+    cliAliases: rel
+    description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
+    type: release_single
+  - name: includeSuppressed
+    cliAliases: include-suppressed
+    description: "Set this to 'true' to include any issues that have been automatically suppressed by Fortify Aviator"
+    required: false
+    defaultValue: false
+  - name: includeClosed
+    cliAliases: include-closed
+    description: "Set this to 'true' to include any issues that have been closed but previously audited by Fortify Aviator"
+    required: false
+    defaultValue: false
+
+steps:
+  - set: 
+      # Add short alias for release object, as we reference it a lot
+    - name: r 
+      value: ${parameters.release}
+      # Define output date format
+    - name: dateFmt
+      value: YYYY-MM-dd HH:mm
+      # Number of vulnerabilities triaged by Aviator
+    - name: criticalCount
+      value: ${0}   
+    - name: highCount
+      value: ${0}  
+    - name: mediumCount
+      value: ${0}
+    - name: lowCount
+      value: ${0}  
+    - name: aviatorCount
+      value: ${0}    
+    - name: suppressedCount
+      value: ${0} 
+    - name: closedCount
+      value: ${0}
+  - progress: Processing Issues
+  - requests:
+    - name: vulnerabilities
+      uri: /api/v3/releases/${r.releaseId}/vulnerabilities?limit=50
+      query:
+        orderBy: severity
+        fortifyAviator: true
+        includeSuppressed: ${parameters.includeSuppressed}
+        includeFixed: ${parameters.includeClosed}
+      type: paged
+      onResponse:
+        - if: ${vulnerabilities_raw.totalCount>10000}
+          throw: There are too many issues to show.
+      forEach:
+        name: vulnerability
+        embed:
+        # TODO: embed more information if anything else decided to be shown?
+        #  - name: details
+        #    uri: /api/v3/releases/${r.releaseId}/vulnerabilities/${vulnerability.vulnId}/details
+          - name: comments
+            uri: /api/v3/releases/${r.releaseId}/vulnerabilities/${vulnerability.vulnId}/comments
+        #  - name: history
+        #    uri: /api/v3/releases/${r.releaseId}/vulnerabilities/${vulnerability.vulnId}/history
+        do:
+          - set:
+            - name: criticalCount
+              value: ${criticalCount + 1}
+              if: ${vulnerability.severityString=='Critical'}
+            - name: highCount
+              value: ${highCount + 1}
+              if: ${vulnerability.severityString=='High'}
+            - name: mediumCount
+              value: ${mediumlCount + 1}
+              if: ${vulnerability.severityString=='Medium'}
+            - name: lowCount
+              value: ${lowCount + 1}
+              if: ${vulnerability.severityString=='Low'}
+            - name: aviatorCount
+              value: ${aviatorCount + 1}
+            - name: suppressedCount
+              value: ${suppressedCount + 1}
+              if: ${vulnerability.isSuppressed==true}
+            - name: closedCount
+              value: ${closedCount + 1}
+              if: ${vulnerability.isClosed==true}
+          - append:
+            - name: mdVulnerabilities
+              valueTemplate: mdVulnerabilitiesListItem         
+
+  - write:
+    - to: ${parameters['file']}
+      valueTemplate: report
+    - if: ${parameters.file!='stdout'}
+      to: stdout
+      value: |
+        Report written to ${parameters['file']}
+
+valueTemplates:
+  - name: report
+    contents: |
+      ## Fortify Aviator Audit and Remediation Report
+
+      ## [${r.applicationName}${#isNotBlank(r.microserviceName)?'- '+r.microserviceName:''} - ${r.releaseName}](${#fod.releaseBrowserUrl(r)})
+
+      Report generated on: ${#formatDateTime(dateFmt)}
+
+      ### Summary
+
+      Fortify Aviator audited the following number of issues:
+
+      ${aviatorCount==0
+        ? "* No issues were audited by Fortify Aviator."
+        : ("| Critical | High | Medium | Low | Suppressed | Closed | Total |\n" +
+           "| :------: | :--: | :----: | :-: | :--------: | :----: | :---: |\n" +
+           "|"+criticalCount+"|"+highCount+"|"+mediumCount+"|"+lowCount+"|"+suppressedCount+"<sup>*</sup>|"+closedCount+"<sup>*</sup>"+"|"+aviatorCount+"|")}
+      
+      __*__ Suppressed and Closed counts are only shown if the options `--include-suppressed`
+      and/or `--include-closed` are set to `true`.
+      
+      ### Details
+
+      ${mdVulnerabilities==null
+        ? "* No issues were audited by Fortify Aviator."
+        : (#join('\n', mdVulnerabilities))}
+
+      ${#copyright()}
+
+  - name: mdVulnerabilitiesListItem   
+    contents: |
+      #### [${vulnerability.id}](${#fod.issueBrowserUrl(vulnerability)}) - *${vulnerability.primaryLocation}* [**${vulnerability.severityString}** - ${vulnerability.category}]
+      ${vulnerability.isSuppressed==true?"_This issue was automatically suppressed by Fortify Aviator._<br/><br/>":""}
+      ${#htmlToText(vulnerability.comments?.^[username=='Fortify Aviator']?.comment?:'No comment.')}
+      
+      >**Status**: ${vulnerability.status}<br/>
+      >**Introduced**: ${#formatDateTime("yyyy-MM-dd", vulnerability.introducedDate)}<br/>
+      >**Developer Status**: ${vulnerability.developerStatus}<br/>
+      >**Auditor Status**: ${vulnerability.auditorStatus}<br/>
+      >**Bug Link**: ${vulnerability.bugSubmitted==true
+        ? vulnerability.bugLink
+        : "No bug submitted."}
+      <hr/>
+
+                
