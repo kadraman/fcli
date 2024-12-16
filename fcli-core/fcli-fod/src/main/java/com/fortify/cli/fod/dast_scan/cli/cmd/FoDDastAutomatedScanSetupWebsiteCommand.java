@@ -73,6 +73,8 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
     private String macroSecondaryUsername;
     @Option(names = {"--macro-secondary-password"})
     private String macroSecondaryPassword;
+    @Option(names = {"--fortify-connect-network"})
+    private String fodConnectNetwork;
 
     @Override
     protected String getScanType() {
@@ -116,6 +118,10 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
             loginMacroFileCreationSettings = new FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType(macroPrimaryUsername,
                     macroPrimaryPassword, macroSecondaryUsername, macroSecondaryPassword);
         }
+        if (fodConnectNetwork != null) {
+            // if Fortify Connect network site override environmentFacingType to Internal
+            environmentFacingType = FoDEnums.DynamicScanEnvironmentFacingType.Internal;
+        }
 
         FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, releaseId, FoDScanType.Dynamic,
                 assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId);
@@ -129,7 +135,7 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
                 .restrictToDirectoryAndSubdirectories(restrictToDirectoryAndSubdirectories != null ? restrictToDirectoryAndSubdirectories : false)
                 .policy(scanPolicy)
                 .timeBoxInHours(timebox)
-                .dynamicScanEnvironmentFacingType(environmentFacingType != null ? environmentFacingType : FoDEnums.DynamicScanEnvironmentFacingType.Internal)
+                .dynamicScanEnvironmentFacingType(environmentFacingType != null ? environmentFacingType : FoDEnums.DynamicScanEnvironmentFacingType.External)
                 .timeZone(timeZoneToUse)
                 .requiresNetworkAuthentication(requiresNetworkAuthentication)
                 .networkAuthenticationSettings(networkAuthenticationSettings)
@@ -139,6 +145,7 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
                 .requestFalsePositiveRemoval(requestFalsePositiveRemoval != null ? requestFalsePositiveRemoval : false)
                 .requestLoginMacroFileCreation(requiresLoginMacroCreation)
                 .loginMacroFileCreationDetails(loginMacroFileCreationSettings)
+                .networkName(fodConnectNetwork != null ? fodConnectNetwork : "")
                 .build();
 
         return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/website-scan-setup")

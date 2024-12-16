@@ -55,6 +55,8 @@ public class FoDDastAutomatedScanSetupWorkflowCommand extends AbstractFoDScanSet
     private String password;
     @Option(names = {"--false-positive-removal"})
     private Boolean requestFalsePositiveRemoval;
+    @Option(names = {"--fortify-connect-network"})
+    private String fodConnectNetwork;
 
     @Override
     protected String getScanType() {
@@ -85,7 +87,11 @@ public class FoDDastAutomatedScanSetupWorkflowCommand extends AbstractFoDScanSet
             networkAuthenticationSettings = new FoDScanDastAutomatedSetupWorkflowRequest.NetworkAuthenticationType(networkAuthenticationType, username, password);
         }
         String timeZoneToUse = FoDScanHelper.validateTimezone(unirest, timezone);
-
+        if (fodConnectNetwork != null) {
+            // if Fortify Connect network site override environmentFacingType to Internal
+            environmentFacingType = FoDEnums.DynamicScanEnvironmentFacingType.Internal;
+        }
+        
         FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, releaseId, FoDScanType.Dynamic,
                 assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId);
         entitlementId = assessmentTypeDescriptor.getEntitlementId();
@@ -100,6 +106,7 @@ public class FoDDastAutomatedScanSetupWorkflowCommand extends AbstractFoDScanSet
                 .entitlementId(entitlementId)
                 .entitlementFrequencyType(FoDEnums.EntitlementFrequencyType.valueOf(assessmentTypeDescriptor.getFrequencyType()))
                 .requestFalsePositiveRemoval(requestFalsePositiveRemoval != null ? requestFalsePositiveRemoval : false)
+                .networkName(fodConnectNetwork != null ? fodConnectNetwork : "")
                 .build();
 
         return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/workflow-scan-setup")

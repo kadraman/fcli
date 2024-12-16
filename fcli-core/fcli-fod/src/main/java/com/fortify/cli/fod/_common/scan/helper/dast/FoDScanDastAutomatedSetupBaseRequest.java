@@ -51,5 +51,5 @@ public class FoDScanDastAutomatedSetupBaseRequest {
     private Integer timeBoxInHours;
     @Builder.Default
     private Boolean requestFalsePositiveRemoval = false;
-
+    private String networkName; // FoDConnect Network Name
 }

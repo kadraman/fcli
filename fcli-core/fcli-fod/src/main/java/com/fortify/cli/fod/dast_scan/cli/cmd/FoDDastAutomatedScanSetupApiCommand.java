@@ -67,6 +67,8 @@ public class FoDDastAutomatedScanSetupApiCommand extends AbstractFoDScanSetupCom
     private String password;
     @Option(names = {"--false-positive-removal"})
     private Boolean requestFalsePositiveRemoval;
+    @Option(names = {"--fortify-connect-network"})
+    private String fodConnectNetwork;
 
     @Override
     protected String getScanType() {
@@ -94,11 +96,14 @@ public class FoDDastAutomatedScanSetupApiCommand extends AbstractFoDScanSetupCom
             networkAuthenticationSettings = new FoDScanDastAutomatedSetupBaseRequest.NetworkAuthenticationType(networkAuthenticationType, username, password);
         }
         String timeZoneToUse = FoDScanHelper.validateTimezone(unirest, timezone);
-
+        if (fodConnectNetwork != null) {
+            // if Fortify Connect network site override environmentFacingType to Internal
+            environmentFacingType = FoDEnums.DynamicScanEnvironmentFacingType.Internal;
+        }
+        
         FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, releaseId, FoDScanType.Dynamic,
                 assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId);
         entitlementId = assessmentTypeDescriptor.getEntitlementId();
-
         FoDScanDastAutomatedSetupBaseRequest setupBaseRequest = FoDScanDastAutomatedSetupBaseRequest.builder()
                 .dynamicScanEnvironmentFacingType(environmentFacingType != null ?
                         environmentFacingType :
@@ -111,6 +116,7 @@ public class FoDDastAutomatedScanSetupApiCommand extends AbstractFoDScanSetupCom
                 .assessmentTypeId(assessmentTypeDescriptor.getAssessmentTypeId())
                 .entitlementId(entitlementId)
                 .entitlementFrequencyType(FoDEnums.EntitlementFrequencyType.valueOf(assessmentTypeDescriptor.getFrequencyType()))
+                .networkName(fodConnectNetwork != null ? fodConnectNetwork : "")
                 .build();
 
         if (apiType.equals(FoDEnums.DastAutomatedApiTypes.Postman)) {
