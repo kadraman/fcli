@@ -21,7 +21,7 @@ import picocli.CommandLine.Option;
 
 //TODO Enum case? See comments in FoDAppTypeOptions
 public class FoDSdlcStatusTypeOptions {
-    public enum FoDSdlcStatusType {Development, QA, Production}
+    public enum FoDSdlcStatusType {Development, QA, Production, Retired}
 
     public static final class FoDSdlcStatusTypeIterable extends ArrayList<String> {
         private static final long serialVersionUID = 1L;
