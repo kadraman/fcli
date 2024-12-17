@@ -14,9 +14,7 @@
 package com.fortify.cli.fod.mast_scan.cli.cmd;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -98,7 +96,8 @@ public class FoDMastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
 
         LOG.info("Finding appropriate entitlement to use.");
 
-        var atd = getAssessmentTypeDescriptor(unirest, relId);
+        var atd = FoDReleaseAssessmentTypeHelper.getAssessmentTypeDescriptor(unirest, relId, FoDScanType.Mobile, 
+            entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), mobileAssessmentType);
         Integer assessmentTypeId = atd.getAssessmentTypeId();
         Integer entitlementIdToUse = atd.getEntitlementId();
 
@@ -134,18 +133,6 @@ public class FoDMastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
         FoDReleaseAssessmentTypeHelper.validateEntitlement(relId, atd);
     }
 
-    private FoDReleaseAssessmentTypeDescriptor getAssessmentTypeDescriptor(UnirestInstance unirest, String relId) {
-        // find an appropriate assessment type to use
-        Optional<FoDReleaseAssessmentTypeDescriptor> atd = Arrays.stream(
-                        FoDReleaseAssessmentTypeHelper.getAssessmentTypes(unirest,
-                                relId, FoDScanType.Mobile,
-                                entitlementFrequencyTypeMixin.getEntitlementFrequencyType(),
-                                false, true)
-                ).filter(n -> n.getName().equals(mobileAssessmentType))
-                .findFirst();
-        return atd.orElseThrow(()->new IllegalArgumentException("Cannot find appropriate assessment type for specified options."));
-    }
-
     @Override
     public JsonNode transformRecord(JsonNode record) {
         FoDReleaseDescriptor releaseDescriptor = releaseResolver.getReleaseDescriptor(getUnirestInstance());
@@ -166,86 +153,5 @@ public class FoDMastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
     public boolean isSingular() {
         return true;
     }
-    /*
-    @Override
-    protected FoDScanDescriptor startScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor) {
-        try ( var progressWriter = progressWriterFactory.create() ) {
-            Properties fcliProperties = FcliBuildPropertiesHelper.getBuildProperties();
-            String relId = releaseDescriptor.getReleaseId();
-            Integer entitlementIdToUse = 0;
-            Integer assessmentTypeId = 0;
-            Boolean isRemediation = false;
-
-            // if we have requested remediation scan use it to find appropriate assessment type
-            if (remediationScanType != null && remediationScanType.getRemediationScanPreferenceType() != null) {
-                if (remediationScanType.getRemediationScanPreferenceType().equals(FoDEnums.RemediationScanPreferenceType.RemediationScanIfAvailable) ||
-                        remediationScanType.getRemediationScanPreferenceType().equals(FoDEnums.RemediationScanPreferenceType.RemediationScanOnly)) {
-                    isRemediation = true;
-                }
-            }
-
-            // get current setup
-            // NOTE: there is currently no GET method for retrieving scan setup so the following cannot be used:
-            // FoDMobileScanSetupDescriptor foDMobileScanSetupDescriptor = FoDMobileScanHelper.getSetupDescriptor(unirest, relId);
-
-            LOG.info("Finding appropriate entitlement to use.");
-
-            // find an appropriate assessment type to use
-            Optional<FoDReleaseAssessmentTypeDescriptor> atd = Arrays.stream(
-                            FoDReleaseAssessmentTypeHelper.getAssessmentTypes(unirest,
-                                    relId, FoDScanType.Mobile,
-                                    entitlementFrequencyTypeMixin.getEntitlementFrequencyType(),
-                                    isRemediation, true)
-                    ).filter(n -> n.getName().equals(mobileAssessmentType))
-                    .findFirst();
-            if (atd.isEmpty()) {
-                throw new IllegalArgumentException("Cannot find appropriate assessment type for specified options.");
-            }
-            assessmentTypeId = atd.get().getAssessmentTypeId();
-            entitlementIdToUse = atd.get().getEntitlementId();
-
-            // validate entitlement specified or currently in use against assessment type found
-            if (entitlementId != null && entitlementId > 0) {
-                // check if "entitlement id" explicitly matches what has been found
-                if (!Objects.equals(entitlementIdToUse, entitlementId)) {
-                    throw new IllegalArgumentException("Cannot find appropriate assessment type with entitlement: " + entitlementId);
-                }
-            } else {
-                // NOTE: there is currently no GET method for retrieving scan setup so the following cannot be used:
-                //if (currentSetup.getEntitlementId() != null && currentSetup.getEntitlementId() > 0) {
-                //    // check if "entitlement id" is already configured
-                //    if (!Objects.equals(entitlementIdToUse, currentSetup.getEntitlementId())) {
-                //        progressWriter.writeI18nWarning("fcli.fod.scan-config.setup-mast.changing-entitlement");
-                //    }
-                // }
-            }
-            LOG.info("Configuring release to use entitlement " + entitlementIdToUse);
-
-            // check if the entitlement is still valid
-            FoDReleaseAssessmentTypeHelper.validateEntitlement(relId, atd.get());
-            LOG.info("The entitlement " + entitlementIdToUse + " is valid");
-
-            // validate timezone (if specified)
-            String timeZoneToUse = FoDScanHelper.validateTimezone(unirest, timezone);
-
-            String startDateStr = (startDate == null || startDate.isEmpty())
-                    ? LocalDateTime.now().format(dtf)
-                    : LocalDateTime.parse(startDate, dtf).toString();
-
-            FoDScanMobileStartRequest startScanRequest = FoDScanMobileStartRequest.builder()
-                    .startDate(startDateStr)
-                    .assessmentTypeId(assessmentTypeId)
-                    .entitlementId(entitlementIdToUse)
-                    .entitlementFrequencyType(entitlementFrequencyTypeMixin.getEntitlementFrequencyType().name())
-                    .timeZone(timeZoneToUse)
-                    .frameworkType(mobileFramework.name())
-                    .platformType(mobilePlatform.name())
-                    .scanMethodType("Other")
-                    .notes(notes != null && !notes.isEmpty() ? notes : "")
-                    .scanTool(fcliProperties.getProperty("projectName", "fcli"))
-                    .scanToolVersion(fcliProperties.getProperty("projectVersion", "unknown")).build();
-
-            return FoDScanMobileHelper.startScan(unirest, progressWriter, releaseDescriptor, startScanRequest, scanFileMixin.getFile());
-        }
-    }*/
+ 
 }

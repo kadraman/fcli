@@ -73,7 +73,7 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
     private String macroSecondaryUsername;
     @Option(names = {"--macro-secondary-password"})
     private String macroSecondaryPassword;
-    @Option(names = {"--fortify-connect-network"})
+    @Option(names = {"--vpn"})
     private String fodConnectNetwork;
 
     @Override

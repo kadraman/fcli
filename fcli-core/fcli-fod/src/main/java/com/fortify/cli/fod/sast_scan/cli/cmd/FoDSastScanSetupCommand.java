@@ -13,10 +13,7 @@
 
 package com.fortify.cli.fod.sast_scan.cli.cmd;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -112,7 +109,8 @@ public class FoDSastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
 
         LOG.info("Finding appropriate entitlement to use.");
 
-        var atd = getAssessmentTypeDescriptor(unirest, relId);
+        var atd = FoDReleaseAssessmentTypeHelper.getAssessmentTypeDescriptor(unirest, relId, FoDScanType.Static, 
+        entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), staticAssessmentType);
         var assessmentTypeId = atd.getAssessmentTypeId();
         var entitlementIdToUse = atd.getEntitlementId();
 
@@ -180,18 +178,6 @@ public class FoDSastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
         }
         // check if the entitlement is still valid
         FoDReleaseAssessmentTypeHelper.validateEntitlement(relId, atd);
-    }
-
-    private FoDReleaseAssessmentTypeDescriptor getAssessmentTypeDescriptor(UnirestInstance unirest, String relId) {
-        // find an appropriate assessment type to use
-        Optional<FoDReleaseAssessmentTypeDescriptor> atd = Arrays.stream(
-                        FoDReleaseAssessmentTypeHelper.getAssessmentTypes(unirest,
-                                relId, FoDScanType.Static,
-                                entitlementFrequencyTypeMixin.getEntitlementFrequencyType(),
-                                false, true)
-                ).filter(n -> n.getName().equals(staticAssessmentType))
-                .findFirst();
-        return atd.orElseThrow(()->new IllegalArgumentException("Cannot find appropriate assessment type for specified options."));
     }
 
     @Override

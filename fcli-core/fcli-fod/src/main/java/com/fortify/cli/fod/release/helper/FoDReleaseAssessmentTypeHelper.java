@@ -13,7 +13,9 @@
 package com.fortify.cli.fod.release.helper;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,6 +27,7 @@ import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.scan.helper.FoDScanType;
 import com.fortify.cli.fod._common.util.FoDEnums;
+import com.fortify.cli.fod._common.util.FoDEnums.EntitlementFrequencyType;
 
 import kong.unirest.GetRequest;
 import kong.unirest.UnirestInstance;
@@ -53,6 +56,18 @@ public final class FoDReleaseAssessmentTypeHelper {
             throw new IllegalStateException("No assessment types found for release id: " + relId);
         }
         return JsonHelper.treeToValue(assessmentTypes, FoDReleaseAssessmentTypeDescriptor[].class);
+    }
+
+    public static final FoDReleaseAssessmentTypeDescriptor getAssessmentTypeDescriptor(UnirestInstance unirest, String relId, 
+        FoDScanType scanType, EntitlementFrequencyType entFreqType, String assessmentType) {
+        // find an appropriate assessment type to use
+        Optional<FoDReleaseAssessmentTypeDescriptor> atd = Arrays.stream(
+                        FoDReleaseAssessmentTypeHelper.getAssessmentTypes(unirest,
+                                relId, scanType, entFreqType,
+                                false, true)
+                ).filter(n -> n.getName().equals(assessmentType))
+                .findFirst();
+        return atd.orElseThrow(()->new IllegalArgumentException("Cannot find appropriate assessment type for specified options."));
     }
 
     public final static void validateEntitlement(String relId,

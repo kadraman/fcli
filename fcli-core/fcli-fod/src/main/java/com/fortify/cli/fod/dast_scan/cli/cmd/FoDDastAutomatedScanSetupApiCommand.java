@@ -67,7 +67,7 @@ public class FoDDastAutomatedScanSetupApiCommand extends AbstractFoDScanSetupCom
     private String password;
     @Option(names = {"--false-positive-removal"})
     private Boolean requestFalsePositiveRemoval;
-    @Option(names = {"--fortify-connect-network"})
+    @Option(names = {"--vpn"})
     private String fodConnectNetwork;
 
     @Override
