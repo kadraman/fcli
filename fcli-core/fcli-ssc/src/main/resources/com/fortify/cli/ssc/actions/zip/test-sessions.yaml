@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev.json
+
+author: Fortify
+usage:
+  header: Test shared sessions
+  description: |
+    TODO
+
+defaults:
+  requestTarget: ssc
+  
+steps:
+    - requests:
+        - name: apps
+          uri: /api/v1/projects
+          forEach:
+            name: app
+            do:
+              - write:
+                - to: stdout
+                  value: ${app}
+        - name: ping
+          uri: /rest/v2/ping
+          target: sc-sast
+    - write:
+        - to: stdout
+          value: ${ping}
+      

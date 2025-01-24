@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.ssc._common.rest.SSCUrls;
+import com.fortify.cli.ssc._common.rest.ssc.SSCUrls;
 
 import kong.unirest.UnirestInstance;
 import lombok.AllArgsConstructor;

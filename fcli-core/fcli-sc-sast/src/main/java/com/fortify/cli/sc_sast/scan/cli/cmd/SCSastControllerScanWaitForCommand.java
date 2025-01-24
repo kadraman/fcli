@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.rest.cli.cmd.AbstractWaitForCommand;
 import com.fortify.cli.common.rest.wait.WaitHelper.WaitHelperBuilder;
-import com.fortify.cli.sc_sast._common.session.cli.mixin.SCSastControllerUnirestInstanceSupplierMixin;
 import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanJobResolverMixin;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobArtifactState;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobArtifactState.SCSastControllerScanJobArtifactStateIterable;
@@ -26,6 +25,7 @@ import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobDescriptor;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobHelper.StatusEndpointVersion;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobState;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobState.SCSastControllerScanJobStateIterable;
+import com.fortify.cli.ssc._common.rest.sc_sast.cli.mixin.SCSastUnirestInstanceSupplierMixin;
 
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
@@ -36,7 +36,7 @@ import picocli.CommandLine.Option;
 
 @Command(name = OutputHelperMixins.WaitFor.CMD_NAME)
 public class SCSastControllerScanWaitForCommand extends AbstractWaitForCommand {
-    @Getter @Mixin private SCSastControllerUnirestInstanceSupplierMixin unirestInstanceSupplier;
+    @Getter @Mixin private SCSastUnirestInstanceSupplierMixin unirestInstanceSupplier;
     @Mixin private SCSastScanJobResolverMixin.PositionalParameterMulti scanJobsResolver;
     @ArgGroup(exclusive = true, multiplicity = "0..1") private WaitOptions waitOptions;
     private static final class WaitOptions {

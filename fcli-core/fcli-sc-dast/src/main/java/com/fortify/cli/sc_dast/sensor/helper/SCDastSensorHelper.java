@@ -20,8 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.sc_dast._common.rest.helper.SCDastInputTransformer;
-import com.fortify.cli.sc_dast._common.rest.helper.SCDastPagingHelper;
+import com.fortify.cli.ssc._common.rest.sc_dast.helper.SCDastInputTransformer;
+import com.fortify.cli.ssc._common.rest.sc_dast.helper.SCDastPagingHelper;
 
 import kong.unirest.HttpResponse;
 import kong.unirest.UnirestInstance;

@@ -19,7 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.ssc._common.rest.SSCUrls;
+import com.fortify.cli.ssc._common.rest.ssc.SSCUrls;
 
 import kong.unirest.UnirestInstance;
 import lombok.Getter;

@@ -62,6 +62,18 @@ public final class EnvHelper {
         return StringUtils.isNotBlank(value) ? value : defaultSupplier.get();    
     }
     
+    public static final String envOrDefault(String name, String defaultValue) {
+        return envOrDefault(name, ()->defaultValue);    
+    }
+    
+    public static final String requiredEnv(String name, String message) {
+        return envOrDefault(name, ()->{throw new IllegalStateException(message);});
+    }
+    
+    public static final String requiredEnv(String name) {
+        return requiredEnv(name, String.format("Required environment variable %s not defined", name));
+    }
+    
     /**
      * Get the value of the environment variable with the given name.
      * This method allows environment variables to be overridden through

@@ -13,32 +13,32 @@
 package com.fortify.cli.ssc._common.session.cli.cmd;
 
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
-import com.fortify.cli.common.rest.unirest.config.IUrlConfig;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLoginCommand;
-import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionLoginOptions;
-import com.fortify.cli.ssc._common.session.helper.ISSCCredentialsConfig;
-import com.fortify.cli.ssc._common.session.helper.SSCSessionDescriptor;
-import com.fortify.cli.ssc._common.session.helper.SSCSessionHelper;
+import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLoginOptions;
+import com.fortify.cli.ssc._common.session.helper.ISSCAndScanCentralCredentialsConfig;
+import com.fortify.cli.ssc._common.session.helper.ISSCAndScanCentralUrlConfig;
+import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
+import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 
 import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Login.CMD_NAME, sortOptions = false)
-public class SSCSessionLoginCommand extends AbstractSessionLoginCommand<SSCSessionDescriptor> {
+public class SSCSessionLoginCommand extends AbstractSessionLoginCommand<SSCAndScanCentralSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.Login outputHelper;
-    @Getter private SSCSessionHelper sessionHelper = SSCSessionHelper.instance();
-    @Mixin private SSCSessionLoginOptions sessionLoginOptions;
+    @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
+    @Mixin private SSCAndScanCentralSessionLoginOptions sessionLoginOptions;
     
     @Override
-    protected void logoutBeforeNewLogin(String sessionName, SSCSessionDescriptor sessionDescriptor) {
-        sessionDescriptor.logout(sessionLoginOptions.getUserCredentialsConfig());
+    protected void logoutBeforeNewLogin(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {
+        sessionDescriptor.logout(sessionLoginOptions.getSscAndScanCentralCredentialConfigOptions().getSscUserCredentialsConfig());
     }
     
     @Override
-    protected SSCSessionDescriptor login(String sessionName) {
-        IUrlConfig urlConfig = sessionLoginOptions.getUrlConfigOptions();
-        ISSCCredentialsConfig credentialsConfig = sessionLoginOptions.getCredentialOptions();
-        return new SSCSessionDescriptor(urlConfig, credentialsConfig);
+    protected SSCAndScanCentralSessionDescriptor login(String sessionName) {
+        ISSCAndScanCentralUrlConfig urlConfig = sessionLoginOptions.getSscAndScanCentralUrlConfigOptions();
+        ISSCAndScanCentralCredentialsConfig credentialsConfig = sessionLoginOptions.getSscAndScanCentralCredentialConfigOptions();
+        return SSCAndScanCentralSessionDescriptor.create(urlConfig, credentialsConfig);
     }
 }

@@ -15,7 +15,7 @@ package com.fortify.cli.sc_sast.scan.cli.cmd;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
-import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastControllerJsonNodeOutputCommand;
+import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastJsonNodeOutputCommand;
 import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanJobResolverMixin;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobDescriptor;
 
@@ -25,7 +25,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Cancel.CMD_NAME)
-public class SCSastControllerScanCancelCommand extends AbstractSCSastControllerJsonNodeOutputCommand implements IActionCommandResultSupplier {
+public class SCSastControllerScanCancelCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
     @Getter @Mixin private OutputHelperMixins.Cancel outputHelper;
     @Mixin private SCSastScanJobResolverMixin.PositionalParameter scanJobResolver;
 

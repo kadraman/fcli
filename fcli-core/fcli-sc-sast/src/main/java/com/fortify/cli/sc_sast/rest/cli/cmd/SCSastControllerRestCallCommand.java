@@ -16,8 +16,8 @@ import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.rest.cli.cmd.AbstractRestCallCommand;
 import com.fortify.cli.common.util.DisableTest;
 import com.fortify.cli.common.util.DisableTest.TestType;
-import com.fortify.cli.sc_sast._common.rest.helper.SCSastControllerProductHelper;
-import com.fortify.cli.sc_sast._common.session.cli.mixin.SCSastControllerUnirestInstanceSupplierMixin;
+import com.fortify.cli.ssc._common.rest.sc_sast.cli.mixin.SCSastUnirestInstanceSupplierMixin;
+import com.fortify.cli.ssc._common.rest.sc_sast.helper.SCSastProductHelper;
 
 import lombok.Getter;
 import picocli.CommandLine.Command;
@@ -27,6 +27,6 @@ import picocli.CommandLine.Mixin;
 @DisableTest(TestType.CMD_DEFAULT_TABLE_OPTIONS_PRESENT) // Output columns depend on response contents
 public final class SCSastControllerRestCallCommand extends AbstractRestCallCommand {
     @Getter @Mixin private OutputHelperMixins.RestCall outputHelper;
-    @Getter @Mixin private SCSastControllerUnirestInstanceSupplierMixin unirestInstanceSupplier;
-    @Getter private final SCSastControllerProductHelper productHelper = SCSastControllerProductHelper.INSTANCE;
+    @Getter @Mixin private SCSastUnirestInstanceSupplierMixin unirestInstanceSupplier;
+    @Getter private final SCSastProductHelper productHelper = SCSastProductHelper.INSTANCE;
 }

@@ -17,22 +17,22 @@ import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLogoutCommand;
 import com.fortify.cli.common.session.cli.mixin.UserCredentialOptions;
 import com.fortify.cli.common.session.helper.SessionLogoutException;
-import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionLogoutOptions;
-import com.fortify.cli.ssc._common.session.helper.SSCSessionDescriptor;
-import com.fortify.cli.ssc._common.session.helper.SSCSessionHelper;
+import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLogoutOptions;
+import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
+import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 
 import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Logout.CMD_NAME, sortOptions = false)
-public class SSCSessionLogoutCommand extends AbstractSessionLogoutCommand<SSCSessionDescriptor> {
+public class SSCSessionLogoutCommand extends AbstractSessionLogoutCommand<SSCAndScanCentralSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.Logout outputHelper;
-    @Getter private SSCSessionHelper sessionHelper = SSCSessionHelper.instance();
-    @Mixin private SSCSessionLogoutOptions logoutOptions;
+    @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
+    @Mixin private SSCAndScanCentralSessionLogoutOptions logoutOptions;
     
     @Override
-    protected void logout(String sessionName, SSCSessionDescriptor sessionDescriptor) {
+    protected void logout(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {
         if ( !logoutOptions.isNoRevokeToken() ) {
             UserCredentialOptions userCredentialOptions = logoutOptions.getUserCredentialOptions();
             try {

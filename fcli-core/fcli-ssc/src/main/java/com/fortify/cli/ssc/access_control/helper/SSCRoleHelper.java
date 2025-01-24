@@ -15,9 +15,9 @@ package com.fortify.cli.ssc.access_control.helper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
-import com.fortify.cli.ssc._common.rest.SSCUrls;
-import com.fortify.cli.ssc._common.rest.bulk.SSCBulkRequestBuilder;
-import com.fortify.cli.ssc._common.rest.bulk.SSCBulkRequestBuilder.SSCBulkResponse;
+import com.fortify.cli.ssc._common.rest.ssc.SSCUrls;
+import com.fortify.cli.ssc._common.rest.ssc.bulk.SSCBulkRequestBuilder;
+import com.fortify.cli.ssc._common.rest.ssc.bulk.SSCBulkRequestBuilder.SSCBulkResponse;
 
 import kong.unirest.GetRequest;
 import kong.unirest.UnirestInstance;

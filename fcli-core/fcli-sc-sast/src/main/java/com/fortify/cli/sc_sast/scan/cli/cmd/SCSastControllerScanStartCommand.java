@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.common.util.StringUtils;
-import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastControllerJsonNodeOutputCommand;
+import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastJsonNodeOutputCommand;
 import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanStartOptionsArgGroup;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerJobType;
 import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobHelper;
@@ -47,7 +47,7 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Command(name = OutputHelperMixins.Start.CMD_NAME)
-public final class SCSastControllerScanStartCommand extends AbstractSCSastControllerJsonNodeOutputCommand implements IActionCommandResultSupplier {
+public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
     @ArgGroup(exclusive = true, multiplicity = "1") 
     private SCSastScanStartOptionsArgGroup optionsProvider = new SCSastScanStartOptionsArgGroup();
     @Getter @Mixin private OutputHelperMixins.Start outputHelper;
@@ -121,14 +121,8 @@ public final class SCSastControllerScanStartCommand extends AbstractSCSastContro
         		// Convert token to application token, in case it was provided as a REST token
         		uploadToken = SSCTokenConverter.toApplicationToken(this.ciToken);
         	} else if ( StringUtils.isBlank(uploadToken) ) {
-                // We assume that the predefined token from the session is a CIToken as passed through 
-                // the --ssc-ci-token option on the login command. If we ever add support for logging 
-                // in with arbitrary SSC tokens, we should make sure we can distinguish between CIToken 
-                // passed through --ssc-ci-token, and arbitrary token passed through --ssc-token on the 
-                // login command; we should only reuse a token passed through the --ssc-ci-token login 
-                // option.
-                char[] ciTokenFromSession = getUnirestInstanceSupplier().getSessionDescriptor().getPredefinedSscToken();
-                uploadToken = ciTokenFromSession==null ? null : SSCTokenConverter.toApplicationToken(String.valueOf(ciTokenFromSession));
+                char[] tokenFromSession = getUnirestInstanceSupplier().getSessionDescriptor().getActiveSSCToken();
+                uploadToken = tokenFromSession==null ? null : SSCTokenConverter.toApplicationToken(String.valueOf(tokenFromSession));
             }
             if ( StringUtils.isBlank(uploadToken) ) { throw new IllegalArgumentException("--ssc-ci-token is required if --publish-to is specified and --ssc-ci-token was not passed to the 'sc-sast session login' command"); }
         }

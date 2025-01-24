@@ -30,30 +30,32 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
-import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
+import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunner;
-import com.fortify.cli.common.action.runner.ActionSpelFunctions;
-import com.fortify.cli.common.action.runner.ActionRunner.ParameterTypeConverterArgs;
 import com.fortify.cli.common.action.runner.ActionRunner.IActionRequestHelper.BasicActionRequestHelper;
+import com.fortify.cli.common.action.runner.ActionRunner.ParameterTypeConverterArgs;
+import com.fortify.cli.common.action.runner.ActionSpelFunctions;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.spring.expression.SpelHelper;
+import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.StringUtils;
-import com.fortify.cli.ssc._common.rest.SSCUrls;
-import com.fortify.cli.ssc._common.rest.bulk.SSCBulkRequestBuilder;
-import com.fortify.cli.ssc._common.rest.helper.SSCProductHelper;
-import com.fortify.cli.ssc._common.rest.transfer.SSCFileTransferHelper.SSCFileTransferTokenSupplier;
-import com.fortify.cli.ssc._common.rest.transfer.SSCFileTransferHelper.SSCFileTransferTokenType;
-import com.fortify.cli.ssc._common.session.cli.mixin.SSCUnirestInstanceSupplierMixin;
+import com.fortify.cli.ssc._common.rest.cli.mixin.SSCAndScanCentralUnirestInstanceSupplierMixin;
+import com.fortify.cli.ssc._common.rest.sc_dast.helper.SCDastProductHelper;
+import com.fortify.cli.ssc._common.rest.sc_sast.helper.SCSastProductHelper;
+import com.fortify.cli.ssc._common.rest.ssc.SSCUrls;
+import com.fortify.cli.ssc._common.rest.ssc.bulk.SSCBulkRequestBuilder;
+import com.fortify.cli.ssc._common.rest.ssc.helper.SSCProductHelper;
+import com.fortify.cli.ssc._common.rest.ssc.transfer.SSCFileTransferHelper.SSCFileTransferTokenSupplier;
+import com.fortify.cli.ssc._common.rest.ssc.transfer.SSCFileTransferHelper.SSCFileTransferTokenType;
 import com.fortify.cli.ssc.appversion.helper.SSCAppVersionHelper;
 import com.fortify.cli.ssc.issue.helper.SSCIssueFilterSetHelper;
 
 import kong.unirest.HttpRequest;
 import kong.unirest.RawResponse;
 import kong.unirest.UnirestInstance;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
@@ -61,11 +63,16 @@ import picocli.CommandLine.Mixin;
 
 @Command(name = "run")
 public class SSCActionRunCommand extends AbstractActionRunCommand {
-    @Getter @Mixin private SSCUnirestInstanceSupplierMixin unirestInstanceSupplier;
+    @Mixin private SSCAndScanCentralUnirestInstanceSupplierMixin unirestInstanceSupplier;
     
     @Override
     protected final String getType() {
         return "SSC";
+    }
+    
+    @Override
+    protected String[] getSharedSessionModules() {
+        return new String[] {"ssc", "sc-sast", "sc-dast"}; 
     }
     
     @Override
@@ -78,8 +85,39 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
         templateRunner
             .addParameterConverter("appversion_single", this::loadAppVersion)
             .addParameterConverter("filterset", this::loadFilterSet)
-            .addRequestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getUnirestInstance, SSCProductHelper.INSTANCE));
+            .addRequestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getSscUnirestInstance, SSCProductHelper.INSTANCE))
+            .addRequestHelper("sc-sast", new SSCActionRequestHelper(unirestInstanceSupplier::getScSastUnirestInstance, SCSastProductHelper.INSTANCE))
+            .addRequestHelper("sc-dast", new SSCActionRequestHelper(unirestInstanceSupplier::getScDastUnirestInstance, SCDastProductHelper.INSTANCE));
+        
         context.setVariable("ssc", new SSCSpelFunctions(templateRunner));
+    }
+    
+    @Override
+    protected String getSessionFromEnvLoginCommand() {
+        var sscUrl = EnvHelper.requiredEnv("SSC_URL");
+        var sscUser = EnvHelper.envOrDefault("SSC_USER", "");
+        var sscPwd = EnvHelper.envOrDefault("SSC_PASSWORD", "");
+        var sscToken = EnvHelper.envOrDefault("SSC_TOKEN", "");
+        var scSastToken = EnvHelper.envOrDefault("SC_SAST_TOKEN", "");
+        var extraOpts = EnvHelper.envOrDefault("SSC_LOGIN_EXTRA_OPTS", "");
+        String sscCredentialArgs;
+        if ( StringUtils.isNotBlank(sscUser) && StringUtils.isNotBlank(sscPwd) ) {
+            sscCredentialArgs = String.format("-u \"%s\" -p \"%s\"", sscUser, sscPwd);
+        } else if ( StringUtils.isNotBlank(sscToken) ) {
+            sscCredentialArgs = String.format("-t \"%s\"", sscToken);
+        } else {
+            throw new IllegalStateException("Either SSC_USER & SSC_PASSWORD, or SSC_TOKEN environment variables must be defined");
+        }
+        return String.format(
+                "ssc session login --url \"%s\" %s -c \"%s\" %s",
+                sscUrl, sscCredentialArgs, scSastToken, extraOpts);
+    }
+    
+    @Override
+    protected String getSessionFromEnvLogoutCommand() {
+        var sscUser = EnvHelper.envOrDefault("SSC_USER", "");
+        var sscPwd = EnvHelper.envOrDefault("SSC_PASSWORD", "");
+        return String.format("ssc session logout -u \"%s\" -p \"%s\"", sscUser, sscPwd);
     }
     
     @RequiredArgsConstructor @Reflectable
@@ -106,7 +144,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
             return templateRunner.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
         }
         private String baseUrl() {
-            return unirestInstanceSupplier.getSessionDescriptor().getUrlConfig().getUrl()
+            return unirestInstanceSupplier.getSessionDescriptor().getSscUrlConfig().getUrl()
                     .replaceAll("/+$", "");
         }
         
@@ -114,7 +152,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     
     private final JsonNode loadAppVersion(String nameOrId, ParameterTypeConverterArgs args) {
         args.getProgressWriter().writeProgress("Loading application version %s", nameOrId);
-        var result = SSCAppVersionHelper.getRequiredAppVersion(unirestInstanceSupplier.getUnirestInstance(), nameOrId, ":");
+        var result = SSCAppVersionHelper.getRequiredAppVersion(unirestInstanceSupplier.getSscUnirestInstance(), nameOrId, ":");
         args.getProgressWriter().writeProgress("Loaded application version %s", result.getAppAndVersionName());
         return result.asJsonNode();
     }
@@ -134,7 +172,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
         if ( StringUtils.isBlank(appVersionId) ) {
             throw new ActionValidationException(String.format("Template parameter %s requires ${%s} to be available", parameter.getName(), appVersionIdExpression.getExpressionString()));
         }
-        var filterSetDescriptor = new SSCIssueFilterSetHelper(unirestInstanceSupplier.getUnirestInstance(), appVersionId).getDescriptorByTitleOrId(titleOrId, false);
+        var filterSetDescriptor = new SSCIssueFilterSetHelper(unirestInstanceSupplier.getSscUnirestInstance(), appVersionId).getDescriptorByTitleOrId(titleOrId, false);
         if ( filterSetDescriptor==null ) {
             throw new IllegalArgumentException("Unknown filter set: "+titleOrId);
         }
