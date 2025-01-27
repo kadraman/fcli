@@ -31,13 +31,13 @@ import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
  * This class manages action data that can be stored, formatted, and retrieved during action execution.
  * @author Ruud Senden
  */
-public final class ActionData {
-    private static final Logger LOG = LoggerFactory.getLogger(ActionData.class);
+public final class ActionRunnerData {
+    private static final Logger LOG = LoggerFactory.getLogger(ActionRunnerData.class);
     private static final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
     private static final String PARAMETERS_VALUE_NAME = "parameters";
     private final ObjectNode values;
     private final IConfigurableSpelEvaluator spelEvaluator;
-    private final ActionData parent;
+    private final ActionRunnerData parent;
     
     /**
      * Construct a new instance of this class with the given SpEL evaluator and action parameters.
@@ -45,7 +45,7 @@ public final class ActionData {
      * acting as the top-level or global data object. Children of this top-level data object can
      * be created through the {@link #createChild()} method.
      */
-    public ActionData(IConfigurableSpelEvaluator spelEvaluator, ObjectNode parameters) {
+    public ActionRunnerData(IConfigurableSpelEvaluator spelEvaluator, ObjectNode parameters) {
         this.spelEvaluator = spelEvaluator;
         this.values = objectMapper.createObjectNode().set(PARAMETERS_VALUE_NAME, parameters);
         this.parent = null;
@@ -54,17 +54,17 @@ public final class ActionData {
     /**
      * Constructor solely used by {@link #createChild()}
      */
-    private ActionData(ActionData parent) {
+    private ActionRunnerData(ActionRunnerData parent) {
         this.spelEvaluator = parent.spelEvaluator;
         this.values = JsonHelper.shallowCopy(parent.values);
         this.parent = parent;
     }
     
     /**
-     * Create a child of the current {@link ActionData} instance
+     * Create a child of the current {@link ActionRunnerData} instance
      */
-    public final ActionData createChild() {
-        return new ActionData(this);
+    public final ActionRunnerData createChild() {
+        return new ActionRunnerData(this);
     }
     
     /**

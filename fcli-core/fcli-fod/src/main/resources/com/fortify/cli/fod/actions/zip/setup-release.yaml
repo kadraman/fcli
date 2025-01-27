@@ -106,7 +106,7 @@ steps:
   - progress: "Creating FoD application & release if non-existing" 
   - fcli:
     - name: createRelease
-      args: fod release create "${parameters.release}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup("rel_create_opts")}
+      args: fod release create "${parameters.release}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup(parameters, "rel_create_opts")}
   - write:
       - to: stdout
         value: |
@@ -119,7 +119,7 @@ steps:
       - progress: "Configuring FoD application release ${parameters.release} for SAST scanning"
       - fcli:
         - name: setupSast
-          args: fod sast-scan setup --rel "${parameters.release}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup("sast_setup_opts")}
+          args: fod sast-scan setup --rel "${parameters.release}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup(parameters, "sast_setup_opts")}
       - write:
         - to: stdout
           value: |
