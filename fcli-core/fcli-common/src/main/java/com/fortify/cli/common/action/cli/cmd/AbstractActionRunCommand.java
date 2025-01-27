@@ -108,7 +108,9 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
             var baseCmd = getSessionFromEnvLoginCommand();
-            new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
+            var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
+            System.err.println(output.getErr());
+            System.out.println(output.getOut());
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
         }
@@ -125,7 +127,9 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         if ( currentActionRunInitializedSessionFromEnv ) {
             try {
                 var baseCmd = getSessionFromEnvLogoutCommand();
-                new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
+                var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
+                System.err.println(output.getErr());
+                System.out.println(output.getOut());
             } finally {
                 currentActionRunInitializedSessionFromEnv = false;
                 System.setProperty("fcli.action.initializedSessionFromEnv", "false");
