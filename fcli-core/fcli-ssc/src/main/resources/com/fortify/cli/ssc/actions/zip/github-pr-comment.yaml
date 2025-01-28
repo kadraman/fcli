@@ -77,14 +77,13 @@ parameters:
     required: false
     defaultValue: false
     
-addRequestTargets:
-  - name: github
-    baseUrl: ${parameters['github-api-url']}
-    headers:
-      Authorization: Bearer ${parameters['github-token']}
-      'X-GitHub-Api-Version': '2022-11-28'
-    
 steps:
+  - addRequestTargets:
+      - name: github
+        baseUrl: ${parameters['github-api-url']}
+        headers:
+          Authorization: Bearer ${parameters['github-token']}
+          'X-GitHub-Api-Version': '2022-11-28'
   - progress: Processing issue data
   - requests:
     - name: issues

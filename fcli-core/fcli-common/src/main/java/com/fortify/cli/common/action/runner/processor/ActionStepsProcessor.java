@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fortify.cli.common.action.model.AbstractActionStepForEach;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
+import com.fortify.cli.common.action.model.ActionStepAddRequestTarget;
 import com.fortify.cli.common.action.model.ActionStepAppend;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
@@ -61,9 +62,14 @@ import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerData;
 import com.fortify.cli.common.action.runner.StepProcessingException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
+import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.cli.util.FcliCommandExecutor;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
+import com.fortify.cli.common.rest.unirest.GenericUnirestFactory;
+import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
+import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
+import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
@@ -90,6 +96,7 @@ public final class ActionStepsProcessor {
             processStepSupplier(step::get_exit, this::processExitStep);
             processStepSupplier(step::getRequests, this::processRequestsStep);
             processStepSupplier(step::getForEach, this::processForEachStep);
+            processStepEntries(step::getAddRequestTargets, this::processAddRequestTarget);
             processStepEntries(step::getFcli, this::processFcliStep);
             processStepEntries(step::getSet, this::processSetStep);
             processStepEntries(step::getAppend, this::processAppendStep);
@@ -328,6 +335,22 @@ public final class ActionStepsProcessor {
         ctx.getCheckStatuses().compute(displayName, (name,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
     }
     
+    private void processAddRequestTarget(ActionStepAddRequestTarget descriptor) {
+        ctx.addRequestHelper(descriptor.getName(), createBasicRequestHelper(descriptor));
+    }
+    
+    private IActionRequestHelper createBasicRequestHelper(ActionStepAddRequestTarget descriptor) {
+        var name = descriptor.getName();
+        var baseUrl = data.eval(descriptor.getBaseUrl(), String.class);
+        var headers = data.eval(descriptor.getHeaders(), String.class);
+        IUnirestInstanceSupplier unirestInstanceSupplier = () -> GenericUnirestFactory.getUnirestInstance(name, u->{
+            u.config().defaultBaseUrl(baseUrl).getDefaultHeaders().add(headers);
+            UnirestUnexpectedHttpResponseConfigurer.configure(u);
+            UnirestJsonHeaderConfigurer.configure(u);
+        });
+        return new BasicActionRequestHelper(unirestInstanceSupplier, null);
+    }
+    
     private void processFcliStep(ActionStepFcli fcli) {
         var args = data.eval(fcli.getArgs(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", args);
@@ -382,7 +405,7 @@ public final class ActionStepsProcessor {
     
     private final void processResponse(ActionStepRequest requestDescriptor, JsonNode rawBody) {
         var name = requestDescriptor.getName();
-        var body = ctx.getConfig().getRequestHelper(requestDescriptor.getTarget()).transformInput(rawBody);
+        var body = ctx.getRequestHelper(requestDescriptor.getTarget()).transformInput(rawBody);
         data.setLocal(name+"_raw", rawBody);
         data.setLocal(name, body);
         processOnResponse(requestDescriptor);
@@ -463,7 +486,7 @@ public final class ActionStepsProcessor {
                 throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getName());
             }
             requestExecutor.addRequests(forEach.getEmbed(), 
-                    (rd,r)->((ObjectNode)currentNode).set(rd.getName(), ctx.getConfig().getRequestHelper(rd.getTarget()).transformInput(r)), 
+                    (rd,r)->((ObjectNode)currentNode).set(rd.getName(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
                     this::processFailure, newData);
         };
     }
@@ -532,7 +555,7 @@ public final class ActionStepsProcessor {
         }
         
         private void executeRequest(String target, List<ActionRequestDescriptor> requests, boolean isPaged) {
-            var requestHelper = ctx.getConfig().getRequestHelper(target);
+            var requestHelper = ctx.getRequestHelper(target);
             if ( isPaged ) {
                 requests.forEach(r->requestHelper.executePagedRequest(r));
             } else {

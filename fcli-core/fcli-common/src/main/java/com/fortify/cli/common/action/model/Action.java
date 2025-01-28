@@ -72,9 +72,6 @@ public class Action implements IActionElement {
     @JsonPropertyDescription("Optional list: Action parameters.")
     @JsonProperty(required = false) private List<ActionParameter> parameters;
     
-    @JsonPropertyDescription("Optional list: Add target URLs and related properties for REST requests.")
-    @JsonProperty(required = false) private List<ActionRequestTarget> addRequestTargets;
-    
     @JsonPropertyDescription("Required list: Steps to be executed when this action is being run.")
     @JsonProperty(required = true) private List<ActionStep> steps;
     

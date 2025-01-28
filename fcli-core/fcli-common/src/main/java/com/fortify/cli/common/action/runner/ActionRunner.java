@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.runner.processor.ActionAddRequestTargetsProcessor;
 import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor;
 import com.fortify.cli.common.action.runner.processor.ActionStepsProcessor;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
@@ -48,7 +47,6 @@ public class ActionRunner implements AutoCloseable {
             initializeCheckStatuses(ctx);
             progressWriter.writeProgress("Processing action parameters");
             ActionRunnerData data = new ActionRunnerData(ctx.getSpelEvaluator(), ctx.getParameterValues());
-            new ActionAddRequestTargetsProcessor(ctx, data).addRequestTargets();
             progressWriter.writeProgress("Processing action steps");
             new ActionStepsProcessor(ctx, data).processSteps(config.getAction().getSteps());
             progressWriter.writeProgress("Action processing finished");

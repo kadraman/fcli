@@ -43,6 +43,9 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
 public final class ActionStep extends AbstractActionStep {
+    @JsonPropertyDescription("Optional list: Add target URLs and related properties for REST requests.")
+    @JsonProperty(required = false) private List<ActionStepAddRequestTarget> addRequestTargets;
+    
     @JsonPropertyDescription("Optional list: Execute one or more REST requests.")
     @JsonProperty(required = false) private List<ActionStepRequest> requests;
     

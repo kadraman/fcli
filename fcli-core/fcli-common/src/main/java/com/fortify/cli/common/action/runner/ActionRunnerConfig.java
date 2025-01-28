@@ -28,7 +28,6 @@ import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.progress.helper.IProgressWriterFactory;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.ISpelEvaluator;
-import com.fortify.cli.common.util.StringUtils;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -55,7 +54,7 @@ public class ActionRunnerConfig {
     /** Custom action parameter converters */
     @Singular private final Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> parameterConverters;
     /** Request helpers */
-    @Singular private final Map<String, IActionRequestHelper> requestHelpers;
+    @Getter(AccessLevel.PACKAGE) @Singular private final Map<String, IActionRequestHelper> requestHelpers;
     /** SpEL configuration functions for configuring the {@link ISpelEvaluator} instances provided by
      *  {@link ActionRunnerConfig} and {@link ActionRunnerContext} through their getSpelEvaluator()
      *  methods. Note that these configurers may not call getSpelEvaluator() during the configuration phase, 
@@ -81,20 +80,5 @@ public class ActionRunnerConfig {
         protected final void configureSpelContext(SimpleEvaluationContext spelContext) {
             configureSpelContext(spelContext, config.getActionConfigSpelEvaluatorConfigurers(), config);
         }
-    }
-    
-    public final IActionRequestHelper getRequestHelper(String name) {
-        if ( StringUtils.isBlank(name) ) {
-            if ( getRequestHelpers().size()==1 ) {
-                return getRequestHelpers().values().iterator().next();
-            } else {
-                throw new IllegalStateException(String.format("Required 'from:' property (allowed values: %s) missing", getRequestHelpers().keySet()));
-            }
-        } 
-        var result = getRequestHelpers().get(name);
-        if ( result==null ) {
-            throw new IllegalStateException(String.format("Invalid 'from: %s', allowed values: %s", name, getRequestHelpers().keySet()));
-        }
-        return result;
     }
 }

@@ -128,7 +128,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     public final class SSCSpelFunctions {
         private final ActionRunnerContext ctx;
         public IActionStepForEachProcessor ruleDescriptionsProcessor(String appVersionId) {
-            var unirest = ctx.getConfig().getRequestHelper("ssc").getUnirestInstance();
+            var unirest = ctx.getRequestHelper("ssc").getUnirestInstance();
             return new SSCFPRRuleDescriptionProcessor(unirest, appVersionId)::process;
         }
         public String issueBrowserUrl(ObjectNode issue, ObjectNode filterset) {

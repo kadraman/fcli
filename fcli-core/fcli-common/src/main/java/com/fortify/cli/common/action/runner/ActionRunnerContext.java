@@ -14,6 +14,7 @@ package com.fortify.cli.common.action.runner;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
+import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
@@ -65,9 +67,38 @@ public class ActionRunnerContext {
     @Setter @Builder.Default private int exitCode = 0;
     @Setter @Builder.Default boolean exitRequested = false;
     
+    /** Modifiable map with Request helpers, either configured on {@link #config} or added during action execution */
+    @Getter(value=AccessLevel.PRIVATE, lazy=true) private final Map<String, IActionRequestHelper> requestHelpers = initializeRequestHelpers();
     /** Factory for creating the single {@link ISpelEvaluator} instance. By using a factory, we can
      *  check for illegal access to the {@link ISpelEvaluator} during configuration phase. */
     @Getter(AccessLevel.NONE) private final ActionConfigSpelEvaluatorFactory spelEvaluatorFactory = new ActionConfigSpelEvaluatorFactory(this);
+    
+    private final Map<String, IActionRequestHelper> initializeRequestHelpers() {
+        var result = new HashMap<String, IActionRequestHelper>();
+        result.putAll(config.getRequestHelpers());
+        return result;
+    }
+    
+    public final void addRequestHelper(String name, IActionRequestHelper requestHelper) {
+        getRequestHelpers().put(name, requestHelper);
+    }
+    
+    public final IActionRequestHelper getRequestHelper(String name) {
+        var requestHelpers = getRequestHelpers();
+        if ( StringUtils.isBlank(name) ) {
+            if ( requestHelpers.size()==1 ) {
+                return requestHelpers.values().iterator().next();
+            } else {
+                throw new IllegalStateException(String.format("Required 'from:' property (allowed values: %s) missing", requestHelpers.keySet()));
+            }
+        } 
+        var result = requestHelpers.get(name);
+        if ( result==null ) {
+            throw new IllegalStateException(String.format("Invalid 'from: %s', allowed values: %s", name, requestHelpers.keySet()));
+        }
+        return result;
+    }
+    
     public final IConfigurableSpelEvaluator getSpelEvaluator() {
         return spelEvaluatorFactory.getSpelEvaluator();
     }

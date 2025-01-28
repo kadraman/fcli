@@ -95,21 +95,6 @@ parameters:
     defaultValue: fortify
   # See SSC/FoD-specific actions for examples on how to load application 
   # versions/releases and SSC filter sets.
-
-# Optional property for adding request targets. By default, fcli provides request targets
-# corresponding to the module that provides a certain action, i.e.:
-# - The 'fcli fod' module provides an 'fod' request target for interacting with FoD
-# - The 'fcli ssc' module provides an 'ssc' request target for interacting with SSC
-# - Not available yet, but 'fcli sc-sast' and 'fcli sc-dast' modules will provide
-#   both 'ssc' and respectively 'sc-sast'/'sc-dast' request targets.
-# Adding request targets allows an action to interact with other (3rd-party) systems
-# like GitHub or GitLab.
-addRequestTargets:
-  - name: github
-    baseUrl: https://api.github.com
-    headers:
-      Authorization: Bearer ${parameters['github-token']}
-      'X-GitHub-Api-Version': '2022-11-28'
   
 # This section defines the steps to be executed for this action. Steps are executed 
 # sequentually. The following step types are currently supported:
@@ -122,6 +107,20 @@ addRequestTargets:
 steps:
     # Output a progress message based on an SpEL expression
   - progress: Processing organization ${parameters['github-org']}
+  # Optional property for adding request targets. By default, fcli provides request targets
+  # corresponding to the module that provides a certain action, i.e.:
+  # - The 'fcli fod' module provides an 'fod' request target for interacting with FoD
+  # - The 'fcli ssc' module provides an 'ssc' request target for interacting with SSC
+  # - Not available yet, but 'fcli sc-sast' and 'fcli sc-dast' modules will provide
+  #   both 'ssc' and respectively 'sc-sast'/'sc-dast' request targets.
+  # Adding request targets allows an action to interact with other (3rd-party) systems
+  # like GitHub or GitLab.
+  - addRequestTargets:
+    - name: github
+      baseUrl: https://api.github.com
+      headers:
+        Authorization: Bearer ${parameters['github-token']}
+        'X-GitHub-Api-Version': '2022-11-28'
     # Execute one or more requests. Requests within a single requests block
     # may not depend on each others output data, as they may be executed
     # in parallel or as a single (SSC) bulk request. Only (REST) requests 
