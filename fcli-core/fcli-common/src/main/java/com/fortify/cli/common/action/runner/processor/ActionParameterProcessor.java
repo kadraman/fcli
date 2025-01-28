@@ -13,17 +13,25 @@
 package com.fortify.cli.common.action.runner.processor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.FloatNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.model.Action;
 import com.fortify.cli.common.action.model.ActionParameter;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
-import com.fortify.cli.common.action.runner.ActionRunnerConfig.ParameterTypeConverterArgs;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.IOptionDescriptor;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionDescriptor;
@@ -31,18 +39,22 @@ import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
+import com.fortify.cli.common.spring.expression.ISpelEvaluator;
 import com.fortify.cli.common.util.StringUtils;
 import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 
 @Builder
 public final class ActionParameterProcessor {
     private final ActionRunnerConfig config;
     private final IConfigurableSpelEvaluator spelEvaluator;
     private final IProgressWriterI18n progressWriter;
+    @Getter(lazy=true) private final Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> parameterConverters = createParameterConverters();
 
     public final ObjectNode parseParameterValues(String[] args) {
         var parameterValues = JsonHelper.getObjectMapper().createObjectNode();
@@ -108,7 +120,7 @@ public final class ActionParameterProcessor {
     private JsonNode convertParameterValue(String value, ActionParameter parameter, ObjectNode parameterValues) {
         var name = parameter.getName();
         var type = StringUtils.isBlank(parameter.getType()) ? "string" : parameter.getType();
-        var paramConverter = config.getParameterConverters().get(type);
+        var paramConverter = getParameterConverters().get(type);
         if ( paramConverter==null ) {
             throw new ActionValidationException(String.format("Unknown parameter type %s for parameter %s", type, name)); 
         } else {
@@ -168,6 +180,40 @@ public final class ActionParameterProcessor {
                         .toList().toArray(String[][]::new))
                 .asString();
         }
-
+    }
+    
+    @Builder @Data
+    public static final class ParameterTypeConverterArgs {
+        private final IProgressWriterI18n progressWriter;
+        private final ISpelEvaluator spelEvaluator;
+        private final Action action;
+        private final ActionParameter parameter;
+        private final ObjectNode parameters;
+    }
+    
+    private final Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> createParameterConverters() {
+        var result = createDefaultParameterConverters();
+        var configuredParameterConverters = config.getParameterConverters();
+        if ( configuredParameterConverters!=null ) {
+            result.putAll(configuredParameterConverters);
+        }
+        return result;
+    }
+    
+    private static final Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> createDefaultParameterConverters() {
+        Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> result = new HashMap<>();
+        // TODO Most of these will likely fail in case value is null or empty
+        result.put("string",  (v,a)->new TextNode(v));
+        result.put("boolean", (v,a)->BooleanNode.valueOf(Boolean.parseBoolean(v)));
+        result.put("int",     (v,a)->IntNode.valueOf(Integer.parseInt(v)));
+        result.put("long",    (v,a)->LongNode.valueOf(Long.parseLong(v)));
+        result.put("double",  (v,a)->DoubleNode.valueOf(Double.parseDouble(v)));
+        result.put("float",   (v,a)->FloatNode.valueOf(Float.parseFloat(v)));
+        result.put("array",   (v,a)->StringUtils.isBlank(v)
+                ? JsonHelper.toArrayNode(new String[] {}) 
+                : JsonHelper.toArrayNode(v.split(",")));
+        // TODO Add BigIntegerNode/DecimalNode/ShortNode support?
+        // TODO Add array support?
+        return result;
     }
 }

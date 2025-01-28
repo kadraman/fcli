@@ -18,8 +18,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
-import com.fortify.cli.common.action.runner.ActionRunnerConfig;
-import com.fortify.cli.common.action.runner.ActionRunnerConfig.ParameterTypeConverterArgs;
+import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
+import com.fortify.cli.common.action.runner.ActionRunnerContext;
+import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ParameterTypeConverterArgs;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
@@ -77,35 +78,35 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
     }
     
     @Override
-    protected void configureActionConfig(ActionRunnerConfig config) {
-        config
-            .addParameterConverter("release_single", this::loadRelease)
-            .addRequestHelper("fod", new FoDDataExtractRequestHelper(unirestInstanceSupplier::getUnirestInstance, FoDProductHelper.INSTANCE));
+    protected void configure(ActionRunnerConfigBuilder configBuilder) {
+       configBuilder
+            .parameterConverter("release_single", this::loadRelease)
+            .requestHelper("fod", new FoDDataExtractRequestHelper(unirestInstanceSupplier::getUnirestInstance, FoDProductHelper.INSTANCE))
+            .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
     }
     
-    @Override
-    protected void configureSpelContext(ActionRunnerConfig actionRunnerConfig, SimpleEvaluationContext spelContext) {
-        spelContext.setVariable("fod", new FoDSpelFunctions(actionRunnerConfig));
+    protected void configureSpelContext(ActionRunnerContext actionRunnerContext, SimpleEvaluationContext spelContext) {
+        spelContext.setVariable("fod", new FoDSpelFunctions(actionRunnerContext));
     }
     
     @RequiredArgsConstructor @Reflectable
     public final class FoDSpelFunctions {
-        private final ActionRunnerConfig config;
+        private final ActionRunnerContext ctx;
         
         public String issueBrowserUrl(ObjectNode issue) {
             var deepLinkExpression = baseUrl()
                     +"/redirect/Issues/${vulnId}";
-            return config.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), issue, String.class);
+            return ctx.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), issue, String.class);
         }
         public String releaseBrowserUrl(ObjectNode appversion) {
             var deepLinkExpression = baseUrl()
                     +"/redirect/Releases/${releaseId}";
-            return config.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
+            return ctx.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
         }
         public String appBrowserUrl(ObjectNode appversion) {
             var deepLinkExpression = baseUrl()
                     +"/redirect/Applications/${applicationId}";
-            return config.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
+            return ctx.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
         }
         private String baseUrl() {
             return FoDProductHelper.INSTANCE.getBrowserUrl(unirestInstanceSupplier.getSessionDescriptor().getUrlConfig().getUrl());

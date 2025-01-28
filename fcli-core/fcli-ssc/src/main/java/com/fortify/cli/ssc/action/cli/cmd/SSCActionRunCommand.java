@@ -32,9 +32,10 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.model.ActionValidationException;
-import com.fortify.cli.common.action.runner.ActionRunnerConfig;
-import com.fortify.cli.common.action.runner.ActionRunnerConfig.ParameterTypeConverterArgs;
+import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
+import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionSpelFunctions;
+import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ParameterTypeConverterArgs;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
@@ -81,18 +82,18 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     }
     
     @Override
-    protected void configureActionConfig(ActionRunnerConfig actionRunnerConfig) {
-        actionRunnerConfig
-            .addParameterConverter("appversion_single", this::loadAppVersion)
-            .addParameterConverter("filterset", this::loadFilterSet)
-            .addRequestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getSscUnirestInstance, SSCProductHelper.INSTANCE))
-            .addRequestHelper("sc-sast", new SSCActionRequestHelper(unirestInstanceSupplier::getScSastUnirestInstance, SCSastProductHelper.INSTANCE))
-            .addRequestHelper("sc-dast", new SSCActionRequestHelper(unirestInstanceSupplier::getScDastUnirestInstance, SCDastProductHelper.INSTANCE));
+    protected void configure(ActionRunnerConfigBuilder configBuilder) {
+       configBuilder
+            .parameterConverter("appversion_single", this::loadAppVersion)
+            .parameterConverter("filterset", this::loadFilterSet)
+            .requestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getSscUnirestInstance, SSCProductHelper.INSTANCE))
+            .requestHelper("sc-sast", new SSCActionRequestHelper(unirestInstanceSupplier::getScSastUnirestInstance, SCSastProductHelper.INSTANCE))
+            .requestHelper("sc-dast", new SSCActionRequestHelper(unirestInstanceSupplier::getScDastUnirestInstance, SCDastProductHelper.INSTANCE))
+            .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
     }
     
-@Override
-    protected void configureSpelContext(ActionRunnerConfig actionRunnerConfig, SimpleEvaluationContext spelContext) {
-        spelContext.setVariable("ssc", new SSCSpelFunctions(actionRunnerConfig));   
+    protected void configureSpelContext(ActionRunnerContext actionRunnerContext, SimpleEvaluationContext spelContext) {
+        spelContext.setVariable("ssc", new SSCSpelFunctions(actionRunnerContext));   
     }
     
     @Override
@@ -125,9 +126,9 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     
     @RequiredArgsConstructor @Reflectable
     public final class SSCSpelFunctions {
-        private final ActionRunnerConfig config;
+        private final ActionRunnerContext ctx;
         public IActionStepForEachProcessor ruleDescriptionsProcessor(String appVersionId) {
-            var unirest = config.getRequestHelper("ssc").getUnirestInstance();
+            var unirest = ctx.getConfig().getRequestHelper("ssc").getUnirestInstance();
             return new SSCFPRRuleDescriptionProcessor(unirest, appVersionId)::process;
         }
         public String issueBrowserUrl(ObjectNode issue, ObjectNode filterset) {
@@ -136,7 +137,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
             if ( filterset!=null ) { 
                 deepLinkExpression+="&filterSet="+filterset.get("guid").asText();
             }
-            return config.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), issue, String.class);
+            return ctx.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), issue, String.class);
         }
         public String appversionBrowserUrl(ObjectNode appversion, ObjectNode filterset) {
             var deepLinkExpression = baseUrl()
@@ -144,7 +145,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
             if ( filterset!=null ) { 
                 deepLinkExpression+="?filterSet="+filterset.get("guid").asText();
             }
-            return config.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
+            return ctx.getSpelEvaluator().evaluate(SpelHelper.parseTemplateExpression(deepLinkExpression), appversion, String.class);
         }
         private String baseUrl() {
             return unirestInstanceSupplier.getSessionDescriptor().getSscUrlConfig().getUrl()

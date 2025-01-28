@@ -16,12 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.expression.spel.support.SimpleEvaluationContext;
-
 import com.fortify.cli.common.action.cli.mixin.ActionResolverMixin;
 import com.fortify.cli.common.action.cli.mixin.ActionValidationMixin;
 import com.fortify.cli.common.action.runner.ActionRunner;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
+import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ActionParameterHelper;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.mixin.CommandHelperMixin;
@@ -58,12 +57,13 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         try (var progressWriter = progressWriterFactory.overrideAutoIfNoConsole(ProgressWriterType.none)) {
             progressWriter.writeProgress("Loading action %s", actionResolver.getAction());
             var action = actionResolver.loadAction(getType(), actionValidationMixin.getActionValidationHandler());
-            config = ActionRunnerConfig.builder()
+            var configBuilder = ActionRunnerConfig.builder()
                 .onValidationErrors(this::onValidationErrors)
                 .action(action)
                 .progressWriterFactory(progressWriterFactory)
-                .rootCommandLine(getRootCommandLine())
-                .build();
+                .rootCommandLine(getRootCommandLine());
+            configure(configBuilder);
+            config = configBuilder.build();
             progressWriter.writeProgress("Executing action %s", config.getAction().getMetadata().getName());
         }
         try ( var actionRunner = new ActionRunner(config) ) {
@@ -78,7 +78,6 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
     private final Integer run(ActionRunnerConfig config, ActionRunner actionRunner) {
         try {
             initializeSession();
-            configure(config);
             
             // We need to set the FCLI_DEFAULT_<module>_SESSION environment variable to allow fcli: statements to 
             // pick up the current session name, and (although probably not needed currently), reset the default
@@ -151,11 +150,6 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         var msg = String.format("Option errors:\n %s\nSupported options:\n%s\n", errorsString, supportedOptionsString);
         return new ParameterException(commandHelper.getCommandSpec().commandLine(), msg);
     }
-    
-    private final void configure(ActionRunnerConfig config) {
-        configureActionConfig(config);
-        config.getSpelEvaluator().configure(spelContext->configureSpelContext(config, spelContext));
-    }
 
     /** By default, this method returns the single module name as defined through {@link #getType()}. If sessions
      *  are shared between multiple modules (i.e., SSC/SC-SAST/SC-DAST), this method should be overridden to
@@ -166,7 +160,6 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
     protected abstract String getType();
     protected abstract String getSessionName();
     protected abstract String getSessionFromEnvLoginCommand();
-    protected abstract String getSessionFromEnvLogoutCommand();
-    protected abstract void configureActionConfig(ActionRunnerConfig actionRunnerConfig); 
-    protected abstract void configureSpelContext(ActionRunnerConfig actionRunnerConfig, SimpleEvaluationContext spelContext);
+    protected abstract String getSessionFromEnvLogoutCommand(); 
+    protected abstract void configure(ActionRunnerConfigBuilder actionRunnerConfigBuilder);
 }

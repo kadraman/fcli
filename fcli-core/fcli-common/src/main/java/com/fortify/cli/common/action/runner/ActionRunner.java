@@ -72,7 +72,6 @@ public class ActionRunner implements AutoCloseable {
         return ActionRunnerContext.builder()
                 .config(config)
                 .progressWriter(progressWriter)
-                .spelEvaluator(config.getSpelEvaluator())
                 .parameterValues(parameterValues)
                 .build();
     }
