@@ -7,9 +7,9 @@ usage:
     For information on how to import this report into GitLab, see 
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportsdast
 
-defaults:
-  requestTarget: fod
-  
+config:
+  defaultRequestTarget: fod
+
 parameters:
   - name: file
     cliAliases: f

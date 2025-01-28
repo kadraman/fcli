@@ -68,9 +68,9 @@ public final class FcliCommandExecutor {
         return getLeafCommand(getParseResult(), IOutputHelperSupplier.class).isPresent();
     }
     
-    public final Output execute(Consumer<ObjectNode> recordConsumer, boolean suppressOutput) {
+    public final Output execute(Consumer<ObjectNode> recordConsumer, boolean collectOutput) {
         if ( canCollectRecords() && recordConsumer!=null ) {
-            StandardOutputWriter.collectRecords(recordConsumer, suppressOutput);
+            StandardOutputWriter.collectRecords(recordConsumer, !collectOutput);
         }
         return execute();
     }

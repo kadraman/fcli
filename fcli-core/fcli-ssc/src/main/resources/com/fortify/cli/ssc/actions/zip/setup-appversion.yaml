@@ -22,8 +22,9 @@ usage:
       for example a --profile option to select between different profiles that each define 
       appropriate option values and setup commands to run.
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
+  output: immediate
   
 parameters:
   - name: appversion

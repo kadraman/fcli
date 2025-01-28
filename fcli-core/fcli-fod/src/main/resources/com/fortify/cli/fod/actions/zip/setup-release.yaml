@@ -27,8 +27,10 @@ usage:
     for example a --profile option to select between different profiles that each define 
     appropriate option values and setup commands to run.
 
-defaults:
-  requestTarget: fod
+config:
+  defaultRequestTarget: fod
+  output: immediate
+
   
 parameters:
   - name: release

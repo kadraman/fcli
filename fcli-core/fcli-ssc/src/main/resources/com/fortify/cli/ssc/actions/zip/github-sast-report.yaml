@@ -21,8 +21,8 @@ usage:
     For information on how to import this report into GitHub, see 
     https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: file

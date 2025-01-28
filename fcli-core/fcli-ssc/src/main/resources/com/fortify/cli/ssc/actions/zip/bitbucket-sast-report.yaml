@@ -7,8 +7,8 @@ usage:
     For information on how to import this report into BitBucket, see 
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
     
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: report-file

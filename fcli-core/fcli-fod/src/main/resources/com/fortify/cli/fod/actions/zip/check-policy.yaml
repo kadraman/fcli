@@ -10,9 +10,9 @@ usage:
     custom action, for example if they need more granuality than what's provided
     by the standard FoD Security Policy.
 
-defaults:
-  requestTarget: fod
-  
+config:
+  defaultRequestTarget: fod
+      
 parameters:
   - name: release
     cliAliases: rel

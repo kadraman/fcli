@@ -7,8 +7,8 @@ usage:
     For information on how to import this report into GitLab, see 
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportsdast
   
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: file

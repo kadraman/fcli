@@ -7,8 +7,8 @@ usage:
     For information on how to import this report into SonarQube, see 
     https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/importing-external-issues/external-analyzer-reports/
 
-defaults:
-  requestTarget: fod
+config:
+  defaultRequestTarget: fod
   
 parameters:
   - name: file

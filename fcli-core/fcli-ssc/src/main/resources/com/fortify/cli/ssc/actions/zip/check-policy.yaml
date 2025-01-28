@@ -7,8 +7,8 @@ usage:
     This sample action demonstrates how to implement a security policy using
     fcli actions, returning a non-zero exit code if any of the checks fail.
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: appversion

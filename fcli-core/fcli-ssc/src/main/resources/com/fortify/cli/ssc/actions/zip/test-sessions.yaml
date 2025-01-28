@@ -6,8 +6,9 @@ usage:
   description: |
     TODO
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
+  sessionFromEnvOutput: show
   
 steps:
     - requests:

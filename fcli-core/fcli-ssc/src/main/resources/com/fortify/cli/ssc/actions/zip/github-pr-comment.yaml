@@ -28,7 +28,10 @@ usage:
       upon PR creation. Optionally, new scans can be run upon PR changes,
       creating new PR comments that show the issue delta compared to the
       previous scan for this PR.
-  
+
+config:
+  defaultRequestTarget: ssc
+        
 parameters:
   - name: appversion
     cliAliases: av
@@ -80,9 +83,6 @@ addRequestTargets:
     headers:
       Authorization: Bearer ${parameters['github-token']}
       'X-GitHub-Api-Version': '2022-11-28'
-    
-defaults:
-  requestTarget: ssc
     
 steps:
   - progress: Processing issue data

@@ -21,8 +21,6 @@ public interface IProgressWriterFactory {
     ProgressWriterType getType();
     /** Create a progress writer for the configured type */
     IProgressWriterI18n create();
-    /** Create a progress writer for either the configured type, or the givven override type if no console is available */
-    IProgressWriterI18n overrideAutoIfNoConsole(ProgressWriterType overrideType);
     /** Create a progress writer for the given type, ignoring the configured type */
     IProgressWriterI18n create(ProgressWriterType progressWriterType);
 }

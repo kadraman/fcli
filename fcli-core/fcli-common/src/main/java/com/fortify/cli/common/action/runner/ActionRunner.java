@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.runner;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
 import com.fortify.cli.common.action.runner.processor.ActionAddRequestTargetsProcessor;
@@ -41,16 +42,16 @@ public class ActionRunner implements AutoCloseable {
     }
     
     public final Supplier<Integer> _run(String[] args) {
-        try ( var progressWriter = config.getProgressWriterFactory().overrideAutoIfNoConsole(ProgressWriterType.none) ) {
+        try ( var progressWriter = createProgressWriter() ) {
             var parameterValues = getParameterValues(args, progressWriter);
             var ctx = createContext(progressWriter, parameterValues);
             initializeCheckStatuses(ctx);
-            ctx.getProgressWriter().writeProgress("Processing action parameters");
+            progressWriter.writeProgress("Processing action parameters");
             ActionRunnerData data = new ActionRunnerData(ctx.getSpelEvaluator(), ctx.getParameterValues());
             new ActionAddRequestTargetsProcessor(ctx, data).addRequestTargets();
-            ctx.getProgressWriter().writeProgress("Processing action steps");
+            progressWriter.writeProgress("Processing action steps");
             new ActionStepsProcessor(ctx, data).processSteps(config.getAction().getSteps());
-            ctx.getProgressWriter().writeProgress("Action processing finished");
+            progressWriter.writeProgress("Action processing finished");
          
             return ()->{
                 ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);
@@ -66,6 +67,15 @@ public class ActionRunner implements AutoCloseable {
                 return ctx.getExitCode();
             };
         }
+    }
+
+    private IProgressWriterI18n createProgressWriter() {
+        var factory = config.getProgressWriterFactory();
+        var type = factory.getType();
+        if ( config.getAction().getConfig().getOutput()==ActionConfigOutput.immediate && type!=ProgressWriterType.none) {
+            type = ProgressWriterType.simple;
+        }
+        return factory.create(type);
     }
 
     private ActionRunnerContext createContext(IProgressWriterI18n progressWriter, ObjectNode parameterValues) {

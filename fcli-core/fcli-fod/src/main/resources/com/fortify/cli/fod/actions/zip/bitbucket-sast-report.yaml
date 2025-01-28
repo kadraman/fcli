@@ -7,8 +7,8 @@ usage:
     For information on how to import this report into BitBucket, see 
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
 
-defaults:
-  requestTarget: fod
+config:
+  defaultRequestTarget: fod
   
 parameters:
   - name: report-file

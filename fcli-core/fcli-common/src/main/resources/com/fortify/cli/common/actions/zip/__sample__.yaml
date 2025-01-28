@@ -32,6 +32,11 @@ usage:
     thus may need to be updated when upgrading fcli. Please see this link for details: 
     https://github.com/fortify/fcli/issues/515
     
+# This section allows for setting some global action configuration properties.
+config:
+  defaultRequestTarget: github
+  output: delayed
+    
 # This section lists action parameters that action users can provide as command-line 
 # options when running the action. Parameter values can be referenced through the
 # 'parameters' property in SpEL expressions. Each parameter entry supports the
@@ -105,12 +110,6 @@ addRequestTargets:
     headers:
       Authorization: Bearer ${parameters['github-token']}
       'X-GitHub-Api-Version': '2022-11-28'
-
-# This section allows for setting default values for some properties. For now, a default
-# request target is the only supported property, avoiding the need to explicitly set a 
-# request target on every request element.
-defaults:
-  requestTarget: github
   
 # This section defines the steps to be executed for this action. Steps are executed 
 # sequentually. The following step types are currently supported:

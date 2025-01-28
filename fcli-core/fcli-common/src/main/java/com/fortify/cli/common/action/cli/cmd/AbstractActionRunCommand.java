@@ -18,6 +18,7 @@ import java.util.Map;
 
 import com.fortify.cli.common.action.cli.mixin.ActionResolverMixin;
 import com.fortify.cli.common.action.cli.mixin.ActionValidationMixin;
+import com.fortify.cli.common.action.model.ActionConfig.ActionConfigSessionFromEnvOutput;
 import com.fortify.cli.common.action.runner.ActionRunner;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
@@ -27,7 +28,6 @@ import com.fortify.cli.common.cli.mixin.CommandHelperMixin;
 import com.fortify.cli.common.cli.util.FcliCommandExecutor;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.progress.cli.mixin.ProgressWriterFactoryMixin;
-import com.fortify.cli.common.progress.helper.ProgressWriterType;
 import com.fortify.cli.common.util.DisableTest;
 import com.fortify.cli.common.util.DisableTest.TestType;
 import com.fortify.cli.common.util.EnvHelper;
@@ -54,7 +54,7 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
     public final Integer call() {
         initMixins();
         ActionRunnerConfig config;
-        try (var progressWriter = progressWriterFactory.overrideAutoIfNoConsole(ProgressWriterType.none)) {
+        try (var progressWriter = progressWriterFactory.create()) {
             progressWriter.writeProgress("Loading action %s", actionResolver.getAction());
             var action = actionResolver.loadAction(getType(), actionValidationMixin.getActionValidationHandler());
             var configBuilder = ActionRunnerConfig.builder()
@@ -77,7 +77,7 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
     
     private final Integer run(ActionRunnerConfig config, ActionRunner actionRunner) {
         try {
-            initializeSession();
+            initializeSession(config);
             
             // We need to set the FCLI_DEFAULT_<module>_SESSION environment variable to allow fcli: statements to 
             // pick up the current session name, and (although probably not needed currently), reset the default
@@ -98,18 +98,20 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
                 }
             }
         } finally {
-            terminateSession();
+            terminateSession(config);
         }
     }
 
-    private final void initializeSession() {
+    private final void initializeSession(ActionRunnerConfig config) {
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
             var baseCmd = getSessionFromEnvLoginCommand();
             var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
-            System.err.println(output.getErr());
-            System.out.println(output.getOut());
+            if ( config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show) {
+                System.err.println(output.getErr());
+                System.out.println(output.getOut());
+            }
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
         }
@@ -119,7 +121,7 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         return "true".equals(System.getProperty("fcli.action.initializedSessionFromEnv"));
     }
 
-    private final void terminateSession() {
+    private final void terminateSession(ActionRunnerConfig config) {
         // Terminate session only if it was initialized from the current 'action run' invocation. This allows
         // for fcli actions to invoke other 'fcli * action run' commands, initializing and cleaning up the 
         // session only on the first 'fcli * action run' invocation.
@@ -127,8 +129,10 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
             try {
                 var baseCmd = getSessionFromEnvLogoutCommand();
                 var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
-                System.err.println(output.getErr());
-                System.out.println(output.getOut());
+                if ( config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show) {
+                    System.err.println(output.getErr());
+                    System.out.println(output.getOut());
+                }
             } finally {
                 currentActionRunInitializedSessionFromEnv = false;
                 System.setProperty("fcli.action.initializedSessionFromEnv", "false");

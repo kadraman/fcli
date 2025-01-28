@@ -66,14 +66,14 @@ public class Action implements IActionElement {
     @JsonPropertyDescription("Required object: Action usage help.")
     @JsonProperty(required = true) private ActionUsage usage;
     
+    @JsonPropertyDescription("Optional object: Action configuration properties.")
+    @JsonProperty(required = false) private ActionConfig config;
+    
     @JsonPropertyDescription("Optional list: Action parameters.")
     @JsonProperty(required = false) private List<ActionParameter> parameters;
     
     @JsonPropertyDescription("Optional list: Add target URLs and related properties for REST requests.")
     @JsonProperty(required = false) private List<ActionRequestTarget> addRequestTargets;
-    
-    @JsonPropertyDescription("Optional object: Default values for some specific properties. Currently only used to set a default request target.")
-    @JsonProperty(required = false) private ActionDefaultValues defaults;
     
     @JsonPropertyDescription("Required list: Steps to be executed when this action is being run.")
     @JsonProperty(required = true) private List<ActionStep> steps;
@@ -126,6 +126,8 @@ public class Action implements IActionElement {
         checkNotNull("action steps", steps, this);
         if ( parameters==null ) {
             parameters = Collections.emptyList();
+        } if ( config==null ) {
+            config = new ActionConfig();
         }
     }
     

@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fortify.cli.common.action.model.AbstractActionStepForEach;
+import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepAppend;
 import com.fortify.cli.common.action.model.ActionStepCheck;
@@ -49,10 +50,6 @@ import com.fortify.cli.common.action.model.ActionStepRequest;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestForEachDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestPagingProgressDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestType;
-import com.fortify.cli.common.action.runner.ActionRunnerContext;
-import com.fortify.cli.common.action.runner.ActionRunnerData;
-import com.fortify.cli.common.action.runner.StepProcessingException;
-import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
 import com.fortify.cli.common.action.model.ActionStepSet;
 import com.fortify.cli.common.action.model.ActionStepUnset;
 import com.fortify.cli.common.action.model.ActionStepWrite;
@@ -60,6 +57,10 @@ import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.ActionValueTemplate;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.model.IActionStepValueSupplier;
+import com.fortify.cli.common.action.runner.ActionRunnerContext;
+import com.fortify.cli.common.action.runner.ActionRunnerData;
+import com.fortify.cli.common.action.runner.StepProcessingException;
+import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
 import com.fortify.cli.common.cli.util.FcliCommandExecutor;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
@@ -229,8 +230,8 @@ public final class ActionStepsProcessor {
         var value = asString(getValue(write));
         try {
             switch (to.toLowerCase()) {
-            case "stdout": ctx.getDelayedConsoleWriterRunnables().add(createRunner(ctx.getStdout(), value)); break;
-            case "stderr": ctx.getDelayedConsoleWriterRunnables().add(createRunner(ctx.getStderr(), value)); break;
+            case "stdout": writeImmediateOrDelayed(ctx.getStdout(), value); break;
+            case "stderr": writeImmediateOrDelayed(ctx.getStderr(), value); break;
             default: write(new File(to), value);
             }
         } catch (IOException e) {
@@ -240,6 +241,14 @@ public final class ActionStepsProcessor {
     
     private Runnable createRunner(PrintStream out, String output) {
         return ()->out.print(output);
+    }
+    
+    private void writeImmediateOrDelayed(PrintStream out, String value) {
+        if ( ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed ) {
+            ctx.getDelayedConsoleWriterRunnables().add(createRunner(out, value));
+        } else {
+            out.print(value);
+        }
     }
 
     private void write(File file, String output) throws IOException {
@@ -339,8 +348,8 @@ public final class ActionStepsProcessor {
         
         // TODO Implement optional output suppression
         var output = cmdExecutor.execute(recordConsumer, true);
-        ctx.getDelayedConsoleWriterRunnables().add(createRunner(System.err, output.getErr()));
-        ctx.getDelayedConsoleWriterRunnables().add(createRunner(System.out, output.getOut()));
+        writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
+        writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
         if ( output.getExitCode() >0 ) { 
             throw new StepProcessingException("Fcli command returned non-zero exit code "+output.getExitCode()); 
         }

@@ -9,8 +9,8 @@ usage:
     For information on how to create or update findings into AWS Security Hub, see 
     https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-update-types.html
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: file

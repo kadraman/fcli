@@ -9,6 +9,9 @@ usage:
     For information on how to create or update findings into AWS Security Hub, see 
     https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-update-types.html
 
+config:
+  defaultRequestTarget: fod
+
 parameters:
   - name: file
     cliAliases: f
@@ -27,9 +30,6 @@ parameters:
     description: 'Required AWS account id. Default value: AWS_ACCOUNT_ID environment variable.'
     required: true
     defaultValue: ${#env('AWS_ACCOUNT_ID')}
-
-defaults:
-  requestTarget: fod
 
 steps:
   - progress: Loading static scan summary

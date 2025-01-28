@@ -9,8 +9,8 @@ usage:
     of this action, parameters and output of this action may change in the next 
     couple of fcli releases.
 
-defaults:
-  requestTarget: ssc
+config:
+  defaultRequestTarget: ssc
   
 parameters:
   - name: file

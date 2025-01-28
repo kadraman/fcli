@@ -72,8 +72,8 @@ public final class ActionStepRequest extends AbstractActionStep {
     public final void postLoad(Action action) {
         Action.checkNotBlank("request name", name, this);
         Action.checkNotNull("request uri", uri, this);
-        if ( StringUtils.isBlank(target) && action.getDefaults()!=null ) {
-            target = action.getDefaults().getRequestTarget();
+        if ( StringUtils.isBlank(target) && action.getConfig()!=null ) {
+            target = action.getConfig().getDefaultRequestTarget();
         }
         Action.checkNotBlank("request target", target, this);
         if ( pagingProgress!=null ) {

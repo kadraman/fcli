@@ -32,15 +32,6 @@ public class ProgressWriterFactoryMixin implements IProgressWriterFactory {
     public final IProgressWriterI18n create() {
         return create(this.type);
     }
-    
-    /** Create a progress writer for either the configured type, or the givven override type if no console is available */
-    @Override
-    public final IProgressWriterI18n overrideAutoIfNoConsole(ProgressWriterType overrideType) {
-        var newType = System.console()==null && type==ProgressWriterType.auto
-                ? overrideType
-                : this.type;
-        return create(newType);
-    }
 
     /** Create a progress writer for the given type, ignoring the configured type */
     @Override

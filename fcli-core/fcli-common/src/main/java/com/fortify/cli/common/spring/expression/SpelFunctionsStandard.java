@@ -31,6 +31,10 @@ import lombok.NoArgsConstructor;
 public class SpelFunctionsStandard {
     private static final DateTimePeriodHelper PeriodHelper = DateTimePeriodHelper.all();
 
+    public static final String fmt(String fmt, Object... input) {
+        return String.format(fmt, input);
+    }
+    
     public static final OffsetDateTime date(String s) {
         if(s == null) { return null; }
         
