@@ -12,9 +12,12 @@
  *******************************************************************************/
 package com.fortify.cli.tool._common.helper;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -56,8 +59,19 @@ public class ToolInstallationDescriptor {
         return result;
     }
     
+    public static final ToolInstallationDescriptor loadLastModified(String toolName) {
+        var installDescriptorsDir = getInstallDescriptorsDirPath(toolName).toFile();
+        ToolInstallationDescriptor result = null;
+        while ( result==null ) { // The load method may delete stale descriptors, in which case we need to look for the next one
+            Optional<File> lastModifiedFile = Arrays.stream(installDescriptorsDir.listFiles(File::isFile))
+                .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
+            result = lastModifiedFile.map(File::toPath).map(ToolInstallationDescriptor::load).orElse(null);
+        }
+        return result;
+    }
+    
     public static final void delete(String toolName, ToolDefinitionVersionDescriptor versionDescriptor) {
-        FcliDataHelper.deleteFile(getInstallDescriptorPath(toolName, versionDescriptor.getVersion()), true);
+        delete(getInstallDescriptorPath(toolName, versionDescriptor.getVersion()));
     }
     
     public final void save(String toolName, ToolDefinitionVersionDescriptor versionDescriptor) {
@@ -74,6 +88,20 @@ public class ToolInstallationDescriptor {
     
     public Path getGlobalBinPath() {
         return asPath(binDir);
+    }
+    
+    private static final ToolInstallationDescriptor load(Path descriptorPath) {
+        var result = FcliDataHelper.readFile(descriptorPath, ToolInstallationDescriptor.class, false);
+        // Check for stale descriptor
+        if ( result!=null && !Files.exists(result.getInstallPath()) ) {
+            delete(descriptorPath);
+            result = null;
+        }
+        return result;
+    }
+    
+    private static final void delete(Path descriptorPath) {
+        FcliDataHelper.deleteFile(descriptorPath, true);
     }
     
     private static final Path asPath(String dir) {

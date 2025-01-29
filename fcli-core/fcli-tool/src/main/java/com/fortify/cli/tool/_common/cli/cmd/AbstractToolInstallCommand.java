@@ -38,6 +38,7 @@ import com.fortify.cli.common.util.DisableTest.TestType;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.FileUtils;
 import com.fortify.cli.common.util.StringUtils;
+import com.fortify.cli.common.variable.DefaultVariablePropertyName;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool._common.helper.ToolInstallationHelper;
 import com.fortify.cli.tool._common.helper.ToolInstaller;
@@ -52,7 +53,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
-@CommandGroup("install")
+@CommandGroup("install") @DefaultVariablePropertyName("version")
 public abstract class AbstractToolInstallCommand extends AbstractOutputCommand implements IJsonNodeSupplier, IActionCommandResultSupplier {
     private static final ObjectMapper OBJECTMAPPER = JsonHelper.getObjectMapper();
     @Option(names={"-v", "--version"}, required = true, descriptionKey="fcli.tool.install.version", defaultValue = "latest") 
@@ -90,7 +91,7 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
     
     @Override
     public final boolean isSingular() {
-        return false;
+        return true;
     }
     
     protected abstract String getToolName();

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021, 2022 Open Text.
+ * Copyright 2021, 2023 Open Text.
  *
  * The only warranties for products and services of Open Text 
  * and its affiliates and licensors ("Open Text") are as may 
@@ -12,22 +12,22 @@
  *******************************************************************************/
 package com.fortify.cli.tool.debricked_cli.cli.cmd;
 
-import com.fortify.cli.common.cli.cmd.AbstractContainerCommand;
+import java.util.List;
 
+import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunCommand;
+import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
+import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
+
+import lombok.Getter;
 import picocli.CommandLine.Command;
 
-@Command(
-        name = ToolDebrickedCliCommands.TOOL_NAME,
-        aliases = {"dcli"},
-        subcommands = {
-                ToolDebrickedCliInstallCommand.class,
-                ToolDebrickedCliListCommand.class,
-                ToolDebrickedCliListPlatformsCommand.class,
-                ToolDebrickedCliRunCommand.class,
-                ToolDebrickedCliUninstallCommand.class
-        }
+@Command(name = "run")
+public class ToolDebrickedCliRunCommand extends AbstractToolRunCommand {
+    @Getter private String toolName = ToolDebrickedCliCommands.TOOL_NAME;
 
-)
-public class ToolDebrickedCliCommands extends AbstractContainerCommand {
-    static final String TOOL_NAME = "debricked-cli";
+    @Override
+    protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
+        var baseCmd = ToolPlatformHelper.isWindows() ? "debricked.exe" : "debricked";
+        return List.of(descriptor.getBinPath().resolve(baseCmd).toString());
+    }
 }
