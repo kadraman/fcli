@@ -1,5 +1,5 @@
-# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev.json
-$schema: https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev.json
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+$schema: https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
 
 # Depending on your IDE/YAML editor, the yaml-language-server comment or the $schema property 
 # above may be used to associate the action YAML file with the action YAML schema. This allows 

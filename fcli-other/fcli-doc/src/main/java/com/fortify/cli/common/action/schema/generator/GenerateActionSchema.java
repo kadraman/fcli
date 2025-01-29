@@ -24,6 +24,7 @@ import com.fortify.cli.common.action.helper.ActionSchemaHelper;
 import com.fortify.cli.common.action.model.Action;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
+import com.fortify.cli.common.util.StringUtils;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -36,12 +37,13 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 
 public class GenerateActionSchema {
-    private static final String DEV_VERSION = "dev";
     public static void main(String[] args) throws Exception {
-        if ( args.length!=3 ) { throw new IllegalArgumentException("This command must be run as GenerateActionSchema <fcli version> <action schema version> <schema output file location>"); }
+        if ( args.length!=3 ) { throw new IllegalArgumentException("This command must be run as GenerateActionSchema <true (dev release)|false (final release)> <action schema version> <schema output file location>"); }
         var isDevelopmentRelease = args[0];
         var actionSchemaVersion = args[1];
         var outputPath = Path.of(args[2]);
+        var actionSchemaMajorVersion = StringUtils.substringBefore(actionSchemaVersion, ".");
+        var devOutputVersion = String.format("dev-%s.x", actionSchemaMajorVersion);
         
         var newSchema = generateSchema();
         var existingSchema = loadExistingSchema(actionSchemaVersion);
@@ -50,8 +52,10 @@ public class GenerateActionSchema {
 
         // If this is an fcli development release, we output the schema as a development release.
         // Note that the same output file name will be used for any branch.
-        var outputVersion = isDevelopmentRelease.equals("true") ? DEV_VERSION : actionSchemaVersion;
-        if ( existingSchema!=null && !DEV_VERSION.equals(outputVersion) ) {
+        var outputVersion = isDevelopmentRelease.equals("true") 
+                ? devOutputVersion
+                : actionSchemaVersion;
+        if ( existingSchema!=null && !devOutputVersion.equals(outputVersion) ) {
             System.out.println("Fortify CLI action schema not being generated as "+outputVersion+" schema already exists");
         } else {
             writeSchema(outputPath, newSchema, outputVersion);
