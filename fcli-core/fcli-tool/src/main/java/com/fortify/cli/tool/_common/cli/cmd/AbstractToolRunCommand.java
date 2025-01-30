@@ -73,7 +73,7 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .toList();
-        System.out.println("Attempting to run "+fullCmd);
+        LOG.debug("Attempting to run "+fullCmd);
         var process = new ProcessBuilder()
                 .command(fullCmd)
                 .directory(new File(workDir))
