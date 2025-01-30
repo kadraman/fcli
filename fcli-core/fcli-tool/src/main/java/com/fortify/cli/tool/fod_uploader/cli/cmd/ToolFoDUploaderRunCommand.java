@@ -27,7 +27,7 @@ public class ToolFoDUploaderRunCommand extends AbstractToolRunShellOrJavaCommand
     @Getter private String toolName = ToolFoDUploaderCommands.TOOL_NAME;
 
     @Override
-    protected List<String> getShellBaseCommand(ToolInstallationDescriptor descriptor) {
+    protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
         var ext = ToolPlatformHelper.isWindows() ? ".bat" : "";
         return List.of(descriptor.getBinPath().resolve("FoDUpload"+ext).toString());
     }

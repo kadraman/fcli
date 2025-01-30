@@ -27,7 +27,7 @@ public class ToolVulnExporterRunCommand extends AbstractToolRunShellOrJavaComman
     @Getter private String toolName = ToolVulnExporterCommands.TOOL_NAME;
 
     @Override
-    protected List<String> getShellBaseCommand(ToolInstallationDescriptor descriptor) {
+    protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
         var ext = ToolPlatformHelper.isWindows() ? ".bat" : "";
         return List.of(descriptor.getBinPath().resolve("FortifyVulnerabilityExporter"+ext).toString());
     }

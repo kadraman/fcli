@@ -20,13 +20,39 @@ import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
 
-public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunOptionalShellCommand {
+import picocli.CommandLine.Option;
+
+public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunCommand {
+    @Option(names={"--use-shell"}, required = false, defaultValue="auto", descriptionKey="fcli.tool.run.java.use-shell")
+    private UseShell useShell;
+    
     @Override
-    protected final List<String> getNonShellBaseCommand(ToolInstallationDescriptor descriptor) {
+    protected final List<List<String>> getBaseCommands(ToolInstallationDescriptor descriptor) {
+        // If the tool install command supports both java and native platforms, jarName may
+        // be null if native platform binaries were installed.
+        var jarName = getJar(descriptor); 
+        if ( useShell==UseShell.yes || jarName==null ) {
+            // Only run base command if useShell==yes or native binaries were installed
+            return List.of(getBaseCommand(descriptor));
+        } else if ( useShell==UseShell.no ) {
+            // Only run Java command if useShell==no
+            return List.of(getJavaBaseCommand(descriptor));
+        } else {
+            // If useShell==auto, first try running base command (usually shell script),
+            // use Java command as fallback if base command invocation fails.
+            return List.of(getBaseCommand(descriptor), getJavaBaseCommand(descriptor));
+        }
+    }
+    
+    public enum UseShell {
+        no, yes, auto
+    }
+    
+    private final List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
         return List.of(getJavaCommand(descriptor), "-jar", getJar(descriptor));
     }
     
-    protected final String getJavaCommand(ToolInstallationDescriptor descriptor) {
+    private final String getJavaCommand(ToolInstallationDescriptor descriptor) {
         var baseJavaCmd = ToolPlatformHelper.isWindows() ? "java.exe" : "java";
         var embeddedJavaCmdPath = descriptor.getInstallPath().resolve("jre/bin").resolve(baseJavaCmd);
         if ( Files.exists(embeddedJavaCmdPath) ) { // Look for java command in embedded JRE
@@ -46,5 +72,6 @@ public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunO
     protected List<String> getJavaHomeEnvVarNames() {
         return List.of(getToolName().toUpperCase().replace('-', '_')+"JAVA_HOME", "JAVA_HOME");
     }
+    protected abstract List<String> getBaseCommand(ToolInstallationDescriptor descriptor);
     protected abstract String getJar(ToolInstallationDescriptor descriptor);
 }
