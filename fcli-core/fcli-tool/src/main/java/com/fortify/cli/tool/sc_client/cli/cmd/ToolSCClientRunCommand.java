@@ -28,11 +28,6 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Getter private String toolName = ToolSCClientCommands.TOOL_NAME;
 
     @Override
-    protected boolean preferShellCommand() {
-        return true;
-    }
-
-    @Override
     protected List<String> getShellBaseCommand(ToolInstallationDescriptor descriptor) {
         var ext = ToolPlatformHelper.isWindows() ? ".bat" : "";
         return List.of(descriptor.getBinPath().resolve("scancentral"+ext).toString());

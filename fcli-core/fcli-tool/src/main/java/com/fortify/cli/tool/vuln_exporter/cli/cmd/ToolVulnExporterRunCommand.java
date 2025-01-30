@@ -12,7 +12,6 @@
  *******************************************************************************/
 package com.fortify.cli.tool.vuln_exporter.cli.cmd;
 
-import java.nio.file.Files;
 import java.util.List;
 
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
@@ -26,11 +25,6 @@ import picocli.CommandLine.Command;
 @Command(name = "run")
 public class ToolVulnExporterRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Getter private String toolName = ToolVulnExporterCommands.TOOL_NAME;
-
-    @Override
-    protected boolean preferShellCommand() {
-        return false;
-    }
 
     @Override
     protected List<String> getShellBaseCommand(ToolInstallationDescriptor descriptor) {

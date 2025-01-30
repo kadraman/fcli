@@ -32,10 +32,8 @@ public abstract class AbstractToolRunOptionalShellCommand extends AbstractToolRu
             return List.of(getShellBaseCommand(descriptor));
         } else if ( useShell==UseShell.no ) {
             return List.of(getNonShellBaseCommand(descriptor));
-        } else if ( preferShellCommand() ) {
-            return List.of(getShellBaseCommand(descriptor), getNonShellBaseCommand(descriptor));
         } else {
-            return List.of(getNonShellBaseCommand(descriptor), getShellBaseCommand(descriptor));
+            return List.of(getShellBaseCommand(descriptor), getNonShellBaseCommand(descriptor));
         }
     }
     
@@ -43,7 +41,6 @@ public abstract class AbstractToolRunOptionalShellCommand extends AbstractToolRu
         no, yes, auto
     }
     
-    protected abstract boolean preferShellCommand();
     protected abstract List<String> getShellBaseCommand(ToolInstallationDescriptor descriptor);
     protected abstract List<String> getNonShellBaseCommand(ToolInstallationDescriptor descriptor);
 }
