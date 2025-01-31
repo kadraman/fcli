@@ -1,6 +1,5 @@
 package com.fortify.cli.ftest.sc_sast;
 
-import static com.fortify.cli.ftest._common.spec.FcliSession.FcliSessionType.SCSAST
 import static com.fortify.cli.ftest._common.spec.FcliSession.FcliSessionType.SSC
 
 import com.fortify.cli.ftest._common.Fcli
@@ -8,14 +7,12 @@ import com.fortify.cli.ftest._common.spec.FcliBaseSpec
 import com.fortify.cli.ftest._common.spec.FcliSession
 import com.fortify.cli.ftest._common.spec.Prefix
 import com.fortify.cli.ftest._common.spec.TestResource
-import com.fortify.cli.ftest.ssc._common.SSCAppVersionSupplier
 
-import spock.lang.AutoCleanup
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Stepwise
 
-@Prefix("sc-sast.scan") @FcliSession([SCSAST, SSC]) @Stepwise
+@Prefix("sc-sast.scan") @FcliSession(SSC) @Stepwise
 @Requires({System.getProperty('ft.ssc.user') && System.getProperty('ft.ssc.password')})
 class SCSastScanSpec extends FcliBaseSpec {
     @Shared @TestResource("runtime/shared/EightBall-package.zip") String packageZip

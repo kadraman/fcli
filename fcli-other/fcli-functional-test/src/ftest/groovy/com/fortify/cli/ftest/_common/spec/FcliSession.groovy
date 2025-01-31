@@ -18,8 +18,6 @@ import com.fortify.cli.ftest._common.Input
     public static enum FcliSessionType {
         SSC(new SSCSessionHandler()),
         FOD(new FoDSessionHandler()),
-        SCSAST(new SCSastSessionHandler()),
-        SCDAST(new SCDastSessionHandler())
         
         final ISessionHandler handler
         
@@ -128,7 +126,7 @@ import com.fortify.cli.ftest._common.Input
             
             @Override
             public List<String> loginCredentialOptions() {
-                options("user", "password")+options("token")+options("ci-token")
+                options("user", "password")+options("token")+options("client-auth-token")
             }
     
             @Override
@@ -173,68 +171,5 @@ import com.fortify.cli.ftest._common.Input
                 ["url", "tenant", "user", "password", "client-id", "client-secret"]
             }
         }
-    
-        private static class SCSastSessionHandler extends AbstractSessionHandler {
-            @Override public String friendlyName() { "ScanCentral SAST" }
-            @Override public String module() { "sc-sast" }
-            
-            @Override
-            public boolean isEnabled() {
-                has("ssc-url")
-            }
-    
-            @Override
-            public List<String> loginOptions() {
-                option("ssc-url")
-            }
-            
-            @Override
-            public List<String> loginCredentialOptions() {
-                options("ssc-user", "ssc-password", "client-auth-token")+options("ssc-ci-token", "client-auth-token")
-            }
-    
-            @Override
-            public List<String> logoutOptions() {
-                def result = options("ssc-user", "ssc-password")
-                return result.size()==0 ? "--no-revoke-token" : result
-            }
-            
-            @Override
-            public List<String> getMaskedProperties() {
-                ["ssc-url", "ssc-user", "ssc-password", "ssc-ci-token", "client-auth-token"]
-            }
-        }
-        
-        private static class SCDastSessionHandler extends AbstractSessionHandler {
-            @Override public String friendlyName() { "ScanCentral DAST" }
-            @Override public String module() { "sc-dast" }
-            
-            @Override
-            public boolean isEnabled() {
-                has("ssc-url")
-            }
-    
-            @Override
-            public List<String> loginOptions() {
-                options("ssc-url")
-            }
-            
-            @Override
-            public List<String> loginCredentialOptions() {
-                options("ssc-user", "ssc-password")+options("ssc-ci-token")
-            }
-    
-            @Override
-            public List<String> logoutOptions() {
-                def result = options("ssc-user", "ssc-password")
-                return result.size()==0 ? "--no-revoke-token" : result
-            }
-            
-            @Override
-            public List<String> getMaskedProperties() {
-                ["ssc-url", "ssc-user", "ssc-password", "ssc-ci-token"]
-            }
-        }
-    
     }
 }
