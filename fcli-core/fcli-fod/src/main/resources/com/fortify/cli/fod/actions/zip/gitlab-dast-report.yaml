@@ -50,18 +50,17 @@ steps:
           - name: request_response
             uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/request-response 
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: vulnerabilities
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: gitlab-dast-report
+      fmt: gitlab-dast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: gitlab-dast-report
     contents:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/dast-report-format.json

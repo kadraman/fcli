@@ -17,13 +17,13 @@ steps:
           forEach:
             name: app
             do:
-              - write:
+              - file.write:
                 - to: stdout
                   value: ${app}
         - name: ping
           uri: /rest/v2/ping
           target: sc-sast
-    - write:
+    - file.write:
         - to: stdout
           value: ${ping}
       

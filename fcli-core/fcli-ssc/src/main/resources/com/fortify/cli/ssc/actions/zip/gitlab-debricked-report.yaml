@@ -42,9 +42,8 @@ steps:
         name: artifact
         breakIf: ${lastDebrickedScan!=null}
         do:
-          - set:
-            - name: lastDebrickedScan
-              value: ${artifact._embed.scans?.^[type=='DEBRICKED']}
+          - var.set:
+              lastDebrickedScan: ${artifact._embed.scans?.^[type=='DEBRICKED']}
   - progress: Processing issue data
   - requests:
     - name: issues
@@ -61,18 +60,17 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: vulnerabilities
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: gitlab-debricked-report
+      fmt: gitlab-debricked-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: gitlab-debricked-report
     contents:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/dependency-scanning-report-format.json

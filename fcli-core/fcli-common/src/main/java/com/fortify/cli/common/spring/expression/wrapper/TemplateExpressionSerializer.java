@@ -32,8 +32,8 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * This Jackson deserializer allows parsing String values into an 
- * SpEL Expression object.
+ * This Jackson serializer allows for serializing {@link TemplateExpression} instances
+ * to expression strings
  */
 @Reflectable
 public final class TemplateExpressionSerializer extends StdSerializer<TemplateExpression> {

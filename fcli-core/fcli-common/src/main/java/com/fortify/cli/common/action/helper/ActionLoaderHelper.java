@@ -52,6 +52,7 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureValidator;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignedTextDescriptor;
 import com.fortify.cli.common.crypto.helper.impl.SignedTextReader;
+import com.fortify.cli.common.spring.expression.wrapper.TemplateExpressionKeyDeserializer;
 import com.fortify.cli.common.util.Break;
 import com.fortify.cli.common.util.FcliBuildPropertiesHelper;
 import com.fortify.cli.common.util.FcliDataHelper;
@@ -205,7 +206,8 @@ public class ActionLoaderHelper {
     
     @Data
     public static final class ActionLoadResult {
-        private static final ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
+        private static final ObjectMapper yamlObjectMapper = createYamlObjectMapper();
+
         private static final Pattern schemaPattern = Pattern.compile("(?m)(^\\$schema:\\s+(?<schemaPropertyValue>\\S+)\\s*$)|(^#\\s+yaml-language-server:\\s+\\$schema=(?<schemaCommentValue>\\S+)\\s*$)");
         private final ActionValidationHandler actionValidationHandler;
         private final SignedTextDescriptor signedTextDescriptor;
@@ -289,6 +291,10 @@ public class ActionLoaderHelper {
                         .publicKey(SignatureHelper.FORTIFY_PUBLIC_KEY)
                         .source(PublicKeySource.INTERNAL)
                         .build();
+        }
+        
+        private static final ObjectMapper createYamlObjectMapper() {
+            return TemplateExpressionKeyDeserializer.registerOn(new ObjectMapper(new YAMLFactory()));
         }
         
         private final void checkSchema() {

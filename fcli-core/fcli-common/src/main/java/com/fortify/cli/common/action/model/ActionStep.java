@@ -12,6 +12,7 @@
  */
 package com.fortify.cli.common.action.model;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,17 +28,6 @@ import lombok.NoArgsConstructor;
  * This class describes a single action step element, which may contain 
  * requests, progress message, and/or set instructions. This class is 
  * used for both top-level step elements, and step elements in forEach elements. 
- * TODO Potentially, later versions may add support for other step types. Some ideas
- *      for potentially useful steps:
- *      <ul>
- *       <li>if: Execute sub-steps only if condition evaluates to true</li>
- *       <li>forEach: Execute sub-steps for every value in input array</li>
- *       <li>fcli: Run other fcli commands to allow for workflow-oriented templates.
- *           Primary question is what to do with output, i.e., store JSON output
- *           in 'data', ability to output regular command output to console (but
- *           how to avoid interference with ProgressWriter?), ...</li>
- *      </ul>
- *
  * @author Ruud Senden
  */
 @Reflectable @NoArgsConstructor
@@ -64,20 +54,37 @@ public final class ActionStep extends AbstractActionStep {
     @JsonPropertyDescription("Optional SpEL template expression: Throw an exception, thereby terminating action execution.")
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
     
-    @JsonPropertyDescription("OptionalSpEL template expression: Terminate action execution and return the given exit code.")
+    @JsonPropertyDescription("Optional SpEL template expression: Terminate action execution and return the given exit code.")
     @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
     
-    @JsonPropertyDescription("Optional list: Set a data value for use in subsequent steps.")
-    @JsonProperty(required = false) private List<ActionStepSet> set;
+    @JsonPropertyDescription("""
+        Optional map: Set variables for use in subsequent steps. Both keys and values may be \
+        specified as SpEL template expressions. Variables can either contain a single value, \
+        a set of properties, or an array, based on the following formats for the map keys:
+          <variable name> - Single value variable
+          <variable name>.<property name> - Variable containing a set of properties   
+          <variable name>.. - Variable containing an array of values
+        For example:
+          var1: val1        # Set variable 'var1' to 'val1'
+          var2.prop1: val2  # Set 'prop1' in 'var2' to 'val2'
+          var2.prop2: val3  # Add second property in 'var2'
+          var3..: val3      # Append 'val3' to the 'var' array
+        Only a single format is supported for a given variable, for example the following fails:
+          var4.prop1: val1  # Defines 'var4' as a set of properties
+          var4..: val2      # Fails because var4 contains a set of properties, not an array
+        Variables are set in the order that they are declared, so the following is supported:
+          var.set:
+            var5: x         # Set variable `var5` to 'x'
+            var6.${var5}: y # Set property 'x' in 'var6' to 'y'
+            var7: ${var6.x} # Set variable 'var7' to 'y'
+    """)
+    @JsonProperty(value = "var.set", required = false) private LinkedHashMap<TemplateExpression,TemplateExpression> varSet;
     
-    @JsonPropertyDescription("Optional list: Append a data value for use in subsequent steps.")
-    @JsonProperty(required = false) private List<ActionStepAppend> append;
-    
-    @JsonPropertyDescription("Optional list: Unset a data value for use in subsequent steps.")
-    @JsonProperty(required = false) private List<ActionStepUnset> unset;
+    @JsonPropertyDescription("Optional list: Unset variables, supports SpEL template expressions to specify the variable names to be unset.")
+    @JsonProperty(value = "var.unset", required = false) private List<TemplateExpression> varUnset;
     
     @JsonPropertyDescription("Optional list: Write data to a file, stdout, or stderr. Note that output to stdout and stderr will be deferred until action termination as to not interfere with progress messages.")
-    @JsonProperty(required = false) private List<ActionStepWrite> write;
+    @JsonProperty(value="file.write", required = false) private List<ActionStepFileWrite> fileWrite;
     
     @JsonPropertyDescription("Optional object: Iterate over a given array of values.")
     @JsonProperty(required = false) private ActionStepForEach forEach;

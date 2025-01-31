@@ -28,24 +28,24 @@ import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 /**
- * This class manages action data that can be stored, formatted, and retrieved during action execution.
+ * This class manages action variables that can be stored, formatted, and retrieved during action execution.
  * @author Ruud Senden
  */
-public final class ActionRunnerData {
-    private static final Logger LOG = LoggerFactory.getLogger(ActionRunnerData.class);
+public final class ActionRunnerVars {
+    private static final Logger LOG = LoggerFactory.getLogger(ActionRunnerVars.class);
     private static final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
     private static final String PARAMETERS_VALUE_NAME = "parameters";
     private final ObjectNode values;
     private final IConfigurableSpelEvaluator spelEvaluator;
-    private final ActionRunnerData parent;
+    private final ActionRunnerVars parent;
     
     /**
      * Construct a new instance of this class with the given SpEL evaluator and action parameters.
      * Only a single instance per action run is supposed to be created through this constructor,
-     * acting as the top-level or global data object. Children of this top-level data object can
-     * be created through the {@link #createChild()} method.
+     * acting as the top-level or global instance. Children of this top-level instance can be
+     * created through the {@link #createChild()} method.
      */
-    public ActionRunnerData(IConfigurableSpelEvaluator spelEvaluator, ObjectNode parameters) {
+    public ActionRunnerVars(IConfigurableSpelEvaluator spelEvaluator, ObjectNode parameters) {
         this.spelEvaluator = spelEvaluator;
         this.values = objectMapper.createObjectNode().set(PARAMETERS_VALUE_NAME, parameters);
         this.parent = null;
@@ -54,21 +54,21 @@ public final class ActionRunnerData {
     /**
      * Constructor solely used by {@link #createChild()}
      */
-    private ActionRunnerData(ActionRunnerData parent) {
+    private ActionRunnerVars(ActionRunnerVars parent) {
         this.spelEvaluator = parent.spelEvaluator;
         this.values = JsonHelper.shallowCopy(parent.values);
         this.parent = parent;
     }
     
     /**
-     * Create a child of the current {@link ActionRunnerData} instance
+     * Create a child of the current {@link ActionRunnerVars} instance
      */
-    public final ActionRunnerData createChild() {
-        return new ActionRunnerData(this);
+    public final ActionRunnerVars createChild() {
+        return new ActionRunnerVars(this);
     }
     
     /**
-     * Evaluate the given SpEL expression on current data values,
+     * Evaluate the given SpEL expression on current variables,
      * and convert the result to the given return type.
      */
     public final <T> T eval(Expression expression, Class<T> returnType) {
@@ -76,7 +76,7 @@ public final class ActionRunnerData {
     }
     
     /**
-     * Evaluate the given SpEL expression on current data values,
+     * Evaluate the given SpEL expression on current variables,
      * and convert the result to the given return type.
      */
     public final <T> T eval(String expression, Class<T> returnType) {
@@ -96,7 +96,7 @@ public final class ActionRunnerData {
     }
     
     /**
-     * Set a data value on both this instance and any parent instances;
+     * Set a variable on both this instance and any parent instances;
      * this method checks for attempts to update 'parameters', logs
      * some details, then defers to {@link #_set(String, JsonNode)} to
      * perform the actual update.
@@ -108,7 +108,7 @@ public final class ActionRunnerData {
     }
 
     /**
-     * Set a data value on both this instance and any parent instances.
+     * Set a variable on both this instance and any parent instances.
      */
     private void _set(String name, JsonNode value) {
         values.set(name, value);
@@ -116,7 +116,7 @@ public final class ActionRunnerData {
     }
     
     /**
-     * Set a data value on this instance only; this method checks for attempts 
+     * Set a variable on this instance only; this method checks for attempts 
      * to update 'parameters', logs some details, then sets the value.
      */
     public final void setLocal(String name, JsonNode value) {
@@ -126,7 +126,7 @@ public final class ActionRunnerData {
     }
     
     /**
-     * Unset a data value on both this instance and any parent instances;
+     * Unset a variable on both this instance and any parent instances;
      * this method checks for attempts to update 'parameters', logs
      * some details, then defers to {@link #_unset(String)} to
      * perform the actual update.
@@ -138,7 +138,7 @@ public final class ActionRunnerData {
     }
 
     /**
-     * Unset a data value on both this instance and any parent instances.
+     * Unset a variable on both this instance and any parent instances.
      */
     private void _unset(String name) {
         values.remove(name);
@@ -162,5 +162,4 @@ public final class ActionRunnerData {
             LOG.debug(messageSupplier.get());
         }
     }
-    
 }

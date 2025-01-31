@@ -38,19 +38,18 @@ steps:
       forEach:
         name: issue
         do:
-          - append:
-            - name: sq_issues
-              valueTemplate: sq_issues
+          - var.set:
+              sq_issues..: ${#action.fmt('sq_issues',#root)}
 
-  - write:
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: sq-sast-report
+      fmt: sq-sast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: sq-sast-report
     contents:
       issues: ${sq_issues?:{}} 

@@ -109,7 +109,7 @@ steps:
   - fcli:
     - name: createRelease
       args: fod release create "${parameters.release}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup("rel_create_opts")}
-  - write:
+  - file.write:
       - to: stdout
         value: |
           Create application release ${parameters.release} (id ${createRelease[0].releaseId}): ${createRelease[0].__action__.replaceAll('\n', ', ')}
@@ -122,7 +122,7 @@ steps:
       - fcli:
         - name: setupSast
           args: fod sast-scan setup --rel "${parameters.release}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup("sast_setup_opts")}
-      - write:
+      - file.write:
         - to: stdout
           value: |
             SAST scan setup status: ${setupSast[0].__action__}

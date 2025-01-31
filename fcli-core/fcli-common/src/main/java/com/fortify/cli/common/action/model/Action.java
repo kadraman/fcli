@@ -75,17 +75,17 @@ public class Action implements IActionElement {
     @JsonPropertyDescription("Required list: Steps to be executed when this action is being run.")
     @JsonProperty(required = true) private List<ActionStep> steps;
     
-    @JsonPropertyDescription("Optional list: Value templates used to format data.")
-    @JsonProperty(required = false) private List<ActionValueTemplate> valueTemplates;
+    @JsonPropertyDescription("Optional list: Formatters that can be referenced in action steps through TODO to format data.")
+    @JsonProperty(required = false) private List<ActionFormatter> formatters;
     
     @JsonIgnore ActionMetadata metadata;
     /** Maps/Collections listing action elements. 
      *  These get filled by the {@link #visit(Action, Object)} method. */ 
-    @ToString.Exclude @JsonIgnore private final Map<String, ActionValueTemplate> valueTemplatesByName = new HashMap<>();
+    @ToString.Exclude @JsonIgnore private final Map<String, ActionFormatter> formattersByName = new HashMap<>();
     @ToString.Exclude @JsonIgnore private final List<IActionElement> allActionElements = new ArrayList<>();
     
-    public Map<String, ActionValueTemplate> getValueTemplatesByName() {
-        return Collections.unmodifiableMap(valueTemplatesByName);
+    public Map<String, ActionFormatter> getFormattersByName() {
+        return Collections.unmodifiableMap(formattersByName);
     }
     
     public List<IActionElement> getAllActionElements() {
@@ -164,22 +164,7 @@ public class Action implements IActionElement {
     }
     
     /**
-     * Utility method for checking the attributes of an {@link IActionStepValueSupplier}
-     * instance.
-     */
-    static final void checkActionValueSupplier(Action action, IActionStepValueSupplier supplier) {
-        var value = supplier.getValue();
-        var valueTemplate = supplier.getValueTemplate();
-        throwIf(value!=null && StringUtils.isNotBlank(valueTemplate), supplier, ()->"Either value or valueTemplate must be specified, not both");
-        throwIf(value==null && StringUtils.isBlank(valueTemplate), supplier, ()->"Either value or valueTemplate must be specified");
-        if ( valueTemplate!=null ) {
-            throwIf(!action.getValueTemplates().stream().anyMatch(d->d.getName().equals(valueTemplate)), supplier, 
-                    ()->"No value template found with name "+valueTemplate);
-        }
-    }
-    
-    /**
-     * Initialize the {@link #allActionElements} and {@link #valueTemplatesByName}
+     * Initialize the {@link #allActionElements} and {@link #formattersByName}
      * collections, using the reflective visit methods. We use reflection as
      * manually navigating the action element tree proved to be too error-prone,
      * often forgetting to handle newly added action element types.
@@ -187,9 +172,9 @@ public class Action implements IActionElement {
     private void initializeCollections() {
         visit(this, this, elt->{
             allActionElements.add(elt);
-            if ( elt instanceof ActionValueTemplate ) {
-                var actionValueTemplate = (ActionValueTemplate)elt;
-                valueTemplatesByName.put(actionValueTemplate.getName(), actionValueTemplate);
+            if ( elt instanceof ActionFormatter ) {
+                var actionValueTemplate = (ActionFormatter)elt;
+                formattersByName.put(actionValueTemplate.getName(), actionValueTemplate);
             }
         });
     }

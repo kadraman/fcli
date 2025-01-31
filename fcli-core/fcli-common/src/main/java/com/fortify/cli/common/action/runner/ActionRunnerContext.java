@@ -19,18 +19,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.action.model.ActionFormatter;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.ISpelEvaluator;
+import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.AccessLevel;
@@ -116,9 +123,8 @@ public class ActionRunnerContext {
     }
     
     @Reflectable @RequiredArgsConstructor
-    private static final class ActionUtil {
+    public static final class ActionUtil {
         private final ActionRunnerContext ctx;
-        @SuppressWarnings("unused")
         public final String copyParametersFromGroup(String group) {
             StringBuilder result = new StringBuilder();
             for ( var p : ctx.getConfig().getAction().getParameters() ) {
@@ -135,6 +141,10 @@ public class ActionRunnerContext {
                 }
             }
             return result.toString();
+        }
+        
+        public final JsonNode fmt(String formatterName, JsonNode input) {
+            return ActionRunnerHelper.fmt(ctx, formatterName, input);
         }
     }
 }

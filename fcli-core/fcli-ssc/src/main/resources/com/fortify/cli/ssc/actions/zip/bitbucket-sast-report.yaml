@@ -47,9 +47,8 @@ steps:
         name: artifact
         breakIf: ${lastStaticScan!=null}
         do:
-          - set:
-            - name: lastStaticScan
-              value: ${artifact._embed.scans?.^[type=='SCA']}
+          - var.set:
+              lastStaticScan: ${artifact._embed.scans?.^[type=='SCA']}
   - progress: Loading issue counts
   - requests:
     - name: fpo_counts_sca
@@ -80,21 +79,20 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: annotations
-              valueTemplate: annotations
-  - write:
+          - var.set:
+              annotations..: ${#action.fmt('annotations',#root)}
+  - file.write:
     - to: ${parameters['annotations-file']}
       value: ${annotations?:{}}
     - to: ${parameters['report-file']}
-      valueTemplate: report
+      fmt: report
     - if: ${parameters['annotations-file']!='stdout' && parameters['report-file']!='stdout'}
       to: stdout
       value: |
         Report written to ${parameters['report-file']}
         Annotations written to ${parameters['annotations-file']}
 
-valueTemplates:
+formatters:
   - name: report
     contents:
       # uuid:

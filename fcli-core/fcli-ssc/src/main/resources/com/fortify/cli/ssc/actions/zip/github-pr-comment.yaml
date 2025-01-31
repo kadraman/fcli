@@ -101,22 +101,19 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - if: ${issue.scanStatus=='REMOVED'}
-              name: removedIssues
-              valueTemplate: mdIssueListItem
-            - if: ${(issue.scanStatus=='NEW' || issue.scanStatus=='REINTRODUCED')}
-              name: newIssues
-              valueTemplate: mdIssueListItem
+          - if: ${issue.scanStatus=='REMOVED'}
+            var.set:
+              removedIssues..: ${#action.fmt('mdIssueListItem',#root)}
+          - if: ${(issue.scanStatus=='NEW' || issue.scanStatus=='REINTRODUCED')}
+            var.set:
+              newIssues..: ${#action.fmt('mdIssueListItem',#root)}
           
   - progress: Generating GitHub request
-  - set:
-      - name: reviewBody
-        valueTemplate: reviewBody
-      - name: reviewRequestBody
-        valueTemplate: reviewRequestBody
+  - var.set:
+      reviewBody: ${#action.fmt('reviewBody',#root)}
+      reviewRequestBody: ${#action.fmt('reviewRequestBody',#root)}
   - if: ${parameters.dryrun}
-    write:
+    file.write:
       - to: stdout
         value: ${reviewRequestBody}
   - if: ${!parameters.dryrun}
@@ -127,7 +124,7 @@ steps:
         target: github
         body:   ${reviewRequestBody}       
 
-valueTemplates:
+formatters:
   - name: reviewRequestBody
     contents:
       owner: ${parameters['github-owner']}

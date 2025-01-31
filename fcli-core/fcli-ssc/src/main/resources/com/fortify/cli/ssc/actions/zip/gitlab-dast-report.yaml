@@ -42,9 +42,8 @@ steps:
         name: artifact
         breakIf: ${lastDynamicScan!=null}
         do:
-          - set:
-            - name: lastDynamicScan
-              value: ${artifact._embed.scans?.^[type=='WEBINSPECT']}
+          - var.set:
+              lastDynamicScan: ${artifact._embed.scans?.^[type=='WEBINSPECT']}
   - progress: Processing issue data
   - requests:
     - name: issues
@@ -61,18 +60,17 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: vulnerabilities
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: gitlab-dast-report
+      fmt: gitlab-dast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: gitlab-dast-report
     contents:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/dast-report-format.json

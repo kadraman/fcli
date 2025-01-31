@@ -64,24 +64,21 @@ steps:
           - name: traces
             uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/traces 
         do:
-          - append:
-            - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
-              name: rules
-              valueTemplate: rules
-            - name: ruleCache
-              property: ${issue.checkId}
-              value: true
-            - name: results
-              valueTemplate: results
-  - write:
+          - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
+            var.set:
+              rules..: ${#action.fmt('rules',#root)}
+          - var.set:
+              ruleCache.${issue.checkId}: true
+              results..: ${#action.fmt('results',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: github-sast-report
+      fmt: github-sast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: github-sast-report
     contents:
       "$schema": https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json 

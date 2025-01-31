@@ -37,7 +37,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data
-public final class ActionValueTemplate implements IActionElement {
+public final class ActionFormatter implements IActionElement {
     @JsonPropertyDescription("Required string: Name of this value template.")
     @JsonProperty(required = true) private String name;
     
@@ -69,7 +69,7 @@ public final class ActionValueTemplate implements IActionElement {
                 try {
                     valueExpressions.put(path, SpelHelper.parseTemplateExpression(expr));
                 } catch (ParseException e) {
-                    throw new ActionValidationException(String.format("Error parsing template expression '%s'", expr), ActionValueTemplate.this, e);
+                    throw new ActionValidationException(String.format("Error parsing template expression '%s'", expr), ActionFormatter.this, e);
                 }
             }
             super.walkValue(state, path, parent, node);

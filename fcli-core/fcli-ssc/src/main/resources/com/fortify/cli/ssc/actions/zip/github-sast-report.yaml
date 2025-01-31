@@ -56,9 +56,8 @@ steps:
         name: artifact
         breakIf: ${lastStaticScan!=null}
         do:
-          - set:
-            - name: lastStaticScan
-              value: ${artifact._embed.scans?.^[type=='SCA']}
+          - var.set:
+              lastStaticScan: ${artifact._embed.scans?.^[type=='SCA']}
   - progress: Processing issue data
   - requests:
     - name: issues
@@ -78,31 +77,27 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: ruleCategories
-              property: ${issue.primaryRuleGuid}
-              value: ${issue.issueName}
-            - name: results
-              valueTemplate: results
+          - var.set:
+              ruleCategories.${issue.primaryRuleGuid}: ${issue.issueName}
+              results..: ${#action.fmt('results',#root)}
   - progress: Processing rule data
   - forEach:
       if: ${ruleCategories!=null}
       processor: ${#ssc.ruleDescriptionsProcessor(parameters.appversion.id)}
       name: rule
       do:
-        - append:
-          - if: ${#isNotBlank(ruleCategories[rule.id])}
-            name: rules
-            valueTemplate: rules
-  - write:
+        - if: ${#isNotBlank(ruleCategories[rule.id])}
+          var.set:
+            rules..: ${#action.fmt('rules',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: github-sast-report
+      fmt: github-sast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: github-sast-report
     contents:
       "$schema": https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json 

@@ -53,18 +53,17 @@ steps:
           - name: recommendations
             uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: issues
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('issues',#root)}
+  - file.write:
     - to: ${parameters['file']}
-      valueTemplate: report
+      fmt: report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Report written to ${parameters['report-file']}
 
-valueTemplates:
+formatters:
   - name: report
     contents:
       issues: ${vulnerabilities?:{}} 

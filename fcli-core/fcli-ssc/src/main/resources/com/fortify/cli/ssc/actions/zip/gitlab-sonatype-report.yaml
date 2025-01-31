@@ -42,9 +42,8 @@ steps:
         name: artifact
         breakIf: ${lastSonatypeScan!=null}
         do:
-          - set:
-            - name: lastSonatypeScan
-              value: ${artifact._embed.scans?.^[type=='SONATYPE']}
+          - var.set:
+              lastSonatypeScan: ${artifact._embed.scans?.^[type=='SONATYPE']}
   - progress: Processing issue data
   - requests:
     - name: issues
@@ -61,18 +60,17 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: vulnerabilities
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: gitlab-sonatype-report
+      fmt: gitlab-sonatype-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: gitlab-sonatype-report
     contents:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/dependency-scanning-report-format.json

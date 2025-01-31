@@ -29,9 +29,7 @@ import lombok.RequiredArgsConstructor;
 // TODO Move processing of each descriptor element into a separate class,
 //      either for all elements or just for step elements.
 //      For example, each of these classes could have a (static?) 
-//      process(context, descriptor element), with context providing access
-//      to ActionRunner fields, parent steps, local data, shared methods like 
-//      setDataValue(), ...
+//      process(context, vars, action element) method
 @RequiredArgsConstructor
 public class ActionRunner implements AutoCloseable {
     private final ActionRunnerConfig config;
@@ -46,9 +44,9 @@ public class ActionRunner implements AutoCloseable {
             var ctx = createContext(progressWriter, parameterValues);
             initializeCheckStatuses(ctx);
             progressWriter.writeProgress("Processing action parameters");
-            ActionRunnerData data = new ActionRunnerData(ctx.getSpelEvaluator(), ctx.getParameterValues());
+            ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
             progressWriter.writeProgress("Processing action steps");
-            new ActionStepsProcessor(ctx, data).processSteps(config.getAction().getSteps());
+            new ActionStepsProcessor(ctx, vars).processSteps(config.getAction().getSteps());
             progressWriter.writeProgress("Action processing finished");
          
             return ()->{

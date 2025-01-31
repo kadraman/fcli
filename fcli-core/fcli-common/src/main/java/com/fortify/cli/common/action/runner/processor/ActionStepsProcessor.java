@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.expression.spel.SpelEvaluationException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -36,40 +35,35 @@ import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fortify.cli.common.action.model.AbstractActionStepForEach;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepAddRequestTarget;
-import com.fortify.cli.common.action.model.ActionStepAppend;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
 import com.fortify.cli.common.action.model.ActionStepFcli;
+import com.fortify.cli.common.action.model.ActionStepFileWrite;
 import com.fortify.cli.common.action.model.ActionStepForEach;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.model.ActionStepRequest;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestForEachDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestPagingProgressDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestType;
-import com.fortify.cli.common.action.model.ActionStepSet;
-import com.fortify.cli.common.action.model.ActionStepUnset;
-import com.fortify.cli.common.action.model.ActionStepWrite;
 import com.fortify.cli.common.action.model.ActionValidationException;
-import com.fortify.cli.common.action.model.ActionValueTemplate;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
-import com.fortify.cli.common.action.model.IActionStepValueSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
-import com.fortify.cli.common.action.runner.ActionRunnerData;
+import com.fortify.cli.common.action.runner.ActionRunnerHelper;
+import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.StepProcessingException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.cli.util.FcliCommandExecutor;
 import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
 import com.fortify.cli.common.rest.unirest.GenericUnirestFactory;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
 import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
+import com.fortify.cli.common.spring.expression.SpelHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
@@ -81,7 +75,7 @@ public final class ActionStepsProcessor {
     /** Logger */
     private static final Logger LOG = LoggerFactory.getLogger(ActionStepsProcessor.class);
     private final ActionRunnerContext ctx;
-    private final ActionRunnerData data;
+    private final ActionRunnerVars vars;
     
     public final void processSteps(List<ActionStep> steps) {
         if ( steps!=null ) { steps.forEach(this::processStep); }
@@ -96,13 +90,12 @@ public final class ActionStepsProcessor {
             processStepSupplier(step::get_exit, this::processExitStep);
             processStepSupplier(step::getRequests, this::processRequestsStep);
             processStepSupplier(step::getForEach, this::processForEachStep);
+            processStepSupplier(step::getVarSet, this::processVarSetStep);
+            processStepSupplier(step::getVarUnset, this::processVarUnsetStep);
             processStepEntries(step::getAddRequestTargets, this::processAddRequestTarget);
             processStepEntries(step::getFcli, this::processFcliStep);
-            processStepEntries(step::getSet, this::processSetStep);
-            processStepEntries(step::getAppend, this::processAppendStep);
-            processStepEntries(step::getUnset, this::processUnsetStep);
             processStepEntries(step::getCheck, this::processCheckStep);
-            processStepEntries(step::getWrite, this::processWriteStep);
+            processStepEntries(step::getFileWrite, this::processFileWriteStep);
             processStepEntries(step::getSteps, this::processStep);
         }
     }
@@ -158,83 +151,82 @@ public final class ActionStepsProcessor {
         if (o instanceof IActionStepIfSupplier ) {
             var _if = ((IActionStepIfSupplier) o).get_if();
             if ( _if!=null ) {
-                return data.eval(_if, Boolean.class);
+                return vars.eval(_if, Boolean.class);
             }
         }
         return true;
     }
     
-    private void processSetStep(ActionStepSet set) {
-        var name = set.getName();
-        var value = getValue(set);
-        data.set(name, value);
+    private final void processVarSetStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+        map.entrySet().forEach(this::processVarSetStepEntry);
     }
     
-    private void processAppendStep(ActionStepAppend append) {
-        var name = append.getName();
-        var property = append.getProperty();
-        var currentValue = data.get(name);
-        var valueToAppend = getValue(append);
-        if ( property==null ) {
-            appendToArray(name, currentValue, valueToAppend);
-        } else {
-            appendToObject(name, currentValue, data.eval(property, String.class), valueToAppend);
-        }
+    private final void processVarSetStepEntry(Map.Entry<TemplateExpression, TemplateExpression> entry) {
+        var name = vars.eval(entry.getKey(), String.class);
+        var rawValue = vars.eval(entry.getValue(), Object.class);
+        var value = ctx.getObjectMapper().valueToTree(rawValue);
+        setVar(name, value);
     }
 
-    private void appendToArray(String name, JsonNode currentValue, JsonNode valueToAppend) {
-        if ( currentValue==null ) {
-            currentValue = ctx.getObjectMapper().createArrayNode();
-        }
-        if ( !currentValue.isArray() ) {
-            throw new IllegalStateException("Cannot append value to non-array node "+currentValue.getNodeType());
+    private final void setVar(String name, JsonNode value) {
+        if ( name.endsWith("..") ) { 
+            appendToArray(name.substring(0, name.length()-2), value); 
         } else {
-            if ( valueToAppend!=null ) {
-                ((ArrayNode)currentValue).add(valueToAppend);
+            var nameElts = name.split("\\.");
+            switch ( nameElts.length ) {
+            case 1: vars.set(name, value); break;
+            case 2: appendToObject(nameElts[0], nameElts[1], value); break;
+            default: throw new StepProcessingException("var.set map keys may not specify nested properties: "+name);
             }
-            data.set(name, currentValue); // Update copies in parents
         }
     }
     
-    private void appendToObject(String name, JsonNode currentValue, String property, JsonNode valueToAppend) {
-        if ( currentValue==null ) {
-            currentValue = ctx.getObjectMapper().createObjectNode();
+    private final void appendToArray(String name, JsonNode value) {
+        var array = getOrCreateVar(name, ()->ctx.getObjectMapper().createArrayNode());
+        if ( !array.isArray() ) {
+            throw new StepProcessingException("Variable "+name+" is not an array; cannot append value");
         }
-        if ( !currentValue.isObject() ) {
-            throw new IllegalStateException(String.format("Cannot append value to non-object node "+currentValue.getNodeType()));
+        ((ArrayNode)array).add(value);
+    }
+
+    private final void appendToObject(String name, String property, JsonNode value) {
+        var obj = getOrCreateVar(name, ()->ctx.getObjectMapper().createObjectNode());
+        if ( !obj.isObject() ) {
+            throw new StepProcessingException("Variable "+name+" is not a set of properties; can't set property "+property);
+        }
+        ((ObjectNode)obj).set(property, value);
+    }
+    
+    private final JsonNode getOrCreateVar(String name, Supplier<JsonNode> supplier) {
+        var v = vars.get(name);
+        if ( v==null || v.isNull() ) {
+            v = supplier.get();
+            vars.set(name, v);
+        }
+        return v;
+    }
+
+    private final void processVarUnsetStep(List<TemplateExpression> list) {
+        list.forEach(this::processVarUnsetStepEntry);
+    }
+    
+    private final void processVarUnsetStepEntry(TemplateExpression entry) {
+        vars.unset(vars.eval(entry, String.class));
+    }
+    
+    private void processFileWriteStep(ActionStepFileWrite fileWrite) {
+        var to = vars.eval(fileWrite.getTo(), String.class);
+        var valueExpression = fileWrite.getValue();
+        var fmt = fileWrite.getFmt();
+        String value;
+        if (StringUtils.isBlank(fmt) ) {
+            value = asString(vars.eval(valueExpression, Object.class));
         } else {
-            if ( valueToAppend!=null ) {
-                ((ObjectNode)currentValue).set(property, valueToAppend);
+            if ( valueExpression==null ) {
+                valueExpression = SpelHelper.parseTemplateExpression("${#root}");
             }
-            data.set(name, currentValue); // Update copies in parents
+            value = asString(ActionRunnerHelper.fmt(ctx, fmt, vars.eval(valueExpression, JsonNode.class)));
         }
-    }
-
-    private void processUnsetStep(ActionStepUnset unset) {
-        data.unset(unset.getName());
-    }
-    
-    private JsonNode getValue(IActionStepValueSupplier supplier) {
-        var value = supplier.getValue();
-        var valueTemplate = supplier.getValueTemplate();
-        if ( value!=null ) { return getValue(value); }
-        else if ( StringUtils.isNotBlank(valueTemplate) ) { return getTemplateValue(valueTemplate); }
-        else { throw new IllegalStateException("Either value or valueTemplate must be specified"); }
-    }
-
-    private JsonNode getValue(TemplateExpression valueExpression) {
-        return ctx.getObjectMapper().valueToTree(data.eval(valueExpression, Object.class));
-    }
-    
-    private final JsonNode getTemplateValue(String templateName) {
-        var valueTemplateDescriptor = ctx.getConfig().getAction().getValueTemplatesByName().get(templateName);
-        var outputRawContents = valueTemplateDescriptor.getContents();
-        return new JsonNodeOutputWalker(valueTemplateDescriptor, data).walk(outputRawContents);
-    }
-    
-    private void processWriteStep(ActionStepWrite write) {
-        var to = data.eval(write.getTo(), String.class);
-        var value = asString(getValue(write));
         try {
             switch (to.toLowerCase()) {
             case "stdout": writeImmediateOrDelayed(ctx.getStdout(), value); break;
@@ -275,23 +267,23 @@ public final class ActionStepsProcessor {
     }  
 
     private void processProgressStep(TemplateExpression progress) {
-        ctx.getProgressWriter().writeProgress(data.eval(progress, String.class));
+        ctx.getProgressWriter().writeProgress(vars.eval(progress, String.class));
     }
     
     private void processWarnStep(TemplateExpression progress) {
-        ctx.getProgressWriter().writeWarning(data.eval(progress, String.class));
+        ctx.getProgressWriter().writeWarning(vars.eval(progress, String.class));
     }
     
     private void processDebugStep(TemplateExpression progress) {
-        LOG.debug(data.eval(progress, String.class));
+        LOG.debug(vars.eval(progress, String.class));
     }
     
     private void processThrowStep(TemplateExpression message) {
-        throw new StepProcessingException(data.eval(message, String.class));
+        throw new StepProcessingException(vars.eval(message, String.class));
     }
     
     private void processExitStep(TemplateExpression exitCodeExpression) {
-        ctx.setExitCode(data.eval(exitCodeExpression, Integer.class));
+        ctx.setExitCode(vars.eval(exitCodeExpression, Integer.class));
         ctx.setExitRequested(true);
     }
     
@@ -299,10 +291,10 @@ public final class ActionStepsProcessor {
         var processorExpression = forEach.getProcessor();
         var valuesExpression = forEach.getValues();
         if ( processorExpression!=null ) {
-            var processor = data.eval(processorExpression, IActionStepForEachProcessor.class);
+            var processor = vars.eval(processorExpression, IActionStepForEachProcessor.class);
             if ( processor!=null ) { processor.process(node->processForEachStepNode(forEach, node)); }
         } else if ( valuesExpression!=null ) {
-            var values = data.eval(valuesExpression, ArrayNode.class);
+            var values = vars.eval(valuesExpression, ArrayNode.class);
             if ( values!=null ) { 
                 // Process values until processForEachStepNode() returns false
                 JsonHelper.stream(values)
@@ -314,8 +306,8 @@ public final class ActionStepsProcessor {
     private boolean processForEachStepNode(AbstractActionStepForEach forEach, JsonNode node) {
         if ( forEach==null ) { return false; }
         var breakIf = forEach.getBreakIf();
-        data.set(forEach.getName(), node);
-        if ( breakIf!=null && data.eval(breakIf, Boolean.class) ) {
+        vars.set(forEach.getName(), node);
+        if ( breakIf!=null && vars.eval(breakIf, Boolean.class) ) {
             return false;
         }
         if ( _if(forEach) ) {
@@ -329,8 +321,8 @@ public final class ActionStepsProcessor {
         var failIf = check.getFailIf();
         var passIf = check.getPassIf();
         var pass = passIf!=null 
-                ? data.eval(passIf, Boolean.class)
-                : !data.eval(failIf, Boolean.class);
+                ? vars.eval(passIf, Boolean.class)
+                : !vars.eval(failIf, Boolean.class);
         var currentStatus = pass ? CheckStatus.PASS : CheckStatus.FAIL;
         ctx.getCheckStatuses().compute(displayName, (name,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
     }
@@ -341,8 +333,8 @@ public final class ActionStepsProcessor {
     
     private IActionRequestHelper createBasicRequestHelper(ActionStepAddRequestTarget descriptor) {
         var name = descriptor.getName();
-        var baseUrl = data.eval(descriptor.getBaseUrl(), String.class);
-        var headers = data.eval(descriptor.getHeaders(), String.class);
+        var baseUrl = vars.eval(descriptor.getBaseUrl(), String.class);
+        var headers = vars.eval(descriptor.getHeaders(), String.class);
         IUnirestInstanceSupplier unirestInstanceSupplier = () -> GenericUnirestFactory.getUnirestInstance(name, u->{
             u.config().defaultBaseUrl(baseUrl).getDefaultHeaders().add(headers);
             UnirestUnexpectedHttpResponseConfigurer.configure(u);
@@ -352,14 +344,14 @@ public final class ActionStepsProcessor {
     }
     
     private void processFcliStep(ActionStepFcli fcli) {
-        var args = data.eval(fcli.getArgs(), String.class);
+        var args = vars.eval(fcli.getArgs(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", args);
         var cmdExecutor = new FcliCommandExecutor(ctx.getConfig().getRootCommandLine(), args);
         Consumer<ObjectNode> recordConsumer = null;
         var forEach = fcli.getForEach();
         var name = fcli.getName();
         if ( StringUtils.isNotBlank(name) ) {
-            data.set(name, ctx.getObjectMapper().createArrayNode());
+            vars.set(name, ctx.getObjectMapper().createArrayNode());
         }
         if ( forEach!=null || StringUtils.isNotBlank(name) ) {
             if ( !cmdExecutor.canCollectRecords() ) {
@@ -387,7 +379,7 @@ public final class ActionStepsProcessor {
             if ( StringUtils.isNotBlank(name) ) {
                 // For name attribute, we want to collect all records,
                 // independent of break condition in the forEach block.
-                appendToArray(name, data.get(name), record);
+                appendToArray(name, record);
             }
             if ( continueProcessing ) {
                 continueProcessing = processForEachStepNode(fcli.getForEach(), record);
@@ -398,7 +390,7 @@ public final class ActionStepsProcessor {
     private void processRequestsStep(List<ActionStepRequest> requests) {
         if ( requests!=null ) {
             var requestsProcessor = new ActionStepRequestsProcessor(ctx);
-            requestsProcessor.addRequests(requests, this::processResponse, this::processFailure, data);
+            requestsProcessor.addRequests(requests, this::processResponse, this::processFailure, vars);
             requestsProcessor.executeRequests();
         }
     }
@@ -406,8 +398,8 @@ public final class ActionStepsProcessor {
     private final void processResponse(ActionStepRequest requestDescriptor, JsonNode rawBody) {
         var name = requestDescriptor.getName();
         var body = ctx.getRequestHelper(requestDescriptor.getTarget()).transformInput(rawBody);
-        data.setLocal(name+"_raw", rawBody);
-        data.setLocal(name, body);
+        vars.setLocal(name+"_raw", rawBody);
+        vars.setLocal(name, body);
         processOnResponse(requestDescriptor);
         processRequestStepForEach(requestDescriptor);
     }
@@ -415,7 +407,7 @@ public final class ActionStepsProcessor {
     private final void processFailure(ActionStepRequest requestDescriptor, UnirestException e) {
         var onFailSteps = requestDescriptor.getOnFail();
         if ( onFailSteps==null ) { throw e; }
-        data.setLocal("exception", new POJONode(e));
+        vars.setLocal("exception", new POJONode(e));
         processSteps(onFailSteps);
     }
     
@@ -427,7 +419,7 @@ public final class ActionStepsProcessor {
     private final void processRequestStepForEach(ActionStepRequest requestDescriptor) {
         var forEach = requestDescriptor.getForEach();
         if ( forEach!=null ) {
-            var input = data.get(requestDescriptor.getName());
+            var input = vars.get(requestDescriptor.getName());
             if ( input!=null ) {
                 if ( input instanceof ArrayNode ) {
                     updateRequestStepForEachTotalCount(forEach, (ArrayNode)input);
@@ -448,46 +440,46 @@ public final class ActionStepsProcessor {
     
     @FunctionalInterface
     private interface IRequestStepForEachEntryProcessor {
-        void process(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerData data);
+        void process(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerVars vars);
     }
     
     private final void processRequestStepForEach(ActionStepRequestForEachDescriptor forEach, ArrayNode source, IRequestStepForEachEntryProcessor entryProcessor) {
         for ( int i = 0 ; i < source.size(); i++ ) {
             var currentNode = source.get(i);
-            var newData = data.createChild();
-            newData.setLocal(forEach.getName(), currentNode);
+            var newVars = vars.createChild();
+            newVars.setLocal(forEach.getName(), currentNode);
             var breakIf = forEach.getBreakIf();
-            if ( breakIf!=null && newData.eval(breakIf, Boolean.class) ) {
+            if ( breakIf!=null && newVars.eval(breakIf, Boolean.class) ) {
                 break;
             }
             var _if = forEach.get_if(); 
-            if ( _if==null || newData.eval(_if, Boolean.class) ) {
-                entryProcessor.process(forEach, currentNode, newData);
+            if ( _if==null || newVars.eval(_if, Boolean.class) ) {
+                entryProcessor.process(forEach, currentNode, newVars);
             }
         }
     }
     
     private void updateRequestStepForEachTotalCount(ActionStepRequestForEachDescriptor forEach, ArrayNode array) {
         var totalCountName = String.format("total%sCount", StringUtils.capitalize(forEach.getName()));
-        var totalCount = data.get(totalCountName);
+        var totalCount = vars.get(totalCountName);
         if ( totalCount==null ) { totalCount = new IntNode(0); }
-        data.setLocal(totalCountName, new IntNode(totalCount.asInt()+array.size()));
+        vars.setLocal(totalCountName, new IntNode(totalCount.asInt()+array.size()));
     }
 
-    private void processRequestStepForEachEntryDo(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerData newData) {
-        var processor = new ActionStepsProcessor(ctx, newData);
+    private void processRequestStepForEachEntryDo(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerVars newVars) {
+        var processor = new ActionStepsProcessor(ctx, newVars);
         processor.processSteps(forEach.get_do());
     }
     
     private IRequestStepForEachEntryProcessor getRequestForEachEntryEmbedProcessor(ActionStepRequestsProcessor requestExecutor) {
-        return (forEach, currentNode, newData) -> {
+        return (forEach, currentNode, newVars) -> {
             if ( !currentNode.isObject() ) {
                 // TODO Improve exception message?
                 throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getName());
             }
             requestExecutor.addRequests(forEach.getEmbed(), 
                     (rd,r)->((ObjectNode)currentNode).set(rd.getName(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
-                    this::processFailure, newData);
+                    this::processFailure, newVars);
         };
     }
     
@@ -497,22 +489,22 @@ public final class ActionStepsProcessor {
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> simpleRequests = new LinkedHashMap<>();
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> pagedRequests = new LinkedHashMap<>();
         
-        final void addRequests(List<ActionStepRequest> requestDescriptors, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerData data) {
+        final void addRequests(List<ActionStepRequest> requestDescriptors, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerVars vars) {
             if ( requestDescriptors!=null ) {
-                requestDescriptors.forEach(r->addRequest(r, responseConsumer, failureConsumer, data));
+                requestDescriptors.forEach(r->addRequest(r, responseConsumer, failureConsumer, vars));
             }
         }
         
-        private final void addRequest(ActionStepRequest requestDescriptor, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerData data) {
+        private final void addRequest(ActionStepRequest requestDescriptor, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerVars vars) {
             var _if = requestDescriptor.get_if();
-            if ( _if==null || data.eval(_if, Boolean.class) ) {
+            if ( _if==null || vars.eval(_if, Boolean.class) ) {
                 var method = requestDescriptor.getMethod();
-                var uri = data.eval(requestDescriptor.getUri(), String.class);
+                var uri = vars.eval(requestDescriptor.getUri(), String.class);
                 checkUri(uri);
-                var query = data.eval(requestDescriptor.getQuery(), Object.class);
-                var body = requestDescriptor.getBody()==null ? null : data.eval(requestDescriptor.getBody(), Object.class);
+                var query = vars.eval(requestDescriptor.getQuery(), Object.class);
+                var body = requestDescriptor.getBody()==null ? null : vars.eval(requestDescriptor.getBody(), Object.class);
                 var requestData = new IActionRequestHelper.ActionRequestDescriptor(method, uri, query, body, r->responseConsumer.accept(requestDescriptor, r), e->failureConsumer.accept(requestDescriptor, e));
-                addPagingProgress(requestData, requestDescriptor.getPagingProgress(), data);
+                addPagingProgress(requestData, requestDescriptor.getPagingProgress(), vars);
                 if ( requestDescriptor.getType()==ActionStepRequestType.paged ) {
                     pagedRequests.computeIfAbsent(requestDescriptor.getTarget(), s->new ArrayList<IActionRequestHelper.ActionRequestDescriptor>()).add(requestData);
                 } else {
@@ -535,17 +527,17 @@ public final class ActionStepsProcessor {
             }
         }
 
-        private void addPagingProgress(ActionRequestDescriptor requestData, ActionStepRequestPagingProgressDescriptor pagingProgress, ActionRunnerData data) {
+        private void addPagingProgress(ActionRequestDescriptor requestData, ActionStepRequestPagingProgressDescriptor pagingProgress, ActionRunnerVars vars) {
             if ( pagingProgress!=null ) {
-                addPagingProgress(pagingProgress.getPrePageLoad(), requestData::setPrePageLoad, data);
-                addPagingProgress(pagingProgress.getPostPageLoad(), requestData::setPostPageLoad, data);
-                addPagingProgress(pagingProgress.getPostPageProcess(), requestData::setPostPageProcess, data);
+                addPagingProgress(pagingProgress.getPrePageLoad(), requestData::setPrePageLoad, vars);
+                addPagingProgress(pagingProgress.getPostPageLoad(), requestData::setPostPageLoad, vars);
+                addPagingProgress(pagingProgress.getPostPageProcess(), requestData::setPostPageProcess, vars);
             }
         }
         
-        private void addPagingProgress(TemplateExpression expr, Consumer<Runnable> consumer, ActionRunnerData data) {
+        private void addPagingProgress(TemplateExpression expr, Consumer<Runnable> consumer, ActionRunnerVars vars) {
             if ( expr!=null ) {
-                consumer.accept(()->ctx.getProgressWriter().writeProgress(data.eval(expr, String.class)));
+                consumer.accept(()->ctx.getProgressWriter().writeProgress(vars.eval(expr, String.class)));
             }
         }
         
@@ -560,30 +552,6 @@ public final class ActionStepsProcessor {
                 requests.forEach(r->requestHelper.executePagedRequest(r));
             } else {
                 requestHelper.executeSimpleRequests(requests);
-            }
-        }
-    }
-    
-    @RequiredArgsConstructor
-    private static final class JsonNodeOutputWalker extends JsonNodeDeepCopyWalker {
-        private final ActionValueTemplate outputDescriptor;
-        private final ActionRunnerData data;
-        @Override
-        protected JsonNode copyValue(JsonNode state, String path, JsonNode parent, ValueNode node) {
-            if ( !(node instanceof TextNode) ) {
-                return super.copyValue(state, path, parent, node);
-            } else {
-                TemplateExpression expression = outputDescriptor.getValueExpressions().get(path);
-                if ( expression==null ) { throw new RuntimeException("No expression for "+path); }
-                try {
-                    var rawResult = data.eval(expression, Object.class);
-                    if ( rawResult instanceof CharSequence ) {
-                        rawResult = new TextNode(((String)rawResult).replace("\\n", "\n"));
-                    }
-                    return JsonHelper.getObjectMapper().valueToTree(rawResult);
-                } catch ( SpelEvaluationException e ) {
-                    throw new RuntimeException("Error evaluating action expression "+expression.getExpressionString(), e);
-                }
             }
         }
     }

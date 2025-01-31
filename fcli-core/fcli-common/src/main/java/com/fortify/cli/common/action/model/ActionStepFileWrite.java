@@ -12,6 +12,8 @@
  */
 package com.fortify.cli.common.action.model;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -26,18 +28,18 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepWrite extends AbstractActionStep implements IActionStepValueSupplier {
+public final class ActionStepFileWrite extends AbstractActionStep {
     @JsonPropertyDescription("Required SpEL template expression: Specify where to write the given data; either 'stdout', 'stderr' or a filename.")
     @JsonProperty(required = true) private TemplateExpression to;
     
-    @JsonPropertyDescription("Required SpEL template expression if 'valueTemplate' is not specified: Value to be written to the given output.")
+    @JsonPropertyDescription("SpEL template expression: Value to be written to the given output. Required if 'fmt' is not specified, otherwise defaults to '#root' to allow the formatter to access all action variables")
     @JsonProperty(required = false) private TemplateExpression value;
     
-    @JsonPropertyDescription("Required string if 'value' is not specified: Name of a value template to be evaluated, writing the outcome of the value template to the given output.")
-    @JsonProperty(required = false) private String valueTemplate;    
+    @JsonPropertyDescription("Optional string: Format the value specified through 'value' using the given formatter.")
+    @JsonProperty(required = false) private String fmt;
     
     public void postLoad(Action action) {
         Action.checkNotNull("write to", to, this);
-        Action.checkActionValueSupplier(action, this);
+        Action.throwIf(value==null && StringUtils.isBlank(fmt), this, ()->"Either 'value', 'fmt', or both need to be specified");
     }
 }

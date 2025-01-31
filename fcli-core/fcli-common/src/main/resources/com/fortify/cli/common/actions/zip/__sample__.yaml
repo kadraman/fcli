@@ -95,15 +95,7 @@ parameters:
     defaultValue: fortify
   # See SSC/FoD-specific actions for examples on how to load application 
   # versions/releases and SSC filter sets.
-  
-# This section defines the steps to be executed for this action. Steps are executed 
-# sequentually. The following step types are currently supported:
-# - progress: Takes an SpEL expression to generate a progress message
-# - requests: Execute one or more requests
-# - set:      Set a data value for use by subsequent or nested steps
-# - append:   Set a data value by appending the given value to a new or existing array or object
-# - write:    Write data to stdout, stderr or a file
-# See below for more information on each step type.
+
 steps:
     # Output a progress message based on an SpEL expression
   - progress: Processing organization ${parameters['github-org']}
@@ -193,18 +185,15 @@ steps:
         #  - name: releases
         #    uri: /repos/${repo.full_name}/releases
         do:
-          - append: # See documentation for 'append' below
-            - name: repositories
-              valueTemplate: repositories
-            - name: repositories_json
-              value: ${repo}
+          - var.set: # See documentation for 'append' below
+              repositories..: ${#action.fmt('repositories',#root)}
+              repositories_json..: ${repo}
   # Write one or more outputs. Each write element supports the following properties:
   # - to: Required; either 'stdout', 'stderr' or a file name.
-  #   value: Required if no valueTemplate specified; SpEL template expression that generates the output to be written.
-  #   valueTemplate: Required if no value specified; template output for the given template name.            
-  - write:
+  #   value: Required; SpEL template expression that generates the output to be written.            
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: output
+      value: ${#action.fmt('output',#root)}
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
@@ -217,7 +206,7 @@ steps:
 #             expression that generates a string, or an object tree that defines
 #             value properties, with each property taking either a nested object
 #             tree or an SpEL template expression that defines property contents.
-valueTemplates:
+formatters:
   - name: output
     contents: |
       # List of repositories

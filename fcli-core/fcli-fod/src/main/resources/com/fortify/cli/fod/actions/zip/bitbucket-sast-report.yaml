@@ -41,21 +41,20 @@ steps:
           - name: details
             uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
         do:
-          - append:
-            - name: annotations
-              valueTemplate: annotations
-  - write:
+          - var.set:
+              annotations..: ${#action.fmt('annotations',#root)}
+  - file.write:
     - to: ${parameters['annotations-file']}
       value: ${annotations?:{}}
     - to: ${parameters['report-file']}
-      valueTemplate: report
+      fmt: report
     - if: ${parameters['annotations-file']!='stdout' && parameters['report-file']!='stdout'}
       to: stdout
       value: |
         Report written to ${parameters['report-file']}
         Annotations written to ${parameters['annotations-file']}
 
-valueTemplates:
+formatters:
   - name: report
     contents:
       # uuid:

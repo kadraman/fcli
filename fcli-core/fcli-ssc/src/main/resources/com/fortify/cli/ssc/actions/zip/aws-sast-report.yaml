@@ -52,9 +52,8 @@ steps:
         name: artifact
         breakIf: ${lastStaticScan!=null}
         do:
-          - set:
-            - name: lastStaticScan
-              value: ${artifact._embed.scans?.^[type=='SCA']}
+          - var.set: 
+              lastStaticScan: ${artifact._embed.scans?.^[type=='SCA']}
   - progress: Processing issue data
   - requests:
     - name: issues
@@ -71,18 +70,17 @@ steps:
           - name: details
             uri: /api/v1/issueDetails/${issue.id}
         do:
-          - append:
-            - name: vulnerabilities
-              valueTemplate: issues
-  - write:
+          - var.set:
+              vulnerabilities..: ${#action.fmt('issues',#root)}
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: aws-sast-report
+      fmt: aws-sast-report
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
-valueTemplates:
+formatters:
   - name: aws-sast-report
     contents:
       issues: ${vulnerabilities?:{}}

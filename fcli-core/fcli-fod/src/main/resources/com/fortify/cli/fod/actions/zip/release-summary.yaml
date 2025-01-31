@@ -24,13 +24,10 @@ parameters:
     type: release_single
   
 steps:
-  - set: 
+  - var.set: 
       # Add short alias for release object, as we reference it a lot
-    - name: r 
-      value: ${parameters.release}
-      # Define output date format
-    - name: dateFmt
-      value: YYYY-MM-dd HH:mm
+      r: ${parameters.release}
+      dateFmt: YYYY-MM-dd HH:mm
   # Update Note: although open source counts are now available on the release object, the date of last open source scan is not so still need below 
   - progress: Loading Scans
   - requests:
@@ -46,22 +43,20 @@ steps:
         breakIf: ${ossScanDate!=null}
         if: ${scan.scanType=='OpenSource'}
         do:
-          - set:
-            - name: scanType
-              value: ${scan.scanType}
-            - name: ossScanDate
-              value: ${scan.completedDateTime} 
+          - var.set:
+              scanType: ${scan.scanType}
+              ossScanDate: ${scan.completedDateTime} 
 
-  - write:
+  - file.write:
     - to: ${parameters.file}
-      valueTemplate: summary-md
+      fmt: summary-md
     - if: ${parameters.file!='stdout'}
       to: stdout
       value: |
         Output written to ${parameters.file}
 
 # Note: update ossScanDate when it is available on release object ...
-valueTemplates:
+formatters:
   - name: summary-md
     contents: |
       # Fortify on Demand Release Summary

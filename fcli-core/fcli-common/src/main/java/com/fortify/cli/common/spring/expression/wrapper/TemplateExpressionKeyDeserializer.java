@@ -26,29 +26,27 @@ package com.fortify.cli.common.spring.expression.wrapper;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.KeyDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spring.expression.SpelHelper;
 
 /**
- * This Jackson deserializer allows got parsing String values into 
+ * This Jackson key deserializer allows for parsing map keys into 
  * TemplateExpression objects.
  */
 @Reflectable
-public final class TemplateExpressionDeserializer extends StdDeserializer<TemplateExpression> {
-    private static final long serialVersionUID = 1L;
-    
-    public TemplateExpressionDeserializer() { this(null); } 
-    public TemplateExpressionDeserializer(Class<?> vc) { super(vc); }
-
+public final class TemplateExpressionKeyDeserializer extends KeyDeserializer {
     @Override
-    public TemplateExpression deserialize(JsonParser jp, DeserializationContext ctxt) 
-      throws IOException, JsonProcessingException {
-        JsonNode node = jp.getCodec().readTree(jp);
-        return node==null || node.isNull() ? null : SpelHelper.parseTemplateExpression(node.asText());
+    public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+        return key==null ? null : SpelHelper.parseTemplateExpression(key);
+    }
+    
+    public static final ObjectMapper registerOn(ObjectMapper objectMapper) {
+        SimpleModule module = new SimpleModule();
+        module.addKeyDeserializer(TemplateExpression.class, new TemplateExpressionKeyDeserializer());
+        return objectMapper.registerModule(module);
     }
 }
