@@ -55,23 +55,32 @@ public final class ActionStep extends AbstractActionStep {
         Optional map: Set variables for use in subsequent steps. Both keys and values may be \
         specified as SpEL template expressions. Variables can either contain a single value, \
         a set of properties, or an array, based on the following formats for the map keys:
-          <variable name> - Single value variable
-          <variable name>.<property name> - Variable containing a set of properties   
-          <variable name>.. - Variable containing an array of values
+        # Single value variable:
+        varName
+        # Variable containing a set of properties
+        varName.propName
+        # Variable containing an array of values (two trailing dots) 
+        varName..
         For example:
-          var1: val1        # Set variable 'var1' to 'val1'
-          var2.prop1: val2  # Set 'prop1' in 'var2' to 'val2'
-          var2.prop2: val3  # Add second property in 'var2'
-          var3..: val3      # Append 'val3' to the 'var' array
-        Only a single format is supported for a given variable, for example the following fails:
-          var4.prop1: val1  # Defines 'var4' as a set of properties
-          var4..: val2      # Fails because var4 contains a set of properties, not an array
-        Variables are set in the order that they are declared, so the following is supported:
-          var.set:
-            var5: x         # Set variable `var5` to 'x'
-            var6.${var5}: y # Set property 'x' in 'var6' to 'y'
-            var7: ${var6.x} # Set variable 'var7' to 'y'
-    """)
+        # Set variable 'var1' to 'val1'
+        var1: val1
+        # Set 'prop1' and 'prop2' in 'var2' to 'val2' and 'val3' respectively
+        var2.prop1: val2
+        var2.prop2: val3
+        # Append 'val4' and 'val5' to the 'var3' array
+        var3..: val4
+        var3..: val5
+        Only a single format is supported for a given variable, for example the following would fails \
+        as 'var' is first defined as a set of properties, whereas the seond step tries to append an \
+        array entry: 
+        var4.prop1: val1
+        var4..: val2
+        Variables are set in the order that they are declared, so the following is supported within a \
+        single 'var.set' block:
+        var5: x
+        var6.${var5}: y
+        var7: ${var6.x}
+        """)
     @JsonProperty(value = "var.set", required = false) private LinkedHashMap<TemplateExpression,TemplateExpression> varSet;
     
     @JsonPropertyDescription("Optional list: Unset variables, supports SpEL template expressions to specify the variable names to be unset.")
