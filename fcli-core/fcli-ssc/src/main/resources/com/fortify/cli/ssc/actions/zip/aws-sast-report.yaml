@@ -10,7 +10,7 @@ usage:
     https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-update-types.html
 
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   
 parameters:
   - name: file
@@ -41,8 +41,8 @@ parameters:
     defaultValue: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
-  - progress: Loading latest static scan
-  - requests:
+  - log.progress: Loading latest static scan
+  - rest.call:
     - name: artifacts
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
       type: paged
@@ -54,8 +54,8 @@ steps:
         do:
           - var.set: 
               lastStaticScan: ${artifact._embed.scans?.^[type=='SCA']}
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v1/projectVersions/${parameters.appversion.id}/issues
       query:

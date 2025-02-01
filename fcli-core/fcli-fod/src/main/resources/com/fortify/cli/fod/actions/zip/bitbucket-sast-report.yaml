@@ -8,7 +8,7 @@ usage:
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
   
 parameters:
   - name: report-file
@@ -27,8 +27,8 @@ parameters:
     type: release_single
   
 steps:
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
       query:

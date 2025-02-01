@@ -8,7 +8,7 @@ usage:
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportsdast
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
 
 parameters:
   - name: file
@@ -22,8 +22,8 @@ parameters:
     type: release_single
   
 steps:
-  - progress: Loading dynamic scan summary
-  - requests:
+  - log.progress: Loading dynamic scan summary
+  - rest.call:
       - name:   dynamicScanSummary
         uri:    /api/v3/scans/${parameters.release.currentDynamicScanId}/summary
         if:     ${parameters.release.currentDynamicScanId!=null}
@@ -31,9 +31,9 @@ steps:
         uri:    /api/v3/scans/${parameters.release.currentDynamicScanId}/site-tree
         if:     ${parameters.release.currentDynamicScanId!=null}
         onFail: 
-          - debug: "Site tree unavailable: ${exception.getMessage()}"
-  - progress: Processing issue data
-  - requests:
+          - log.debug: "Site tree unavailable: ${exception.getMessage()}"
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
       query:

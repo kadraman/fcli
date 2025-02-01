@@ -8,7 +8,7 @@ usage:
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
     
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   
 parameters:
   - name: report-file
@@ -36,8 +36,8 @@ parameters:
     defaultValue: "100"
   
 steps:
-  - progress: Loading latest static scan
-  - requests:
+  - log.progress: Loading latest static scan
+  - rest.call:
     - name: artifacts
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
       type: paged
@@ -49,22 +49,22 @@ steps:
         do:
           - var.set:
               lastStaticScan: ${artifact._embed.scans?.^[type=='SCA']}
-  - progress: Loading issue counts
-  - requests:
+  - log.progress: Loading issue counts
+  - rest.call:
     - name: fpo_counts_sca
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueGroups
       query:
         filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
         groupingtype: 11111111-1111-1111-1111-111111111150
         filterset: ${parameters.filterset.guid}
-  - requests:
+  - rest.call:
     - name: fpo_counts_total
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueGroups
       query:
         groupingtype: 11111111-1111-1111-1111-111111111150
         filterset: ${parameters.filterset.guid}      
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v1/projectVersions/${parameters.appversion.id}/issues
       query:

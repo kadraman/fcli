@@ -8,7 +8,7 @@ usage:
     https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/importing-external-issues/external-analyzer-reports/
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
   
 parameters:
   - name: file
@@ -27,8 +27,8 @@ parameters:
     type: release_single
   
 steps:
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
       query:

@@ -25,8 +25,8 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 public final class ActionConfig implements IActionElement {
-    @JsonPropertyDescription("Optional string: Default request target to use for requests: steps.")
-    @JsonProperty(required = false) private String defaultRequestTarget;
+    @JsonPropertyDescription("Optional string: Default target to use for rest.call steps.")
+    @JsonProperty(value = "rest.target.default", required = false) private String restTargetDefault;
     
     @JsonPropertyDescription("Optional enum value: If set to 'delayed' (default), all output to stdout/stderr except for progress messages will be delayed until the end of action execution. If set to 'immediate', output will be written immediately and progress writer will be configured to 'simple' mode (unless set to 'none') to avoid such output from interfering with progress messages.")
     @JsonProperty(required = false) private ActionConfigOutput output = ActionConfigOutput.delayed;

@@ -28,7 +28,7 @@ usage:
     appropriate option values and setup commands to run.
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
   output: immediate
 
   
@@ -105,21 +105,21 @@ parameters:
     type: boolean  
   
 steps:
-  - progress: "Creating FoD application & release if non-existing" 
-  - fcli:
+  - log.progress: "Creating FoD application & release if non-existing" 
+  - run.fcli:
     - name: createRelease
       args: fod release create "${parameters.release}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup("rel_create_opts")}
   - file.write:
       - to: stdout
         value: |
           Create application release ${parameters.release} (id ${createRelease[0].releaseId}): ${createRelease[0].__action__.replaceAll('\n', ', ')}
-  - progress: "Waiting for release to leave suspended state"
-  - fcli:
+  - log.progress: "Waiting for release to leave suspended state"
+  - run.fcli:
     - args: fod release wait-for "${parameters.release}" --progress=none
   - if: ${parameters["scan-types"].contains("sast")}
     steps:        
-      - progress: "Configuring FoD application release ${parameters.release} for SAST scanning"
-      - fcli:
+      - log.progress: "Configuring FoD application release ${parameters.release} for SAST scanning"
+      - run.fcli:
         - name: setupSast
           args: fod sast-scan setup --rel "${parameters.release}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup("sast_setup_opts")}
       - file.write:

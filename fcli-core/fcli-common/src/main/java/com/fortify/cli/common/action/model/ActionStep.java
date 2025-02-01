@@ -33,29 +33,23 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
 public final class ActionStep extends AbstractActionStep {
-    @JsonPropertyDescription("Optional list: Add target URLs and related properties for REST requests.")
-    @JsonProperty(required = false) private List<ActionStepAddRequestTarget> addRequestTargets;
+    @JsonPropertyDescription("Optional list: Add REST request targets for use in rest.request steps.")
+    @JsonProperty(value = "rest.target", required = false) private List<ActionStepRestTarget> restTargets;
     
     @JsonPropertyDescription("Optional list: Execute one or more REST requests.")
-    @JsonProperty(required = false) private List<ActionStepRequest> requests;
+    @JsonProperty(value = "rest.call", required = false) private List<ActionStepRestCall> restCalls;
     
     @JsonPropertyDescription("Optional list: Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
-    @JsonProperty(required = false) private List<ActionStepFcli> fcli;
+    @JsonProperty(value = "run.fcli", required = false) private List<ActionStepRunFcli> runFcli;
     
     @JsonPropertyDescription("Optional SpEL template expression: Write a progress message.")
-    @JsonProperty(required = false) private TemplateExpression progress;
+    @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
     
     @JsonPropertyDescription("Optional SpEL template expression: Write a warning message to console and log file (if enabled). Note that warning messages will be shown on console only after all action steps have been executed, to not interfere with progress messages.")
-    @JsonProperty(required = false) private TemplateExpression warn;
+    @JsonProperty(value = "log.warn", required = false) private TemplateExpression logWarn;
     
     @JsonPropertyDescription("Optional SpEL template expression: Write a debug message to log file (if enabled).")
-    @JsonProperty(required = false) private TemplateExpression debug;
-
-    @JsonPropertyDescription("Optional SpEL template expression: Throw an exception, thereby terminating action execution.")
-    @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
-    
-    @JsonPropertyDescription("Optional SpEL template expression: Terminate action execution and return the given exit code.")
-    @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
+    @JsonProperty(value = "log.debug", required = false) private TemplateExpression logDebug;
     
     @JsonPropertyDescription("""
         Optional map: Set variables for use in subsequent steps. Both keys and values may be \
@@ -94,6 +88,12 @@ public final class ActionStep extends AbstractActionStep {
     
     @JsonPropertyDescription("Optional list: Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
     @JsonProperty(required = false) private List<ActionStep> steps;
+    
+    @JsonPropertyDescription("Optional SpEL template expression: Throw an exception, thereby terminating action execution.")
+    @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
+    
+    @JsonPropertyDescription("Optional SpEL template expression: Terminate action execution and return the given exit code.")
+    @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
     
     /**
      * This method is invoked by the parent element (which may either be another

@@ -23,7 +23,7 @@ usage:
       appropriate option values and setup commands to run.
 
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   output: immediate
   
 parameters:
@@ -65,8 +65,8 @@ parameters:
     description: "See 'fcli ssc av create'. Default value: 300s"
   
 steps:
-  - progress: "Creating SSC application version if non-existing"
-  - fcli:
+  - log.progress: "Creating SSC application version if non-existing"
+  - run.fcli:
     - name: createAppVersion
       args: ssc av create ${parameters.appversion} --skip-if-exists --auto-required-attrs --refresh ${#action.copyParametersFromGroup("av_create_opts")}
   - file.write:

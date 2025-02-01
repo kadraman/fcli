@@ -8,7 +8,7 @@ usage:
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportsdast
   
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   
 parameters:
   - name: file
@@ -31,8 +31,8 @@ parameters:
     defaultValue: "100"
   
 steps:
-  - progress: Loading latest dynamic scan
-  - requests:
+  - log.progress: Loading latest dynamic scan
+  - rest.call:
     - name: artifacts
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
       type: paged
@@ -44,8 +44,8 @@ steps:
         do:
           - var.set:
               lastDynamicScan: ${artifact._embed.scans?.^[type=='WEBINSPECT']}
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v1/projectVersions/${parameters.appversion.id}/issues
       query:

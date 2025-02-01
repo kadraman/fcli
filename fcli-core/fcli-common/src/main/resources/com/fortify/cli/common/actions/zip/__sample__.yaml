@@ -34,7 +34,7 @@ usage:
     
 # This section allows for setting some global action configuration properties.
 config:
-  defaultRequestTarget: github
+  rest.target.default: github
   output: delayed
     
 # This section lists action parameters that action users can provide as command-line 
@@ -98,7 +98,7 @@ parameters:
 
 steps:
     # Output a progress message based on an SpEL expression
-  - progress: Processing organization ${parameters['github-org']}
+  - log.progress: Processing organization ${parameters['github-org']}
   # Optional property for adding request targets. By default, fcli provides request targets
   # corresponding to the module that provides a certain action, i.e.:
   # - The 'fcli fod' module provides an 'fod' request target for interacting with FoD
@@ -107,7 +107,7 @@ steps:
   #   both 'ssc' and respectively 'sc-sast'/'sc-dast' request targets.
   # Adding request targets allows an action to interact with other (3rd-party) systems
   # like GitHub or GitLab.
-  - addRequestTargets:
+  - rest.target:
     - name: github
       baseUrl: https://api.github.com
       headers:
@@ -158,7 +158,7 @@ steps:
     #                      property. For SSC, a single bulk request will be executed
     #                      for all records in the current page.
     #     do:              List of steps to be executed for the current record.
-  - requests:
+  - rest.call:
       # 
     - name: repos
       # if: ${true}

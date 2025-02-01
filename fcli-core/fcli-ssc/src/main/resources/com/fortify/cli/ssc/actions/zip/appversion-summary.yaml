@@ -10,7 +10,7 @@ usage:
     couple of fcli releases.
 
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   
 parameters:
   - name: file
@@ -34,13 +34,13 @@ steps:
       filtersetsArray: ${parameters.filtersets?.split(',')}
       issueStateNames: ${{'NEW', 'REINTRODUCED', 'REMOVED', 'UPDATED'}}
   # Load SSC issue selector filter by sets
-  - progress: Loading issue selector sets
-  - requests:
+  - log.progress: Loading issue selector sets
+  - rest.call:
     - name: issueSelectorSet
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueSelectorSet?fields=filterBySet
   - var.set:
       analysisTypes: ${issueSelectorSet.filterBySet.^[displayName=='Analysis Type'].selectorOptions}
-  - requests:
+  - rest.call:
     - if: ${analysisTypes!=null && analysisTypes.size()>0}
       name: artifactsResponse
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
@@ -62,7 +62,7 @@ steps:
                     analyzedScans..: ${scan}
                     
   # Collect SSC filter set data, together with issue counts by analysis type & folder
-  - requests:
+  - rest.call:
     - name: filterSetsResponse
       uri:  /api/v1/projectVersions/${parameters.appversion.id}/filterSets
       type: paged
@@ -71,7 +71,7 @@ steps:
         name: filterset
         if:   ${filtersetsArray==null || filtersetsArray.contains(filterset.title) || filtersetsArray.contains(filterset.guid) || (filtersetsArray.contains('default') && filterset.defaultFilterSet)}
         do: 
-          - progress: Loading ${filterset.title} filter set data
+          - log.progress: Loading ${filterset.title} filter set data
           # Collect filter sets
           - var.set:
               filtersets..: ${filterset}
@@ -81,7 +81,7 @@ steps:
               values: ${analysisTypes}
               do:
                 # Load SSC issue counts by folder for current filter set and analysis type
-                - requests:
+                - rest.call:
                   - name: issueGroupsByFolder
                     uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueGroups
                     query:
@@ -114,7 +114,7 @@ steps:
                             state: ${filterset.title+':'+analysisType.displayName+':'+issueGroupState.id}
                             issueCountsByState.${state}: ${issueGroupState.visibleCount}
                             
-  - progress: Generating output data
+  - log.progress: Generating output data
   
   # For each filter set, generate the issue counts table
   - forEach:

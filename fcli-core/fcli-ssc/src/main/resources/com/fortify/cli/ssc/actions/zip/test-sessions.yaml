@@ -7,11 +7,11 @@ usage:
     TODO
 
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
   sessionFromEnvOutput: show
   
 steps:
-    - requests:
+    - rest.call:
         - name: apps
           uri: /api/v1/projects
           forEach:

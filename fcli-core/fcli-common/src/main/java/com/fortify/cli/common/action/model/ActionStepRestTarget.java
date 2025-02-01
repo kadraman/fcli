@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data
-public final class ActionStepAddRequestTarget implements IActionElement {
+public final class ActionStepRestTarget implements IActionElement {
     @JsonPropertyDescription("Required string: Request target name, referenceable from 'request' steps.")
     @JsonProperty(required = true) private String name;
     

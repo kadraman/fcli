@@ -30,7 +30,7 @@ usage:
       previous scan for this PR.
 
 config:
-  defaultRequestTarget: ssc
+  rest.target.default: ssc
         
 parameters:
   - name: appversion
@@ -78,14 +78,14 @@ parameters:
     defaultValue: false
     
 steps:
-  - addRequestTargets:
+  - rest.target:
       - name: github
         baseUrl: ${parameters['github-api-url']}
         headers:
           Authorization: Bearer ${parameters['github-token']}
           'X-GitHub-Api-Version': '2022-11-28'
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v1/projectVersions/${parameters.appversion.id}/issues?limit=200
       query:
@@ -108,7 +108,7 @@ steps:
             var.set:
               newIssues..: ${#action.fmt('mdIssueListItem',#root)}
           
-  - progress: Generating GitHub request
+  - log.progress: Generating GitHub request
   - var.set:
       reviewBody: ${#action.fmt('reviewBody',#root)}
       reviewRequestBody: ${#action.fmt('reviewRequestBody',#root)}
@@ -117,7 +117,7 @@ steps:
       - to: stdout
         value: ${reviewRequestBody}
   - if: ${!parameters.dryrun}
-    requests:
+    rest.call:
       - name:   GitHub PR review
         method: POST
         uri:    /repos/${parameters['github-owner']}/${parameters['github-repo']}/pulls/${parameters['pr']}/reviews

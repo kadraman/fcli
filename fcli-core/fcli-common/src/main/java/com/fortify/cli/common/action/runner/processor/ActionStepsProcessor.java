@@ -38,17 +38,17 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.model.AbstractActionStepForEach;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
-import com.fortify.cli.common.action.model.ActionStepAddRequestTarget;
+import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.model.ActionStepFcli;
+import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepFileWrite;
 import com.fortify.cli.common.action.model.ActionStepForEach;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
-import com.fortify.cli.common.action.model.ActionStepRequest;
-import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestForEachDescriptor;
-import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestPagingProgressDescriptor;
-import com.fortify.cli.common.action.model.ActionStepRequest.ActionStepRequestType;
+import com.fortify.cli.common.action.model.ActionStepRestCall;
+import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestForEachDescriptor;
+import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestPagingProgressDescriptor;
+import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestType;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -83,19 +83,19 @@ public final class ActionStepsProcessor {
     
     private final void processStep(ActionStep step) {
         if ( _if(step) ) {
-            processStepSupplier(step::getProgress, this::processProgressStep);
-            processStepSupplier(step::getWarn, this::processWarnStep);
-            processStepSupplier(step::getDebug, this::processDebugStep);
-            processStepSupplier(step::get_throw, this::processThrowStep);
-            processStepSupplier(step::get_exit, this::processExitStep);
-            processStepSupplier(step::getRequests, this::processRequestsStep);
-            processStepSupplier(step::getForEach, this::processForEachStep);
+            processStepSupplier(step::getLogProgress, this::processLogProgressStep);
+            processStepSupplier(step::getLogWarn, this::processLogWarnStep);
+            processStepSupplier(step::getLogDebug, this::processLogDebugStep);
+            processStepEntries(step::getRestTargets, this::processRestTargetsStep);
+            processStepSupplier(step::getRestCalls, this::processRestCallStep);
             processStepSupplier(step::getVarSet, this::processVarSetStep);
             processStepSupplier(step::getVarUnset, this::processVarUnsetStep);
-            processStepEntries(step::getAddRequestTargets, this::processAddRequestTarget);
-            processStepEntries(step::getFcli, this::processFcliStep);
+            processStepEntries(step::getRunFcli, this::processRunFcliStep);
             processStepEntries(step::getCheck, this::processCheckStep);
             processStepEntries(step::getFileWrite, this::processFileWriteStep);
+            processStepSupplier(step::get_throw, this::processThrowStep);
+            processStepSupplier(step::get_exit, this::processExitStep);
+            processStepSupplier(step::getForEach, this::processForEachStep);
             processStepEntries(step::getSteps, this::processStep);
         }
     }
@@ -266,15 +266,15 @@ public final class ActionStepsProcessor {
         }
     }  
 
-    private void processProgressStep(TemplateExpression progress) {
+    private void processLogProgressStep(TemplateExpression progress) {
         ctx.getProgressWriter().writeProgress(vars.eval(progress, String.class));
     }
     
-    private void processWarnStep(TemplateExpression progress) {
+    private void processLogWarnStep(TemplateExpression progress) {
         ctx.getProgressWriter().writeWarning(vars.eval(progress, String.class));
     }
     
-    private void processDebugStep(TemplateExpression progress) {
+    private void processLogDebugStep(TemplateExpression progress) {
         LOG.debug(vars.eval(progress, String.class));
     }
     
@@ -327,11 +327,11 @@ public final class ActionStepsProcessor {
         ctx.getCheckStatuses().compute(displayName, (name,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
     }
     
-    private void processAddRequestTarget(ActionStepAddRequestTarget descriptor) {
+    private void processRestTargetsStep(ActionStepRestTarget descriptor) {
         ctx.addRequestHelper(descriptor.getName(), createBasicRequestHelper(descriptor));
     }
     
-    private IActionRequestHelper createBasicRequestHelper(ActionStepAddRequestTarget descriptor) {
+    private IActionRequestHelper createBasicRequestHelper(ActionStepRestTarget descriptor) {
         var name = descriptor.getName();
         var baseUrl = vars.eval(descriptor.getBaseUrl(), String.class);
         var headers = vars.eval(descriptor.getHeaders(), String.class);
@@ -343,7 +343,7 @@ public final class ActionStepsProcessor {
         return new BasicActionRequestHelper(unirestInstanceSupplier, null);
     }
     
-    private void processFcliStep(ActionStepFcli fcli) {
+    private void processRunFcliStep(ActionStepRunFcli fcli) {
         var args = vars.eval(fcli.getArgs(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", args);
         var cmdExecutor = new FcliCommandExecutor(ctx.getConfig().getRootCommandLine(), args);
@@ -371,7 +371,7 @@ public final class ActionStepsProcessor {
     }
     @RequiredArgsConstructor
     private class FcliRecordConsumer implements Consumer<ObjectNode> {
-        private final ActionStepFcli fcli;
+        private final ActionStepRunFcli fcli;
         private boolean continueProcessing = true;
         @Override
         public void accept(ObjectNode record) {
@@ -387,7 +387,7 @@ public final class ActionStepsProcessor {
         }
     }
 
-    private void processRequestsStep(List<ActionStepRequest> requests) {
+    private void processRestCallStep(List<ActionStepRestCall> requests) {
         if ( requests!=null ) {
             var requestsProcessor = new ActionStepRequestsProcessor(ctx);
             requestsProcessor.addRequests(requests, this::processResponse, this::processFailure, vars);
@@ -395,7 +395,7 @@ public final class ActionStepsProcessor {
         }
     }
     
-    private final void processResponse(ActionStepRequest requestDescriptor, JsonNode rawBody) {
+    private final void processResponse(ActionStepRestCall requestDescriptor, JsonNode rawBody) {
         var name = requestDescriptor.getName();
         var body = ctx.getRequestHelper(requestDescriptor.getTarget()).transformInput(rawBody);
         vars.setLocal(name+"_raw", rawBody);
@@ -404,19 +404,19 @@ public final class ActionStepsProcessor {
         processRequestStepForEach(requestDescriptor);
     }
     
-    private final void processFailure(ActionStepRequest requestDescriptor, UnirestException e) {
+    private final void processFailure(ActionStepRestCall requestDescriptor, UnirestException e) {
         var onFailSteps = requestDescriptor.getOnFail();
         if ( onFailSteps==null ) { throw e; }
         vars.setLocal("exception", new POJONode(e));
         processSteps(onFailSteps);
     }
     
-    private final void processOnResponse(ActionStepRequest requestDescriptor) {
+    private final void processOnResponse(ActionStepRestCall requestDescriptor) {
         var onResponseSteps = requestDescriptor.getOnResponse();
         processSteps(onResponseSteps);
     }
 
-    private final void processRequestStepForEach(ActionStepRequest requestDescriptor) {
+    private final void processRequestStepForEach(ActionStepRestCall requestDescriptor) {
         var forEach = requestDescriptor.getForEach();
         if ( forEach!=null ) {
             var input = vars.get(requestDescriptor.getName());
@@ -489,13 +489,13 @@ public final class ActionStepsProcessor {
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> simpleRequests = new LinkedHashMap<>();
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> pagedRequests = new LinkedHashMap<>();
         
-        final void addRequests(List<ActionStepRequest> requestDescriptors, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerVars vars) {
+        final void addRequests(List<ActionStepRestCall> requestDescriptors, BiConsumer<ActionStepRestCall, JsonNode> responseConsumer, BiConsumer<ActionStepRestCall, UnirestException> failureConsumer, ActionRunnerVars vars) {
             if ( requestDescriptors!=null ) {
                 requestDescriptors.forEach(r->addRequest(r, responseConsumer, failureConsumer, vars));
             }
         }
         
-        private final void addRequest(ActionStepRequest requestDescriptor, BiConsumer<ActionStepRequest, JsonNode> responseConsumer, BiConsumer<ActionStepRequest, UnirestException> failureConsumer, ActionRunnerVars vars) {
+        private final void addRequest(ActionStepRestCall requestDescriptor, BiConsumer<ActionStepRestCall, JsonNode> responseConsumer, BiConsumer<ActionStepRestCall, UnirestException> failureConsumer, ActionRunnerVars vars) {
             var _if = requestDescriptor.get_if();
             if ( _if==null || vars.eval(_if, Boolean.class) ) {
                 var method = requestDescriptor.getMethod();

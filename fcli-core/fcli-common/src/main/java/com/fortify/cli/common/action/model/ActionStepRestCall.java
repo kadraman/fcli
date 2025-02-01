@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRequest extends AbstractActionStep {
+public final class ActionStepRestCall extends AbstractActionStep {
     @JsonPropertyDescription("Required string: Name to assign to the JSON response for this REST request. Can be referenced in subsequent steps using ${[name]} to access transformed data (if applicable) or ${[name]_raw} to access raw, untransformed data.")
     @JsonProperty(required = true) private String name;
     
@@ -41,7 +41,7 @@ public final class ActionStepRequest extends AbstractActionStep {
     @JsonPropertyDescription("Required SpEL template expression: Unqualified REST URI, like '/api/v3/some/api/${parameters.[name].id}' to be appended to the base URL as configured for the given 'target'.")
     @JsonProperty(required = true) private TemplateExpression uri;
     
-    @JsonPropertyDescription("Required string if no default target has been configured through defaults.requestTarget: Target on which to execute the REST request. This may be 'fod' (for actions in FoD module), 'ssc' (for actions in SSC module), or a custom request target as configured through 'addRequestTargets'.")
+    @JsonPropertyDescription("Required string if no default target has been configured through config:rest.target.default. Target on which to execute the REST request. This may be 'fod' (for actions in FoD module), 'ssc' (for actions in SSC module), or a custom request target as configured through 'rest.target'.")
     @JsonProperty(required = false) private String target;
     
     @JsonPropertyDescription("Optional map(string,SpEL template expression): Map of query parameters and corresponding values, for example 'someParam: ${[name].[property]}'.")
@@ -51,10 +51,10 @@ public final class ActionStepRequest extends AbstractActionStep {
     @JsonProperty(required = false) private TemplateExpression body;
     
     @JsonPropertyDescription("Optional enum value: Flag to indicate whether this is a 'paged' or 'simple' request. If set to 'paged' (only available for 'fod' and 'ssc' request targets for now), all pages will be automatically processed. Defaults to 'simple'.")
-    @JsonProperty(required = false, defaultValue = "simple") private ActionStepRequest.ActionStepRequestType type = ActionStepRequestType.simple;
+    @JsonProperty(required = false, defaultValue = "simple") private ActionStepRestCall.ActionStepRequestType type = ActionStepRequestType.simple;
 
     @JsonPropertyDescription("Optional object: Progress messages for various stages of request/response processing.")
-    @JsonProperty(required = false) private ActionStepRequest.ActionStepRequestPagingProgressDescriptor pagingProgress;
+    @JsonProperty(required = false) private ActionStepRestCall.ActionStepRequestPagingProgressDescriptor pagingProgress;
     
     @JsonPropertyDescription("Optional list: Steps to be executed on the overall response before executing any 'forEach' steps.")
     @JsonProperty(required = false) private List<ActionStep> onResponse;
@@ -63,7 +63,7 @@ public final class ActionStepRequest extends AbstractActionStep {
     @JsonProperty(required = false) private List<ActionStep> onFail;
 
     @JsonPropertyDescription("Optional object: Steps to be executed for each record in the REST response.")
-    @JsonProperty(required = false) private ActionStepRequest.ActionStepRequestForEachDescriptor forEach;
+    @JsonProperty(required = false) private ActionStepRestCall.ActionStepRequestForEachDescriptor forEach;
     
     /**
      * This method is invoked by {@link ActionStep#postLoad()}
@@ -73,7 +73,7 @@ public final class ActionStepRequest extends AbstractActionStep {
         Action.checkNotBlank("request name", name, this);
         Action.checkNotNull("request uri", uri, this);
         if ( StringUtils.isBlank(target) && action.getConfig()!=null ) {
-            target = action.getConfig().getDefaultRequestTarget();
+            target = action.getConfig().getRestTargetDefault();
         }
         Action.checkNotBlank("request target", target, this);
         if ( pagingProgress!=null ) {
@@ -89,7 +89,7 @@ public final class ActionStepRequest extends AbstractActionStep {
     @Reflectable @NoArgsConstructor
     @Data @EqualsAndHashCode(callSuper = true)
     public static final class ActionStepRequestForEachDescriptor extends AbstractActionStepForEach implements IActionStepIfSupplier {
-        private List<ActionStepRequest> embed;
+        private List<ActionStepRestCall> embed;
         
         protected final void _postLoad(Action action) {
             //throw new RuntimeException("test");

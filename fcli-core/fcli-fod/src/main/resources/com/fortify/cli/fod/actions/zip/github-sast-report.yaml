@@ -22,7 +22,7 @@ usage:
     https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
   
 parameters:
   - name: file
@@ -36,15 +36,15 @@ parameters:
     type: release_single
 
 steps:
-  - progress: Loading static scan summary
-  - requests:
+  - log.progress: Loading static scan summary
+  - rest.call:
       - name: staticScanSummary
         uri:  /api/v3/scans/${parameters.release.currentStaticScanId}/summary
         if:   ${parameters.release.currentStaticScanId!=null}
         onFail: 
-          - warn: Unable to load static scan summary, some scan metadata may be missing from the report
-  - progress: Processing issue data
-  - requests:
+          - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
       query:

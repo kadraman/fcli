@@ -10,7 +10,7 @@ usage:
     https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-update-types.html
 
 config:
-  defaultRequestTarget: fod
+  rest.target.default: fod
 
 parameters:
   - name: file
@@ -32,13 +32,13 @@ parameters:
     defaultValue: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
-  - progress: Loading static scan summary
-  - requests:
+  - log.progress: Loading static scan summary
+  - rest.call:
       - name: staticScanSummary
         uri:  /api/v3/scans/${parameters.release.currentStaticScanId}/summary
         if:   ${parameters.release.currentStaticScanId!=null}
-  - progress: Processing issue data
-  - requests:
+  - log.progress: Processing issue data
+  - rest.call:
     - name: issues
       uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
       query:
