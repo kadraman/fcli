@@ -21,12 +21,10 @@ parameters:
   - name: appversion
     cliAliases: av
     description: "Required application version id or <appName>:<versionName>"
-    type: appversion_single
   - name: filterset
     cliAliases: fs
     description: "Filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
     required: false
-    type: filterset    
   - name: page-size
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see --socket-timeout option on fcli ssc session login command). Default value: 100"
     required: false
@@ -41,10 +39,13 @@ parameters:
     defaultValue: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
+  - var.set:
+      av: ${#ssc.appVersion(parameters.appversion)}
+      fs: ${#ssc.filterSet(av, parameters.filterset)}
   - log.progress: Loading latest static scan
   - rest.call:
     - name: artifacts
-      uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
+      uri:  /api/v1/projectVersions/${av.id}/artifacts
       type: paged
       query:
         embed: scans
@@ -57,10 +58,10 @@ steps:
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v1/projectVersions/${parameters.appversion.id}/issues
+      uri: /api/v1/projectVersions/${av.id}/issues
       query:
         filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
-        filterset: ${parameters.filterset.guid}
+        filterset: ${fs.guid}
         limit: ${parameters['page-size']}
       pagingProgress:
         postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
@@ -88,7 +89,7 @@ formatters:
   - name: issues
     contents:
       SchemaVersion: 2018-10-08
-      id: ${parameters.appversion.id}-${issue.id}
+      id: ${av.id}-${issue.id}
       ProductArn: "arn:aws:securityhub:${parameters['aws-region']}:${parameters['aws-account']}:product/${parameters['aws-account']}/default"
       GeneratorId: "arn:aws:securityhub:${parameters['aws-region']}:${parameters['aws-account']}:product/${parameters['aws-account']}/default"
       ProductName: 'Fortify SAST'
@@ -105,22 +106,22 @@ formatters:
       Remediation:
         Recommendation:
           Text: ${#abbreviate(#htmlToText(issue.details?.recommendation), 510)}
-          Url: ${#ssc.appversionBrowserUrl(parameters.appversion)}
+          Url: ${#ssc.appversionBrowserUrl(av)}
       ProductFields:
         Product Name: 'Fortify SAST'
         'aws/securityhub/CompanyName': OpenText
         'aws/securityhub/ProductName': 'Fortify SAST'
       Resources:
         - Type: Application
-          Id: ${parameters.appversion.id}-${issue.id}
+          Id: ${av.id}-${issue.id}
           Partition: aws
           Region: ${parameters['aws-region']}
           Details:
             Other:
-                APPLICATION ID: ${parameters.appversion.project.id+''}
-                APPLICATION NAME: ${parameters.appversion.project.name}
-                APPLICATION VERSION ID: ${parameters.appversion.id+''}
-                APPLICATION VERSION NAME: ${parameters.appversion.name}
+                APPLICATION ID: ${av.project.id+''}
+                APPLICATION NAME: ${av.project.name}
+                APPLICATION VERSION ID: ${av.id+''}
+                APPLICATION VERSION NAME: ${av.name}
                 PRIMARY LOCATION:  ${issue.fullFileName}
                 LINE NUMBER: ${issue.lineNumber+''}
                 INSTANCE ID: ${issue.issueInstanceId}

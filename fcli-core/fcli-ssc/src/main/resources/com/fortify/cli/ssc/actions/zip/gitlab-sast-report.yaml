@@ -19,22 +19,23 @@ parameters:
   - name: appversion
     cliAliases: av
     description: "Required application version id or <appName>:<versionName>"
-    type: appversion_single
   - name: filterset
     cliAliases: fs
     description: "Filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
     required: false
-    type: filterset
   - name: page-size
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see --socket-timeout option on fcli ssc session login command). Default value: 100"
     required: false
     defaultValue: "100"
   
 steps:
+  - var.set:
+      av: ${#ssc.appVersion(parameters.appversion)}
+      fs: ${#ssc.filterSet(av, parameters.filterset)}
   - log.progress: Loading latest static scan
   - rest.call:
     - name: artifacts
-      uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
+      uri:  /api/v1/projectVersions/${av.id}/artifacts
       type: paged
       query:
         embed: scans
@@ -47,10 +48,10 @@ steps:
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v1/projectVersions/${parameters.appversion.id}/issues
+      uri: /api/v1/projectVersions/${av.id}/issues
       query:
         filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
-        filterset: ${parameters.filterset.guid}
+        filterset: ${fs.guid}
         limit: ${parameters['page-size']}
       pagingProgress:
         postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
@@ -114,10 +115,10 @@ formatters:
         - name:  "Instance id: ${issue.issueInstanceId}"
           type:  issueInstanceId
           value: ${issue.issueInstanceId}
-          url:   ${#ssc.issueBrowserUrl(issue,parameters.filterset)}
+          url:   ${#ssc.issueBrowserUrl(issue,fs)}
       links:
         - name: Additional issue details, including analysis trace, in Software Security Center
-          url:  ${#ssc.issueBrowserUrl(issue,parameters.filterset)}
+          url:  ${#ssc.issueBrowserUrl(issue,fs)}
         - name: SecureCodeWarrior Training
           url:  ${issue.details?.appSecTrainingUrl}
       location:

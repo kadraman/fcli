@@ -12,7 +12,6 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -38,12 +37,9 @@ public final class ActionParameter implements IActionElement {
     @JsonPropertyDescription("Optional string: Comma-separated CLI option aliases. This will allow the action to accept CLI options named `--[alias]` or `-[alias]` for single-letter aliases. Aliases cannot be referenced in SpEL expressions.")
     @JsonProperty(required = false) private String cliAliases;
     
-    @JsonPropertyDescription("Optional string: Action parameter type. Supported types depends on the fcli module (SSC/FoD) from which the action is being run. See built-in actions for examples of supported types.")
+    @JsonPropertyDescription("Optional string: Action parameter type: string (default), boolean, int, long, double, float, or array.")
     @JsonProperty(required = false) private String type;
-    
-    @JsonPropertyDescription("Optional map(string,SpEL template expression): Action parameter type parameters to allow for additional configuration of the type converter configured through 'type'.")
-    @JsonProperty(required = false) private Map<String, TemplateExpression> typeParameters;
-    
+        
     @JsonPropertyDescription("Optional SpEL template expression: Default value for this action parameter if no value is specified by the user.")
     @JsonProperty(required = false) private TemplateExpression defaultValue;
     

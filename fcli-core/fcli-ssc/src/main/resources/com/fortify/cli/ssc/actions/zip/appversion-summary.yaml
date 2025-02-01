@@ -21,7 +21,6 @@ parameters:
   - name: appversion
     cliAliases: av
     description: "Required application version id or <appName>:<versionName>"
-    type: appversion_single
   - name: filtersets
     cliAliases: fs
     description: "Comma-separated list of filter set names, guid's or 'default' to display in the summary. If not specified, all filter sets will be included."
@@ -30,6 +29,7 @@ parameters:
 steps:
   # Set output date format and convert filtersets parameter to array
   - var.set:
+      av: ${#ssc.appVersion(parameters.appversion)}
       dateFmt: YYYY-MM-dd HH:mm
       filtersetsArray: ${parameters.filtersets?.split(',')}
       issueStateNames: ${{'NEW', 'REINTRODUCED', 'REMOVED', 'UPDATED'}}
@@ -37,13 +37,13 @@ steps:
   - log.progress: Loading issue selector sets
   - rest.call:
     - name: issueSelectorSet
-      uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueSelectorSet?fields=filterBySet
+      uri:  /api/v1/projectVersions/${av.id}/issueSelectorSet?fields=filterBySet
   - var.set:
       analysisTypes: ${issueSelectorSet.filterBySet.^[displayName=='Analysis Type'].selectorOptions}
   - rest.call:
     - if: ${analysisTypes!=null && analysisTypes.size()>0}
       name: artifactsResponse
-      uri:  /api/v1/projectVersions/${parameters.appversion.id}/artifacts
+      uri:  /api/v1/projectVersions/${av.id}/artifacts
       type: paged
       query:
         embed: scans
@@ -62,9 +62,10 @@ steps:
                     analyzedScans..: ${scan}
                     
   # Collect SSC filter set data, together with issue counts by analysis type & folder
+  # TODO Can we use ${#ssc.filterSet(av, filtersetTitleOrId)} instead?
   - rest.call:
     - name: filterSetsResponse
-      uri:  /api/v1/projectVersions/${parameters.appversion.id}/filterSets
+      uri:  /api/v1/projectVersions/${av.id}/filterSets
       type: paged
       forEach:
         # Process each filter set if included by filtersets parameter value
@@ -83,7 +84,7 @@ steps:
                 # Load SSC issue counts by folder for current filter set and analysis type
                 - rest.call:
                   - name: issueGroupsByFolder
-                    uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueGroups
+                    uri:  /api/v1/projectVersions/${av.id}/issueGroups
                     query:
                       qm: issues
                       groupingtype: FOLDER
@@ -98,7 +99,7 @@ steps:
                             folder: ${filterset.title+':'+analysisType.displayName+':'+issueGroupFolder.id}
                             issueCountsByFolder.${folder}: ${issueGroupFolder.visibleCount}
                   - name: issueGroupsByState
-                    uri:  /api/v1/projectVersions/${parameters.appversion.id}/issueGroups
+                    uri:  /api/v1/projectVersions/${av.id}/issueGroups
                     query:
                       qm: issues
                       groupingtype: 11111111-1111-1111-1111-111111111167
@@ -210,7 +211,7 @@ formatters:
     contents: |
       # SSC Application Version Summary
       
-      ## [${parameters.appversion.project.name} - ${parameters.appversion.name}](${#ssc.appversionBrowserUrl(parameters.appversion,null)})
+      ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,null)})
       
       Summary generated on: ${#formatDateTime(dateFmt)}
       

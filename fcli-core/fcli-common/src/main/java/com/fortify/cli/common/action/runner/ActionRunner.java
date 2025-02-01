@@ -40,7 +40,7 @@ public class ActionRunner implements AutoCloseable {
     
     public final Supplier<Integer> _run(String[] args) {
         try ( var progressWriter = createProgressWriter() ) {
-            var parameterValues = getParameterValues(args, progressWriter);
+            var parameterValues = getParameterValues(args);
             var ctx = createContext(progressWriter, parameterValues);
             initializeCheckStatuses(ctx);
             progressWriter.writeProgress("Processing action parameters");
@@ -82,10 +82,9 @@ public class ActionRunner implements AutoCloseable {
                 .build();
     }
 
-    private ObjectNode getParameterValues(String[] args, IProgressWriterI18n progressWriter) {
+    private ObjectNode getParameterValues(String[] args) {
         var parameterValues = ActionParameterProcessor.builder()
                 .config(config)
-                .progressWriter(progressWriter)
                 .spelEvaluator(config.getSpelEvaluator())
                 .build()
                 .parseParameterValues(args);

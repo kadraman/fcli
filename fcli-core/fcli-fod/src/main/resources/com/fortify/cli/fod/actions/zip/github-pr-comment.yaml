@@ -38,7 +38,6 @@ parameters:
   - name: release
     cliAliases: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-    type: release_single
   - name: scan-type
     cliAliases: t
     description: "Scan type for which to list vulnerabilities. Default value: Static"
@@ -81,10 +80,12 @@ steps:
         headers:
           Authorization: Bearer ${parameters['github-token']}
           'X-GitHub-Api-Version': '2022-11-28'
+  - var.set:
+      rel: ${#fod.release(parameters.release)}
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
+      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
       query:
         includeFixed: true
         filters: scantype:${parameters['scan-type']}
@@ -95,7 +96,7 @@ steps:
         if: ${issue.status!='Existing'}
         embed:
           - name: details
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
         do:
           - if: ${issue.status=='Fix Validated'}
             var.set:
@@ -137,7 +138,7 @@ formatters:
     contents: |
       ## Fortify vulnerability summary
       
-      Any issues listed below are based on comparing the latest scan results against the previous scan results in FoD release [${parameters.release.applicationName}${#isNotBlank(parameters.release.microserviceNae)?'- '+parameters.release.microserviceName:''} - ${parameters.release.releaseName}](${#fod.releaseBrowserUrl(parameters.release)}). This is for informational purposes only and, depending on workflow, may not be an accurate representation of what issues will be introduced into or removed from the target branch when merging this PR.   
+      Any issues listed below are based on comparing the latest scan results against the previous scan results in FoD release [${rel.applicationName}${#isNotBlank(rel.microserviceNae)?'- '+rel.microserviceName:''} - ${rel.releaseName}](${#fod.releaseBrowserUrl(rel)}). This is for informational purposes only and, depending on workflow, may not be an accurate representation of what issues will be introduced into or removed from the target branch when merging this PR.   
       
       ### New Issues
       

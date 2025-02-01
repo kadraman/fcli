@@ -33,20 +33,21 @@ parameters:
   - name: release
     cliAliases: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-    type: release_single
 
 steps:
+  - var.set:
+      rel: ${#fod.release(parameters.release)}
   - log.progress: Loading static scan summary
   - rest.call:
       - name: staticScanSummary
-        uri:  /api/v3/scans/${parameters.release.currentStaticScanId}/summary
-        if:   ${parameters.release.currentStaticScanId!=null}
+        uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
+        if:   ${rel.currentStaticScanId!=null}
         onFail: 
           - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
+      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
       query:
         filters: scantype:Static
       pagingProgress:
@@ -58,11 +59,11 @@ steps:
         name: issue
         embed:
           - name: details
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
           - name: recommendations
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
           - name: traces
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/traces 
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
         do:
           - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
             var.set:
@@ -91,10 +92,10 @@ formatters:
               rules: ${rules?:{}}
               properties:
                 copyright: ${#copyright()}
-                applicationName: ${parameters.release.applicationName}
-                applicationId: ${parameters.release.applicationId}
-                releaseName: ${parameters.release.releaseName}
-                releaseId: ${parameters.release.releaseId}
+                applicationName: ${rel.applicationName}
+                applicationId: ${rel.applicationId}
+                releaseName: ${rel.releaseName}
+                releaseId: ${rel.releaseId}
           results: ${results?:{}}
      
   - name: rules

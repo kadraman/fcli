@@ -15,14 +15,11 @@ package com.fortify.cli.common.action.runner;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.action.model.Action;
-import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ParameterTypeConverterArgs;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.progress.helper.IProgressWriterFactory;
@@ -51,8 +48,6 @@ public class ActionRunnerConfig {
     @NonNull private final Action action;
     /** Callback to handle validation errors */
     @NonNull private final Function<OptionsParseResult, RuntimeException> onValidationErrors;
-    /** Custom action parameter converters */
-    @Singular private final Map<String, BiFunction<String, ParameterTypeConverterArgs, JsonNode>> parameterConverters;
     /** Request helpers */
     @Getter(AccessLevel.PACKAGE) @Singular private final Map<String, IActionRequestHelper> requestHelpers;
     /** SpEL configuration functions for configuring the {@link ISpelEvaluator} instances provided by

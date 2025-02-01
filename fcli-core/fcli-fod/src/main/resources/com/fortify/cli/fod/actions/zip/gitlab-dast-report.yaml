@@ -19,23 +19,24 @@ parameters:
   - name: release
     cliAliases: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-    type: release_single
   
 steps:
+  - var.set:
+      rel: ${#fod.release(parameters.release)}
   - log.progress: Loading dynamic scan summary
   - rest.call:
       - name:   dynamicScanSummary
-        uri:    /api/v3/scans/${parameters.release.currentDynamicScanId}/summary
-        if:     ${parameters.release.currentDynamicScanId!=null}
+        uri:    /api/v3/scans/${rel.currentDynamicScanId}/summary
+        if:     ${rel.currentDynamicScanId!=null}
       - name:   siteTree
-        uri:    /api/v3/scans/${parameters.release.currentDynamicScanId}/site-tree
-        if:     ${parameters.release.currentDynamicScanId!=null}
+        uri:    /api/v3/scans/${rel.currentDynamicScanId}/site-tree
+        if:     ${rel.currentDynamicScanId!=null}
         onFail: 
           - log.debug: "Site tree unavailable: ${exception.getMessage()}"
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
+      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
       query:
         filters: scantype:Dynamic
       pagingProgress:
@@ -44,11 +45,11 @@ steps:
         name: issue
         embed:
           - name: details
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
           - name: recommendations
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
           - name: request_response
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/request-response 
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/request-response 
         do:
           - var.set:
               vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
@@ -68,7 +69,7 @@ formatters:
       scan:
         start_time: ${#formatDateTime("yyyy-MM-dd'T'HH:mm:ss", dynamicScanSummary?.startedDateTime?:'1970-01-01T00:00:00')}
         end_time: ${#formatDateTime("yyyy-MM-dd'T'HH:mm:ss", dynamicScanSummary?.completedDateTime?:'1970-01-01T00:00:00')}
-        status: ${parameters.release.dynamicAnalysisStatusTypeId==2?'success':'failure'}
+        status: ${rel.dynamicAnalysisStatusTypeId==2?'success':'failure'}
         type: dast
         analyzer:
           id: FoD-DAST

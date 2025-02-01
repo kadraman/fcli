@@ -17,10 +17,11 @@ parameters:
   - name: release
     cliAliases: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-    type: release_single
   
 steps:
+  - var.set:
+      rel: ${#fod.release(parameters.release)}
   - check:
     - displayName: FoD Security Policy must Pass
-      passIf:      ${parameters.release.isPassed}
+      passIf:      ${rel.isPassed}
       

@@ -24,13 +24,14 @@ parameters:
   - name: release
     cliAliases: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-    type: release_single
   
 steps:
+  - var.set:
+      rel: ${#fod.release(parameters.release)}
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
-      uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities?limit=50
+      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
       query:
         filters: scantype:Static
       pagingProgress:
@@ -39,7 +40,7 @@ steps:
         name: issue
         embed:
           - name: details
-            uri: /api/v3/releases/${parameters.release.releaseId}/vulnerabilities/${issue.vulnId}/details
+            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
         do:
           - var.set:
               annotations..: ${#action.fmt('annotations',#root)}
@@ -59,45 +60,45 @@ formatters:
     contents:
       # uuid:
       title: Fortify Scan Report
-      details: Fortify on Demand detected ${parameters.release.issueCount} ${parameters.release.issueCount==1 ? 'vulnerability':'vulnerabilities'}
+      details: Fortify on Demand detected ${rel.issueCount} ${rel.issueCount==1 ? 'vulnerability':'vulnerabilities'}
       #external_id:
       reporter: Fortify on Demand
-      link: ${#fod.releaseBrowserUrl(parameters.release)}
+      link: ${#fod.releaseBrowserUrl(rel)}
       # remote_link_enabled:
       logo_url: https://bitbucket.org/workspaces/fortifysoftware/avatar
       report_type: SECURITY
-      result: ${parameters.release.isPassed ? 'PASSED':'FAILED'}
+      result: ${rel.isPassed ? 'PASSED':'FAILED'}
       data:
         - type: DATE
           title: Last Static Scan # Apparently BB is very strict on how TZ is presented, so we always provide UTC date/time
-          value: ${#formatDateTimewithZoneIdAsUTC("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",parameters.release.staticScanDate?:'1970-01-01T00:00:00',parameters.release.serverZoneId)}
+          value: ${#formatDateTimewithZoneIdAsUTC("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",rel.staticScanDate?:'1970-01-01T00:00:00',rel.serverZoneId)}
         - type: NUMBER
           title: Rating
-          value: ${parameters.release.rating}
+          value: ${rel.rating}
         - type: NUMBER
           title: Critical (SAST)
-          value: ${parameters.release.staticCritical}
+          value: ${rel.staticCritical}
         - type: NUMBER
           title: Critical (Overall)
-          value: ${parameters.release.critical}
+          value: ${rel.critical}
         - type: NUMBER
           title: High (SAST)
-          value: ${parameters.release.staticHigh}
+          value: ${rel.staticHigh}
         - type: NUMBER
           title: High (Overall)
-          value: ${parameters.release.high}
+          value: ${rel.high}
         - type: NUMBER
           title: Medium (SAST)
-          value: ${parameters.release.staticMedium}
+          value: ${rel.staticMedium}
         - type: NUMBER
           title: Medium (Overall)
-          value: ${parameters.release.medium}
+          value: ${rel.medium}
         - type: NUMBER
           title: Low (SAST)
-          value: ${parameters.release.staticLow}
+          value: ${rel.staticLow}
         - type: NUMBER
           title: Low (Overall)
-          value: ${parameters.release.low}
+          value: ${rel.low}
 
   - name: annotations
     contents:

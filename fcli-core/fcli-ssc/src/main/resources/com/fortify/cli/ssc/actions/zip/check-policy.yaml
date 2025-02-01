@@ -14,22 +14,24 @@ parameters:
   - name: appversion
     cliAliases: av
     description: "Required application version id or <appName>:<versionName>"
-    type: appversion_single
   
 steps:
+  - var.set:
+      av: ${#ssc.appVersion(parameters.appversion)}
+      fs: ${#ssc.filterSet(av, parameters.filterset)}
   - run.fcli:
     - name: countsByFolder
-      args: ssc issue count --av ${parameters.appversion.id} --by FOLDER
+      args: ssc issue count --av ${av.id} --by FOLDER
   - run.fcli:
     - name: countsByNewIssue
-      args: ssc issue count --av ${parameters.appversion.id} --by "New Issue"
+      args: ssc issue count --av ${av.id} --by "New Issue"
   - check:
     - displayName: No critical issues allowed
       failIf:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
     - displayName: No new issues allowed
       failIf:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
   - run.fcli:
-    - args: ssc issue ls --av ${parameters.appversion.id}
+    - args: ssc issue ls --av ${av.id}
       forEach:
         name: issue
         do:

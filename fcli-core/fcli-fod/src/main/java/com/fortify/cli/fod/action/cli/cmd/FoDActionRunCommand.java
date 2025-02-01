@@ -14,13 +14,11 @@ package com.fortify.cli.fod.action.cli.cmd;
 
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
-import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ParameterTypeConverterArgs;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
@@ -80,7 +78,6 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected void configure(ActionRunnerConfigBuilder configBuilder) {
        configBuilder
-            .parameterConverter("release_single", this::loadRelease)
             .requestHelper("fod", new FoDDataExtractRequestHelper(unirestInstanceSupplier::getUnirestInstance, FoDProductHelper.INSTANCE))
             .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
     }
@@ -92,7 +89,12 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
     @RequiredArgsConstructor @Reflectable
     public final class FoDSpelFunctions {
         private final ActionRunnerContext ctx;
-        
+        public final ObjectNode release(String nameOrId) {
+            ctx.getProgressWriter().writeProgress("Loading release %s", nameOrId);
+            var result = FoDReleaseHelper.getReleaseDescriptor(unirestInstanceSupplier.getUnirestInstance(), nameOrId, ":", true);
+            ctx.getProgressWriter().writeProgress("Loaded release %s", result.getQualifiedName());
+            return result.asObjectNode();
+        }
         public String issueBrowserUrl(ObjectNode issue) {
             var deepLinkExpression = baseUrl()
                     +"/redirect/Issues/${vulnId}";
@@ -111,13 +113,6 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
         private String baseUrl() {
             return FoDProductHelper.INSTANCE.getBrowserUrl(unirestInstanceSupplier.getSessionDescriptor().getUrlConfig().getUrl());
         }
-    }
-    
-    private final JsonNode loadRelease(String nameOrId, ParameterTypeConverterArgs args) {
-        args.getProgressWriter().writeProgress("Loading release %s", nameOrId);
-        var result = FoDReleaseHelper.getReleaseDescriptor(unirestInstanceSupplier.getUnirestInstance(), nameOrId, ":", true);
-        args.getProgressWriter().writeProgress("Loaded release %s", result.getQualifiedName());
-        return result.asJsonNode();
     }
     
     private static final class FoDDataExtractRequestHelper extends BasicActionRequestHelper {
