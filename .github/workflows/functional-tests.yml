@@ -133,7 +133,7 @@ jobs:
           # require an SSC session.
           java -jar fcli-ftest.jar -Dft.fcli=./fcli -Dft.run=$type \
             -Dft.fod.url=$fod_url -Dft.fod.tenant=$fod_tenant -Dft.fod.user=$fod_user -Dft.fod.password=$fod_pwd \
-            -Dft.ssc.url=$ssc_url -Dft.ssc.user=$ssc_user -Dft.ssc.password=$ssc_pwd -Dft.sc-sast.client-auth-token=$scsast_token
+            -Dft.ssc.url=$ssc_url -Dft.ssc.user=$ssc_user -Dft.ssc.password=$ssc_pwd -Dft.ssc.client-auth-token=$scsast_token
         env:
           type: ${{ matrix.type }}
           fod_url: ${{ secrets.FCLI_FT_FOD_URL }}

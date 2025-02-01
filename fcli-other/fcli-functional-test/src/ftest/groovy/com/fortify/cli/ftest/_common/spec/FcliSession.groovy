@@ -126,7 +126,7 @@ import com.fortify.cli.ftest._common.Input
             
             @Override
             public List<String> loginCredentialOptions() {
-                options("user", "password")+options("token")+options("client-auth-token")
+                options("user", "password", "client-auth-token")+options("token", "client-auth-token")
             }
     
             @Override
@@ -137,7 +137,7 @@ import com.fortify.cli.ftest._common.Input
             
             @Override
             public List<String> getMaskedProperties() {
-                ["url", "user", "password", "token", "ci-token"]
+                ["url", "user", "password", "token", "client-auth-token"]
             }
             
         }
