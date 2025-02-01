@@ -35,7 +35,7 @@ class FoDBuiltinActionRunSpec extends FcliBaseSpec {
     def "runWithOutputFile"() {
         def random = System.currentTimeMillis()
         def outputFile = "${actionOutputDir}/output-${random}"
-        def args = "fod action run ${action} -f ${outputFile} --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
+        def args = "fod action run ${action} --progress=none -f ${outputFile} --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
         when:
             def result = Fcli.run(args)
         then:
@@ -57,7 +57,7 @@ class FoDBuiltinActionRunSpec extends FcliBaseSpec {
         def random = System.currentTimeMillis()
         def reportFile = "${actionOutputDir}/bb-report-${random}"
         def annotationsFile = "${actionOutputDir}/bb-annotations-${random}"
-        def args = "fod action run bitbucket-sast-report -r ${reportFile} -a ${annotationsFile} --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
+        def args = "fod action run bitbucket-sast-report --progress=none -r ${reportFile} -a ${annotationsFile} --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
         when:
             def result = Fcli.run(args)
         then:
@@ -69,7 +69,7 @@ class FoDBuiltinActionRunSpec extends FcliBaseSpec {
     }
     
     def "runCheckPolicy"() {
-        def args = "fod action run check-policy --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
+        def args = "fod action run check-policy --progress=none --rel ${eightBallReleaseSupplier.release.get("releaseId")}"
         when:
             def result = Fcli.run(args, {})
         then:
