@@ -106,6 +106,11 @@ public final class ActionStepsProcessor {
         if ( list!=null ) { list.forEach(value->processStep(value, consumer)); }
     }
     
+    private <N,T> void processStepEntries(Supplier<Map<N,T>> supplier, BiConsumer<N,T> consumer) {
+        var map = supplier.get();
+        if ( map!=null ) { map.entrySet().forEach(e->processStep(e.getKey(), e.getValue(), consumer)); }
+    }
+    
     private <T> void processStepSupplier(Supplier<T> supplier, Consumer<T> consumer) {
         processStep(supplier.get(), consumer);
     }
@@ -119,6 +124,30 @@ public final class ActionStepsProcessor {
             }
             try {
                 consumer.accept(value);
+            } catch ( Exception e ) {
+                if ( e instanceof StepProcessingException ) {
+                    throw e;
+                } else {
+                    valueString = getStepAsString(valueString, value);
+                    throw new StepProcessingException("Error processing:\n"+valueString, e);
+                }
+            }
+            if ( LOG.isDebugEnabled() ) {
+                valueString = getStepAsString(valueString, value);
+                LOG.debug("End processing:\n"+valueString);
+            }
+        }
+    }
+    
+    private <N,T> void processStep(N name, T value, BiConsumer<N,T> consumer) {
+        if ( _if(value) ) {
+            String valueString = null;
+            if ( LOG.isDebugEnabled() ) {
+                valueString = getStepAsString(valueString, value);
+                LOG.debug("Start processing:\n"+valueString);
+            }
+            try {
+                consumer.accept(name, value);
             } catch ( Exception e ) {
                 if ( e instanceof StepProcessingException ) {
                     throw e;
@@ -340,12 +369,11 @@ public final class ActionStepsProcessor {
         ctx.getCheckStatuses().compute(displayName, (name,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
     }
     
-    private void processRestTargetsStep(ActionStepRestTarget descriptor) {
-        ctx.addRequestHelper(descriptor.getName(), createBasicRequestHelper(descriptor));
+    private void processRestTargetsStep(String name, ActionStepRestTarget descriptor) {
+        ctx.addRequestHelper(name, createBasicRequestHelper(name, descriptor));
     }
     
-    private IActionRequestHelper createBasicRequestHelper(ActionStepRestTarget descriptor) {
-        var name = descriptor.getName();
+    private IActionRequestHelper createBasicRequestHelper(String name, ActionStepRestTarget descriptor) {
         var baseUrl = vars.eval(descriptor.getBaseUrl(), String.class);
         var headers = vars.eval(descriptor.getHeaders(), String.class);
         IUnirestInstanceSupplier unirestInstanceSupplier = () -> GenericUnirestFactory.getUnirestInstance(name, u->{

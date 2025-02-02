@@ -80,7 +80,9 @@ public class Action implements IActionElement {
     @JsonPropertyDescription("""
         Optional map: CLI options accepted by this action. Map keys define option names, values define option \
         definitions. Option values can be referenced by action steps through the 'cli' variable, for example \
-        ${cli.myOption} or ${cli['my-option']}.   
+        ${cli.myOption} or ${cli['my-option']}. Users can specify '--optionName value' on the 'fcli action * run' \
+        command line, or, if an alias is defined, through '--alias value'. For single-letter option names/aliases, \
+        the CLI option will be preceded by just a single dash, for example '-f' if the option name/alias is 'f'.
         """)
     @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOptions> cliOptions;
     

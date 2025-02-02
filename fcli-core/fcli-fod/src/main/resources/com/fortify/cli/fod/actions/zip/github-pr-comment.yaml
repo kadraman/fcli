@@ -75,7 +75,7 @@ cli.options:
     
 steps:
   - rest.target:
-      - name: github
+      github:
         baseUrl: ${cli['github-api-url']}
         headers:
           Authorization: Bearer ${cli['github-token']}

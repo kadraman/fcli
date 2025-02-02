@@ -14,6 +14,7 @@ package com.fortify.cli.common.action.model;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -55,17 +56,20 @@ public final class ActionStep extends AbstractActionStep {
         var4.prop1: ...
         var4..: ...
         
-        Due to this syntax, variable names cannot contain dots like 'var.1', as '1' would \
-        be interpreted as a property on the 'var' variable. Property names may contain dots \
+        Due to this syntax, variable names cannot contain dots like 'var.1', as '1' would be \
+        interpreted as a property name on the 'var' variable. Property names may contain dots \
         though, so 'var5.x.y' would be intepreted as property name 'x.y' on 'var5'.
         
         Within a single 'var.set' or 'var.fmt' step, variables are processed in the order that \
-        they are declared, allowing earlier declared variables to be referenced by variables \
-        that are declared later.
+        they are declared, allowing earlier declared variables to be referenced by variables or \
+        formatters that are declared later.
         """;
     
-    @JsonPropertyDescription("Add REST request targets for use in 'rest.request' steps.")
-    @JsonProperty(value = "rest.target", required = false) private List<ActionStepRestTarget> restTargets;
+    @JsonPropertyDescription("""
+        Add REST request targets for use in 'rest.request' steps. This step takes a map, with \
+        keys defining REST target names, and values defining the REST target definition. 
+        """)
+    @JsonProperty(value = "rest.target", required = false) private Map<String, ActionStepRestTarget> restTargets;
     
     @JsonPropertyDescription("Execute one or more REST requests.")
     @JsonProperty(value = "rest.call", required = false) private List<ActionStepRestCall> restCalls;

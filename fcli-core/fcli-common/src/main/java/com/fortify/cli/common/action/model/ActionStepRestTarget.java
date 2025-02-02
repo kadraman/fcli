@@ -28,9 +28,6 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 public final class ActionStepRestTarget implements IActionElement {
-    @JsonPropertyDescription("Required string: Request target name, referenceable from 'request' steps.")
-    @JsonProperty(required = true) private String name;
-    
     @JsonPropertyDescription("Required SpEL template expression: Base URL to use for REST requests to this request target.")
     @JsonProperty(required = true) private TemplateExpression baseUrl;
     
@@ -41,7 +38,6 @@ public final class ActionStepRestTarget implements IActionElement {
     // TODO ? Add proxy support ?
     
     public final void postLoad(Action action) {
-        Action.checkNotBlank("request target name", name, this);
         Action.checkNotNull("request target base URL", baseUrl, this);
     }
 }
