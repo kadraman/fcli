@@ -20,7 +20,6 @@ import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
 import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor;
 import com.fortify.cli.common.action.runner.processor.ActionStepsProcessor;
-import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.progress.helper.ProgressWriterType;
 
@@ -31,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 //      For example, each of these classes could have a (static?) 
 //      process(context, vars, action element) method
 @RequiredArgsConstructor
-public class ActionRunner implements AutoCloseable {
+public class ActionRunner {
     private final ActionRunnerConfig config;
     
     public final Integer run(String[] args) {
@@ -41,27 +40,28 @@ public class ActionRunner implements AutoCloseable {
     public final Supplier<Integer> _run(String[] args) {
         try ( var progressWriter = createProgressWriter() ) {
             var parameterValues = getParameterValues(args);
-            var ctx = createContext(progressWriter, parameterValues);
-            initializeCheckStatuses(ctx);
-            progressWriter.writeProgress("Processing action parameters");
-            ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
-            progressWriter.writeProgress("Processing action steps");
-            new ActionStepsProcessor(ctx, vars).processSteps(config.getAction().getSteps());
-            progressWriter.writeProgress("Action processing finished");
-         
-            return ()->{
-                ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);
-                if ( !ctx.getCheckStatuses().isEmpty() ) {
-                    ctx.getCheckStatuses().entrySet().forEach(
-                        e-> printCheckResult(ctx, e.getValue(), e.getKey()));
-                    var overallStatus = CheckStatus.combine(ctx.getCheckStatuses().values());
-                    ctx.getStdout().println("Status: "+overallStatus);
-                    if ( ctx.getExitCode()==0 && overallStatus==CheckStatus.FAIL ) {
-                        ctx.setExitCode(100);
+            try ( var ctx = createContext(progressWriter, parameterValues) ) {
+                initializeCheckStatuses(ctx);
+                progressWriter.writeProgress("Processing action parameters");
+                ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
+                progressWriter.writeProgress("Processing action steps");
+                new ActionStepsProcessor(ctx, vars).processSteps(config.getAction().getSteps());
+                progressWriter.writeProgress("Action processing finished");
+             
+                return ()->{
+                    ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);
+                    if ( !ctx.getCheckStatuses().isEmpty() ) {
+                        ctx.getCheckStatuses().entrySet().forEach(
+                            e-> printCheckResult(ctx, e.getValue(), e.getKey()));
+                        var overallStatus = CheckStatus.combine(ctx.getCheckStatuses().values());
+                        ctx.getStdout().println("Status: "+overallStatus);
+                        if ( ctx.getExitCode()==0 && overallStatus==CheckStatus.FAIL ) {
+                            ctx.setExitCode(100);
+                        }
                     }
-                }
-                return ctx.getExitCode();
-            };
+                    return ctx.getExitCode();
+                };
+            }
         }
     }
 
@@ -79,7 +79,7 @@ public class ActionRunner implements AutoCloseable {
                 .config(config)
                 .progressWriter(progressWriter)
                 .parameterValues(parameterValues)
-                .build();
+                .build().initialize();
     }
 
     private ObjectNode getParameterValues(String[] args) {
@@ -111,9 +111,5 @@ public class ActionRunner implements AutoCloseable {
             out.println(String.format("%s: %s", status, displayName));
             //out.flush();
         }
-    }
-
-    public final void close() {
-        config.getRequestHelpers().values().forEach(IActionRequestHelper::close);
     }
 }

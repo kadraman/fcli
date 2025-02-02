@@ -45,7 +45,7 @@ import lombok.Setter;
  * @author Ruud Senden
  */
 @Getter @Builder
-public class ActionRunnerContext {
+public class ActionRunnerContext implements AutoCloseable {
     /** Jackson {@link ObjectMapper} used for various JSON-related operations */
     private final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
     /** Jackson {@link ObjectMapper} used for formatting steps in logging/exception messages */
@@ -68,16 +68,15 @@ public class ActionRunnerContext {
     @Setter @Builder.Default private int exitCode = 0;
     @Setter @Builder.Default boolean exitRequested = false;
     
-    /** Modifiable map with Request helpers, either configured on {@link #config} or added during action execution */
-    @Getter(value=AccessLevel.PRIVATE, lazy=true) private final Map<String, IActionRequestHelper> requestHelpers = initializeRequestHelpers();
+    /** Modifiable map with Request helpers; may be added during context configuration phase or action execution */
+    private final Map<String, IActionRequestHelper> requestHelpers = new HashMap<>();
     /** Factory for creating the single {@link ISpelEvaluator} instance. By using a factory, we can
      *  check for illegal access to the {@link ISpelEvaluator} during configuration phase. */
     @Getter(AccessLevel.NONE) private final ActionConfigSpelEvaluatorFactory spelEvaluatorFactory = new ActionConfigSpelEvaluatorFactory(this);
     
-    private final Map<String, IActionRequestHelper> initializeRequestHelpers() {
-        var result = new HashMap<String, IActionRequestHelper>();
-        result.putAll(config.getRequestHelpers());
-        return result;
+    public final ActionRunnerContext initialize() {
+        config.getActionContextConfigurers().forEach(configurer->configurer.accept(this));
+        return this;
     }
     
     public final void addRequestHelper(String name, IActionRequestHelper requestHelper) {
@@ -140,5 +139,10 @@ public class ActionRunnerContext {
         public final JsonNode fmt(String formatterName, JsonNode input) {
             return ActionRunnerHelper.fmt(ctx, formatterName, input);
         }
+    }
+
+    @Override
+    public void close() {
+        getRequestHelpers().values().forEach(IActionRequestHelper::close);
     }
 }

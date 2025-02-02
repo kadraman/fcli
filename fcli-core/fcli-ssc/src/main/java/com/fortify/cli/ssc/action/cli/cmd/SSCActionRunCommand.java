@@ -82,10 +82,14 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected void configure(ActionRunnerConfigBuilder configBuilder) {
        configBuilder
-            .requestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getSscUnirestInstance, SSCProductHelper.INSTANCE))
-            .requestHelper("sc-sast", new SSCActionRequestHelper(unirestInstanceSupplier::getScSastUnirestInstance, SCSastProductHelper.INSTANCE))
-            .requestHelper("sc-dast", new SSCActionRequestHelper(unirestInstanceSupplier::getScDastUnirestInstance, SCDastProductHelper.INSTANCE))
+            .actionContextConfigurer(this::configureActionContext)
             .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
+    }
+    
+    protected void configureActionContext(ActionRunnerContext ctx) {
+        ctx.addRequestHelper("ssc", new SSCActionRequestHelper(unirestInstanceSupplier::getSscUnirestInstance, SSCProductHelper.INSTANCE));
+        ctx.addRequestHelper("sc-sast", new SSCActionRequestHelper(unirestInstanceSupplier::getScSastUnirestInstance, SCSastProductHelper.INSTANCE));
+        ctx.addRequestHelper("sc-dast", new SSCActionRequestHelper(unirestInstanceSupplier::getScDastUnirestInstance, SCDastProductHelper.INSTANCE));
     }
     
     protected void configureSpelContext(ActionRunnerContext actionRunnerContext, SimpleEvaluationContext spelContext) {

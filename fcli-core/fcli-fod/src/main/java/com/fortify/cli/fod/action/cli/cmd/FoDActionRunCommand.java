@@ -78,8 +78,12 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected void configure(ActionRunnerConfigBuilder configBuilder) {
        configBuilder
-            .requestHelper("fod", new FoDDataExtractRequestHelper(unirestInstanceSupplier::getUnirestInstance, FoDProductHelper.INSTANCE))
+            .actionContextConfigurer(this::configureActionContext)
             .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
+    }
+    
+    protected void configureActionContext(ActionRunnerContext ctx) {
+        ctx.addRequestHelper("fod", new FoDDataExtractRequestHelper(unirestInstanceSupplier::getUnirestInstance, FoDProductHelper.INSTANCE));
     }
     
     protected void configureSpelContext(ActionRunnerContext actionRunnerContext, SimpleEvaluationContext spelContext) {

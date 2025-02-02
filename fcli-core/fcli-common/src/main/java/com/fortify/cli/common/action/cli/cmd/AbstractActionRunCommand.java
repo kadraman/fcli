@@ -66,9 +66,7 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
             config = configBuilder.build();
             progressWriter.writeProgress("Executing action %s", config.getAction().getMetadata().getName());
         }
-        try ( var actionRunner = new ActionRunner(config) ) {
-            return run(config, actionRunner);
-        }
+        return run(config, new ActionRunner(config));
     }
 
     private final CommandLine getRootCommandLine() {

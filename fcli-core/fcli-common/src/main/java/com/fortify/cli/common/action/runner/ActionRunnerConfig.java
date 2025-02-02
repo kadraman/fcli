@@ -13,14 +13,13 @@
 package com.fortify.cli.common.action.runner;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import com.fortify.cli.common.action.model.Action;
-import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.progress.helper.IProgressWriterFactory;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
@@ -48,8 +47,8 @@ public class ActionRunnerConfig {
     @NonNull private final Action action;
     /** Callback to handle validation errors */
     @NonNull private final Function<OptionsParseResult, RuntimeException> onValidationErrors;
-    /** Request helpers */
-    @Getter(AccessLevel.PACKAGE) @Singular private final Map<String, IActionRequestHelper> requestHelpers;
+    /** Action context configurers. Main purpose is to register request helpers on the context. */
+    @Singular private final Collection<Consumer<ActionRunnerContext>> actionContextConfigurers;
     /** SpEL configuration functions for configuring the {@link ISpelEvaluator} instances provided by
      *  {@link ActionRunnerConfig} and {@link ActionRunnerContext} through their getSpelEvaluator()
      *  methods. Note that these configurers may not call getSpelEvaluator() during the configuration phase, 
