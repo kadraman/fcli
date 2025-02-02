@@ -26,41 +26,41 @@ config:
   rest.target.default: ssc
   output: immediate
   
-parameters:
-  - name: appversion
-    cliAliases: av
+cli.options:
+  appversion:
+    alias: av
     required: true
     description: "Required application version name as <appName>:<versionName>"
-  - group: av_create_opts
+  add-users:
+    group: av_create_opts
     required: false
-    name: add-users
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
+  attrs:
+    group: av_create_opts
     required: false
-    name: attrs
-    cliAliases: attributes
+    alias: attributes
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
-    required: false
-    name: copy
+  copy:
+    group: av_create_opts
+    required: false 
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
+  description:
+    group: av_create_opts
     required: false
-    name: description
-    cliAliases: d
+    alias: d
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
+  copy-from:
+    group: av_create_opts
     required: false
-    name: copy-from
-    cliAliases: from
+    alias: from
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
+  issue-template:
+    group: av_create_opts
     required: false
-    name: issue-template
     description: "See `fcli ssc appversion create`"
-  - group: av_create_opts
+  refresh-timeout:
+    group: av_create_opts
     required: false
-    name: refresh-timeout
     defaultValue: "300s"
     description: "See 'fcli ssc av create'. Default value: 300s"
   

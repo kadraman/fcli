@@ -26,19 +26,19 @@ usage:
 config:
   rest.target.default: fod
   
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: fortify-sast.sarif"
     required: false
     defaultValue: fortify-sast.sarif
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
 
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Loading static scan summary
   - rest.call:
       - name: staticScanSummary
@@ -65,22 +65,22 @@ steps:
             uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
         do:
           - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
-            var.set:
-              rules..: ${#action.fmt('rules',#root)}
+            var.fmt:
+              rules..: rules
           - var.set:
               ruleCache.${issue.checkId}: true
-              results..: ${#action.fmt('results',#root)}
+          - var.fmt:
+              results..: results
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: github-sast-report
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 formatters:
-  - name: github-sast-report
-    contents:
+  github-sast-report:
       "$schema": https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json 
       version: '2.1.0'
       runs:
@@ -97,8 +97,7 @@ formatters:
                 releaseId: ${rel.releaseId}
           results: ${results?:{}}
      
-  - name: rules
-    contents:
+  rules:
       id: ${issue.checkId}
       shortDescription:
         text: ${issue.category}
@@ -125,8 +124,7 @@ formatters:
           
           ${#copyright()}
 
-  - name: results
-    contents:
+  results:
       ruleId: ${issue.checkId}
       message: 
         text: ${#cleanIssueDescription(issue.details?.summary)} [More information](${#fod.issueBrowserUrl(issue)})

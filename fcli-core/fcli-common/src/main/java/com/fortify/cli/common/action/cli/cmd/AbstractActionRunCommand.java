@@ -22,7 +22,7 @@ import com.fortify.cli.common.action.model.ActionConfig.ActionConfigSessionFromE
 import com.fortify.cli.common.action.runner.ActionRunner;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
-import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ActionParameterHelper;
+import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.ActionParameterHelper;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.mixin.CommandHelperMixin;
 import com.fortify.cli.common.cli.util.FcliCommandExecutor;

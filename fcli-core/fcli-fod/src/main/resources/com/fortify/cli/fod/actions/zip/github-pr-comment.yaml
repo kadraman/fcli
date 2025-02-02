@@ -12,7 +12,7 @@ usage:
     This action adds review comments to a GitHub Pull Request. Currently
     this is marked as PREVIEW as we build out this functionality; later
     versions may have different behavior and/or require different action
-    parameters. 
+    cli. 
     
     The current implementation simply compares current scan results 
     against previous scan results in the given FoD release, listing 
@@ -34,40 +34,40 @@ config:
   rest.target.default: fod
 
     
-parameters:
-  - name: release
-    cliAliases: rel
+cli.options:
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-  - name: scan-type
-    cliAliases: t
+  scan-type:
+    alias: t
     description: "Scan type for which to list vulnerabilities. Default value: Static"
     required: true
     defaultValue: Static
-  - name: github-api-url
+  github-api-url:
     description: 'Required GitHub API URL. Default value: GITHUB_API_URL environment variable.'
     required: true
     defaultValue: ${#env('GITHUB_API_URL')}
-  - name: github-token
+  github-token:
     description: 'Required GitHub Token. Default value: GITHUB_TOKEN environment variable.'
     required: true
     defaultValue: ${#env('GITHUB_TOKEN')}
-  - name: github-owner
+  github-owner:
     description: 'Required GitHub repository owner. Default value: GITHUB_REPOSITORY_OWNER environment variable.'
     required: true
     defaultValue: ${#env('GITHUB_REPOSITORY_OWNER')}
-  - name: github-repo
+  github-repo:
     description: 'Required GitHub repository. Default value: Taken from GITHUB_REPOSITORY environment variable.'
     required: true
     defaultValue: ${#substringAfter(#env('GITHUB_REPOSITORY'),'/')}
-  - name: pr
+  pr:
     description: "Required PR number. Default value: Taken from GITHUB_REF_NAME environment variable. Note that default value will only work on GitHub pull_request triggers; if this fcli action is invoked through any other GitHub trigger, it will fail unless an explicit PR number is passed through this option." 
     required: true
     defaultValue: ${#substringBefore(#env('GITHUB_REF_NAME'),'/')}
-  - name: commit
+  commit:
     description: 'Required commit hash. Default value: GITHUB_SHA environment variable.'
     required: true
     defaultValue: ${#env('GITHUB_SHA')}
-  - name: dryrun
+  dryrun:
     description: "Set to true to just output PR decoration JSON; don't actually update any PR"
     type: boolean
     required: false
@@ -76,19 +76,19 @@ parameters:
 steps:
   - rest.target:
       - name: github
-        baseUrl: ${parameters['github-api-url']}
+        baseUrl: ${cli['github-api-url']}
         headers:
-          Authorization: Bearer ${parameters['github-token']}
+          Authorization: Bearer ${cli['github-token']}
           'X-GitHub-Api-Version': '2022-11-28'
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
       uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
       query:
         includeFixed: true
-        filters: scantype:${parameters['scan-type']}
+        filters: scantype:${cli['scan-type']}
       pagingProgress:
         postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
       forEach:
@@ -99,43 +99,41 @@ steps:
             uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
         do:
           - if: ${issue.status=='Fix Validated'}
-            var.set:
-              removedIssues..: ${#action.fmt('mdIssueListItem',#root)}
+            var.fmt:
+              removedIssues..: mdIssueListItem
           - if: ${(issue.status=='New' || issue.status=='Reopen')}
-            var.set:
-              newIssues..: ${#action.fmt('mdIssueListItem',#root)}
+            var.fmt:
+              newIssues..: mdIssueListItem
           
   - log.progress: Generating GitHub request
-  - var.set:
-      reviewBody: ${#action.fmt('reviewBody',#root)}
-      reviewRequestBody: ${#action.fmt('reviewRequestBody',#root)}
-  - if: ${parameters.dryrun}
+  - var.fmt:
+      reviewBody: reviewBody
+      reviewRequestBody: reviewRequestBody
+  - if: ${cli.dryrun}
     file.write:
       - to: stdout
         value: ${reviewRequestBody}
-  - if: ${!parameters.dryrun}
+  - if: ${!cli.dryrun}
     rest.call:
       - name:   GitHub PR review
         method: POST
-        uri:    /repos/${parameters['github-owner']}/${parameters['github-repo']}/pulls/${parameters['pr']}/reviews
+        uri:    /repos/${cli['github-owner']}/${cli['github-repo']}/pulls/${cli['pr']}/reviews
         target: github
         body:   ${reviewRequestBody}       
 
 formatters:
-  - name: reviewRequestBody
-    contents:
-      owner: ${parameters['github-owner']}
-      repo: ${parameters['github-repo']}
-      pull_number: ${parameters['pr']}
-      commit_id: ${parameters['commit']}
+  reviewRequestBody:
+      owner: ${cli['github-owner']}
+      repo: ${cli['github-repo']}
+      pull_number: ${cli['pr']}
+      commit_id: ${cli['commit']}
       body: ${reviewBody}
       event: COMMENT
       # For now, we don't include any source code comments, as this will cause
       # GitHub to return an error if the source file doesn't exist in the repo.
       comments: ${{}} 
       
-  - name: reviewBody
-    contents: |
+  reviewBody: |
       ## Fortify vulnerability summary
       
       Any issues listed below are based on comparing the latest scan results against the previous scan results in FoD release [${rel.applicationName}${#isNotBlank(rel.microserviceNae)?'- '+rel.microserviceName:''} - ${rel.releaseName}](${#fod.releaseBrowserUrl(rel)}). This is for informational purposes only and, depending on workflow, may not be an accurate representation of what issues will be introduced into or removed from the target branch when merging this PR.   
@@ -152,8 +150,7 @@ formatters:
         ? "* No removed issues were detected" 
         : ("* "+#join('\n* ',removedIssues))}
         
-  - name: mdIssueListItem
-    contents: "${issue.status} (${issue.scantype}) - ${issue.category}:    \n[${issue.primaryLocationFull}${issue.lineNumber==null?'':':'+issue.lineNumber}](${#fod.issueBrowserUrl(issue)})"
+  mdIssueListItem: "${issue.status} (${issue.scantype}) - ${issue.category}:    \n[${issue.primaryLocationFull}${issue.lineNumber==null?'':':'+issue.lineNumber}](${#fod.issueBrowserUrl(issue)})"
       
       
       

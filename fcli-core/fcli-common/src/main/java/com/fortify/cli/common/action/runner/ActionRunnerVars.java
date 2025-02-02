@@ -27,6 +27,8 @@ import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
+import lombok.Getter;
+
 /**
  * This class manages action variables that can be stored, formatted, and retrieved during action execution.
  * @author Ruud Senden
@@ -34,8 +36,8 @@ import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 public final class ActionRunnerVars {
     private static final Logger LOG = LoggerFactory.getLogger(ActionRunnerVars.class);
     private static final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
-    private static final String PARAMETERS_VALUE_NAME = "parameters";
-    private final ObjectNode values;
+    private static final String CLI_OPTIONS_VAR_NAME = "cli";
+    @Getter private final ObjectNode values;
     private final IConfigurableSpelEvaluator spelEvaluator;
     private final ActionRunnerVars parent;
     
@@ -45,9 +47,9 @@ public final class ActionRunnerVars {
      * acting as the top-level or global instance. Children of this top-level instance can be
      * created through the {@link #createChild()} method.
      */
-    public ActionRunnerVars(IConfigurableSpelEvaluator spelEvaluator, ObjectNode parameters) {
+    public ActionRunnerVars(IConfigurableSpelEvaluator spelEvaluator, ObjectNode cliOptions) {
         this.spelEvaluator = spelEvaluator;
-        this.values = objectMapper.createObjectNode().set(PARAMETERS_VALUE_NAME, parameters);
+        this.values = objectMapper.createObjectNode().set(CLI_OPTIONS_VAR_NAME, cliOptions);
         this.parent = null;
     }
     
@@ -97,12 +99,12 @@ public final class ActionRunnerVars {
     
     /**
      * Set a variable on both this instance and any parent instances;
-     * this method checks for attempts to update 'parameters', logs
+     * this method checks for attempts to update 'cli', logs
      * some details, then defers to {@link #_set(String, JsonNode)} to
      * perform the actual update.
      */
     public final void set(String name, JsonNode value) {
-        rejectParametersUpdate(name);
+        rejectCliOptionsUpdate(name);
         logDebug(()->String.format("Set %s: %s", name, value.toPrettyString()));
         _set(name, value);
     }
@@ -120,7 +122,7 @@ public final class ActionRunnerVars {
      * to update 'parameters', logs some details, then sets the value.
      */
     public final void setLocal(String name, JsonNode value) {
-        rejectParametersUpdate(name);
+        rejectCliOptionsUpdate(name);
         logDebug(()->String.format("Set Local %s: %s", name, value.toPrettyString()));
         values.set(name, value);
     }
@@ -132,7 +134,7 @@ public final class ActionRunnerVars {
      * perform the actual update.
      */
     public final void unset(String name) {
-        rejectParametersUpdate(name);
+        rejectCliOptionsUpdate(name);
         logDebug(()->String.format("Unset %s", name));
         _unset(name);
     }
@@ -151,9 +153,9 @@ public final class ActionRunnerVars {
      * user-provided parameter values as 'safe' values in potentially unsafe 
      * actions. As such, actions are not allowed to update the parameters object.
      */
-    private static final void rejectParametersUpdate(String name) {
-        if ( PARAMETERS_VALUE_NAME.equals(name) ) {
-            throw new IllegalStateException("Action steps are not allowed to modify 'parameters'");
+    private static final void rejectCliOptionsUpdate(String name) {
+        if ( CLI_OPTIONS_VAR_NAME.equals(name) ) {
+            throw new IllegalStateException("Action steps are not allowed to modify the "+CLI_OPTIONS_VAR_NAME+" variable");
         }
     }
     

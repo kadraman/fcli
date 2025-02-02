@@ -12,8 +12,6 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -27,15 +25,12 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data
-public final class ActionParameter implements IActionElement {
-    @JsonPropertyDescription("Required string: Action parameter name. This will allow the action to accept CLI options named `--[name]` or `-[name]` for single-letter names. Parameter value can be referenced through ${parameters.[name]} in SpEL template expressions.")
-    @JsonProperty(required = true) private String name;
-    
+public final class ActionCliOptions implements IActionElement {
     @JsonPropertyDescription("Required string: Action parameter description to be shown in action usage help.")
     @JsonProperty(required = true) private String description;
     
-    @JsonPropertyDescription("Optional string: Comma-separated CLI option aliases. This will allow the action to accept CLI options named `--[alias]` or `-[alias]` for single-letter aliases. Aliases cannot be referenced in SpEL expressions.")
-    @JsonProperty(required = false) private String cliAliases;
+    @JsonPropertyDescription("Optional string: This will allow the action to also accept a CLI option named `--[alias]` or `-[alias]` for single-letter aliases. Aliases cannot be referenced in SpEL expressions.")
+    @JsonProperty(required = false) private String alias;
     
     @JsonPropertyDescription("Optional string: Action parameter type: string (default), boolean, int, long, double, float, or array.")
     @JsonProperty(required = false) private String type;
@@ -50,15 +45,9 @@ public final class ActionParameter implements IActionElement {
     @JsonProperty(required = false) private String group;
     
     public final void postLoad(Action action) {
-        Action.checkNotBlank("parameter name", name, this);
         Action.checkNotNull("parameter description", getDescription(), this);
         // TODO Check no duplicate names; ideally ActionRunner should also verify
         //      that option names/aliases don't conflict with command options
         //      like --help/-h, --log-file, ...
-    }
-    
-    public final String[] getCliAliasesArray() {
-        if ( cliAliases==null ) { return new String[] {}; }
-        return Stream.of(cliAliases).map(String::trim).toArray(String[]::new);
     }
 }

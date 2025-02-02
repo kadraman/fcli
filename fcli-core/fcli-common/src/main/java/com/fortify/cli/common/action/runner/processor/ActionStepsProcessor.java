@@ -38,10 +38,8 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.model.AbstractActionStepForEach;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
-import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepFileWrite;
 import com.fortify.cli.common.action.model.ActionStepForEach;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
@@ -49,6 +47,8 @@ import com.fortify.cli.common.action.model.ActionStepRestCall;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestForEachDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestPagingProgressDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestType;
+import com.fortify.cli.common.action.model.ActionStepRestTarget;
+import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -89,6 +89,7 @@ public final class ActionStepsProcessor {
             processStepEntries(step::getRestTargets, this::processRestTargetsStep);
             processStepSupplier(step::getRestCalls, this::processRestCallStep);
             processStepSupplier(step::getVarSet, this::processVarSetStep);
+            processStepSupplier(step::getVarFmt, this::processVarFmtStep);
             processStepSupplier(step::getVarUnset, this::processVarUnsetStep);
             processStepEntries(step::getRunFcli, this::processRunFcliStep);
             processStepEntries(step::getCheck, this::processCheckStep);
@@ -157,6 +158,17 @@ public final class ActionStepsProcessor {
         return true;
     }
     
+    private final void processVarFmtStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+        map.entrySet().forEach(this::processVarFmtStepEntry);
+    }
+    
+    private final void processVarFmtStepEntry(Map.Entry<TemplateExpression, TemplateExpression> entry) {
+        var name = vars.eval(entry.getKey(), String.class);
+        var formatter = vars.eval(entry.getValue(), String.class);
+        var value = ActionRunnerHelper.fmt(ctx, formatter, vars.getValues());
+        setVar(name, value);
+    }
+    
     private final void processVarSetStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
         map.entrySet().forEach(this::processVarSetStepEntry);
     }
@@ -172,11 +184,12 @@ public final class ActionStepsProcessor {
         if ( name.endsWith("..") ) { 
             appendToArray(name.substring(0, name.length()-2), value); 
         } else {
-            var nameElts = name.split("\\.");
-            switch ( nameElts.length ) {
-            case 1: vars.set(name, value); break;
-            case 2: appendToObject(nameElts[0], nameElts[1], value); break;
-            default: throw new StepProcessingException("var.set map keys may not specify nested properties: "+name);
+            var varName = StringUtils.substringBefore(name, ".");
+            var propName = StringUtils.substringAfter(name, ".");
+            if ( StringUtils.isBlank(propName) ) {
+                vars.set(name, value);
+            } else {
+                appendToObject(varName, propName, value);
             }
         }
     }

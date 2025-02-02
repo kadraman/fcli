@@ -22,10 +22,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Singular;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Unmatched;
 
@@ -58,7 +61,7 @@ public final class SimpleOptionsParser {
     @Builder @Data
     public static class OptionDescriptor implements IOptionDescriptor {
         private final String name;
-        private final List<String> aliases;
+        @Singular private final List<String> aliases;
         private final String description;
         private final boolean bool;
     }
@@ -132,10 +135,16 @@ public final class SimpleOptionsParser {
             result.put(option.getName(), option);
             var aliases = option.getAliases();
             if ( aliases!=null ) {
-                aliases.forEach(alias->result.put(alias, option));
+                aliases.forEach(alias->addAlias(result, option, alias));
             }
         });
         return result;
+    }
+
+    private void addAlias(final Map<String, IOptionDescriptor> result, IOptionDescriptor option, String alias) {
+        if ( StringUtils.isNotBlank(alias) ) {
+            result.put(alias, option);
+        }
     }
     
     private final IOptionDescriptor getOption(String nameOrAlias) {

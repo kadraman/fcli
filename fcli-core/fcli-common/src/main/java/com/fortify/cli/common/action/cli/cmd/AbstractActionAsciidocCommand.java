@@ -25,7 +25,7 @@ import com.fortify.cli.common.action.cli.mixin.ActionSourceResolverMixin;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
 import com.fortify.cli.common.action.model.Action;
-import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor.ActionParameterHelper;
+import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.ActionParameterHelper;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.IOptionDescriptor;

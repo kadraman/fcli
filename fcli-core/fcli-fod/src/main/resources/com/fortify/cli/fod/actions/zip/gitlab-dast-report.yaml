@@ -10,19 +10,19 @@ usage:
 config:
   rest.target.default: fod
 
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gl-fortify-dast.json"
     required: false
     defaultValue: gl-fortify-dast.json
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Loading dynamic scan summary
   - rest.call:
       - name:   dynamicScanSummary
@@ -51,19 +51,18 @@ steps:
           - name: request_response
             uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/request-response 
         do:
-          - var.set:
-              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+          - var.fmt:
+              vulnerabilities..: vulnerabilities
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: gitlab-dast-report
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 formatters:
-  - name: gitlab-dast-report
-    contents:
+  gitlab-dast-report:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/dast-report-format.json
       version: 15.0.0
       scan:
@@ -97,8 +96,7 @@ formatters:
       vulnerabilities: ${vulnerabilities?:{}}
       # remediations: ... 
      
-  - name: vulnerabilities
-    contents:
+  vulnerabilities:
       id: ${issue.vulnId}
       category: dast
       name: ${issue.category}

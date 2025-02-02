@@ -10,15 +10,15 @@ usage:
 config:
   rest.target.default: ssc
   
-parameters:
-  - name: appversion
-    cliAliases: av
+cli.options:
+  appversion:
+    alias: av
     description: "Required application version id or <appName>:<versionName>"
   
 steps:
   - var.set:
-      av: ${#ssc.appVersion(parameters.appversion)}
-      fs: ${#ssc.filterSet(av, parameters.filterset)}
+      av: ${#ssc.appVersion(cli.appversion)}
+      fs: ${#ssc.filterSet(av, cli.filterset)}
   - run.fcli:
     - name: countsByFolder
       args: ssc issue count --av ${av.id} --by FOLDER

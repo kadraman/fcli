@@ -11,19 +11,19 @@ usage:
 config:
   rest.target.default: fod
 
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: stdout"
     required: false
     defaultValue: stdout
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   
 steps:
   - var.set:
-      r: ${#fod.release(parameters.release)}
+      r: ${#fod.release(cli.release)}
       dateFmt: YYYY-MM-dd HH:mm
   # Update Note: although open source counts are now available on the release object, the date of last open source scan is not so still need below 
   - log.progress: Loading Scans
@@ -45,17 +45,16 @@ steps:
               ossScanDate: ${scan.completedDateTime} 
 
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: summary-md
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 # Note: update ossScanDate when it is available on release object ...
 formatters:
-  - name: summary-md
-    contents: |
+  summary-md: |
       # Fortify on Demand Release Summary
       
       ## [${r.applicationName}${#isNotBlank(r.microserviceNae)?'- '+r.microserviceName:''} - ${r.releaseName}](${#fod.releaseBrowserUrl(r)})

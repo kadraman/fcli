@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -29,7 +28,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.model.Action;
-import com.fortify.cli.common.action.model.ActionParameter;
+import com.fortify.cli.common.action.model.ActionCliOptions;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser;
@@ -46,7 +45,7 @@ import com.github.freva.asciitable.HorizontalAlign;
 import lombok.Builder;
 
 @Builder
-public final class ActionParameterProcessor {
+public final class ActionCliOptionsProcessor {
     private final ActionRunnerConfig config;
     private final IConfigurableSpelEvaluator spelEvaluator;
     private static final Map<String, Function<String, JsonNode>> parameterConverters = createParameterConverters();
@@ -57,29 +56,28 @@ public final class ActionParameterProcessor {
         if ( optionsParseResult.hasValidationErrors() ) {
             throw config.getOnValidationErrors().apply(optionsParseResult);
         }
-        config.getAction().getParameters().forEach(p->addParameterValues(optionsParseResult, p, parameterValues));
+        config.getAction().getCliOptions().entrySet().forEach(e->addParameterValues(optionsParseResult, e.getKey(), e.getValue(), parameterValues));
         return parameterValues;
     }
     
-    private final OptionsParseResult _parseParameterValues(ObjectNode parameterValues, String[] args) {
+    private final OptionsParseResult _parseParameterValues(ObjectNode result, String[] args) {
         List<IOptionDescriptor> optionDescriptors = ActionParameterHelper.getOptionDescriptors(config.getAction());
         var parseResult = new SimpleOptionsParser(optionDescriptors).parse(args);
-        addDefaultValues(parseResult, parameterValues);
+        addDefaultValues(parseResult, result);
         addValidationMessages(parseResult);
         return parseResult;
     }
 
     private final void addDefaultValues(OptionsParseResult parseResult, ObjectNode parameterValues) {
-        config.getAction().getParameters().forEach(p->addDefaultValue(parseResult, p, parameterValues));
+        config.getAction().getCliOptions().entrySet().forEach(e->addDefaultValue(parseResult, e.getKey(), e.getValue(), parameterValues));
     }
     
     private final void addValidationMessages(OptionsParseResult parseResult) {
-        config.getAction().getParameters().forEach(p->addValidationMessages(parseResult, p));
+        config.getAction().getCliOptions().entrySet().forEach(e->addValidationMessages(parseResult, e.getKey(), e.getValue()));
     }
     
-    private final void addDefaultValue(OptionsParseResult parseResult, ActionParameter parameter, ObjectNode parameterValues) {
-        var name = parameter.getName();
-        var value = getOptionValue(parseResult, parameter);
+    private final void addDefaultValue(OptionsParseResult parseResult, String name, ActionCliOptions parameter, ObjectNode parameterValues) {
+        var value = getOptionValue(parseResult, name, parameter);
         if ( value==null ) {
             var defaultValueExpression = parameter.getDefaultValue();
             value = defaultValueExpression==null 
@@ -89,31 +87,29 @@ public final class ActionParameterProcessor {
         parseResult.getOptionValuesByName().put(ActionParameterHelper.getOptionName(name), value);
     }
     
-    private final void addValidationMessages(OptionsParseResult parseResult, ActionParameter parameter) {
-        if ( parameter.isRequired() && StringUtils.isBlank(getOptionValue(parseResult, parameter)) ) {
+    private final void addValidationMessages(OptionsParseResult parseResult, String name, ActionCliOptions parameter) {
+        if ( parameter.isRequired() && StringUtils.isBlank(getOptionValue(parseResult, name, parameter)) ) {
             parseResult.getValidationErrors().add("No value provided for required option "+
-                    ActionParameterHelper.getOptionName(parameter.getName()));                
+                    ActionParameterHelper.getOptionName(name));                
         }
     }
 
-    private final void addParameterValues(OptionsParseResult optionsParseResult, ActionParameter parameter, ObjectNode parameterValues) {
-        var name = parameter.getName();
-        var value = getOptionValue(optionsParseResult, parameter);
+    private final void addParameterValues(OptionsParseResult optionsParseResult, String name, ActionCliOptions parameter, ObjectNode parameterValues) {
+        var value = getOptionValue(optionsParseResult, name, parameter);
         if ( value==null ) {
             var defaultValueExpression = parameter.getDefaultValue();
             value = defaultValueExpression==null 
                     ? null 
                     : spelEvaluator.evaluate(defaultValueExpression, parameterValues, String.class);
         }
-        parameterValues.set(name, convertParameterValue(value, parameter, parameterValues));
+        parameterValues.set(name, convertParameterValue(value, name, parameter, parameterValues));
     }
-    private String getOptionValue(OptionsParseResult parseResult, ActionParameter parameter) {
-        var optionName = ActionParameterHelper.getOptionName(parameter.getName());
+    private String getOptionValue(OptionsParseResult parseResult, String name, ActionCliOptions parameter) {
+        var optionName = ActionParameterHelper.getOptionName(name);
         return parseResult.getOptionValuesByName().get(optionName);
     }
     
-    private JsonNode convertParameterValue(String value, ActionParameter parameter, ObjectNode parameterValues) {
-        var name = parameter.getName();
+    private JsonNode convertParameterValue(String value, String name, ActionCliOptions parameter, ObjectNode parameterValues) {
         var type = StringUtils.isBlank(parameter.getType()) ? "string" : parameter.getType();
         var paramConverter = parameterConverters.get(type);
         if ( paramConverter==null ) {
@@ -128,28 +124,25 @@ public final class ActionParameterProcessor {
         private ActionParameterHelper() {}
         
         public static final List<IOptionDescriptor> getOptionDescriptors(Action action) {
-            var parameters = action.getParameters();
+            var parameters = action.getCliOptions();
             List<IOptionDescriptor> result = new ArrayList<>(parameters.size());
-            parameters.forEach(p->addOptionDescriptor(result, p));
+            parameters.entrySet().forEach(e->addOptionDescriptor(result, e.getKey(), e.getValue()));
             return result;
         }
 
-        private static final void addOptionDescriptor(List<IOptionDescriptor> result, ActionParameter parameter) {
+        private static final void addOptionDescriptor(List<IOptionDescriptor> result, String name, ActionCliOptions parameter) {
             result.add(OptionDescriptor.builder()
-                    .name(getOptionName(parameter.getName()))
-                    .aliases(getOptionAliases(parameter.getCliAliasesArray()))
+                    .name(getOptionName(name))
+                    .alias(getOptionName(parameter.getAlias()))
                     .description(parameter.getDescription())
                     .bool(parameter.getType()!=null && parameter.getType().equals("boolean"))
                     .build());
         }
         
         static final String getOptionName(String parameterNameOrAlias) {
+            if ( StringUtils.isBlank(parameterNameOrAlias) ) { return null; }
             var prefix = parameterNameOrAlias.length()==1 ? "-" : "--";
             return prefix+parameterNameOrAlias;
-        }
-        
-        private static final List<String> getOptionAliases(String[] aliases) {
-            return aliases==null ? null : Stream.of(aliases).map(ActionParameterHelper::getOptionName).toList();
         }
         
         public static final String getSupportedOptionsTable(Action action) {

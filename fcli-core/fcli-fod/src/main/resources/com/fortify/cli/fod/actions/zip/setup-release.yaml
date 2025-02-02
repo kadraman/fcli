@@ -32,75 +32,75 @@ config:
   output: immediate
 
   
-parameters:
-  - name: release
-    cliAliases: rel
+cli.options:
+  release:
+    alias: rel
     required: true
     description: "Required release name as <application>[:<microservice>]:<release>"
-  - name: scan-types
-    cliAliases: t
+  scan-types:
+    alias: t
     required: false
     type: array
     description: "Optional comma-separated list of scan type(s) to set up; for now, only 'sast' is supported"  
-  - group: rel_create_opts
-    name: attributes
+  attributes:
+    group: rel_create_opts  
     required: false
-    cliAliases: attrs
-    description: "Optional comma-separated list of attributes to set on the application and/or release"   
-  - group: rel_create_opts
+    alias: attrs
+    description: "Optional comma-separated list of attributes to set on the application and/or release"
+  copy-from:   
+    group: rel_create_opts
     required: false
-    name: copy-from
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  description:
+    group: rel_create_opts
     required: false
-    name: description
-    cliAliases: d
+    alias: d
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  sdlc-status:
+    group: rel_create_opts
     required: true
-    name: sdlc-status
-    cliAliases: status
+    alias: status
     description: "See `fcli fod release create`. Default value: Development"
     defaultValue: Development
-  - group: rel_create_opts
+  app-description:
+    group: rel_create_opts
     required: false
-    name: app-description
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  app-notify:  
+    group: rel_create_opts
     required: false
-    name: app-notify
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  app-owner:
+    group: rel_create_opts
     required: false
-    name: app-owner
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  app-groups:
+    group: rel_create_opts
     required: false
-    name: app-groups
     description: "See `fcli fod release create`"
-  - group: rel_create_opts
+  app-type:
+    group: rel_create_opts
     required: false
-    name: app-type
     description: "See `fcli fod release create`. Default value: Web"
     defaultValue: Web
-  - group: rel_create_opts
+  app-criticality:
+    group: rel_create_opts
     required: false
-    name: app-criticality
     description: "See `fcli fod release create`. Default value: Medium"
     defaultValue: Medium
-  - group: sast_setup_opts
-    name: assessment-type
+  assessment-type:
+    group: sast_setup_opts
     required: false
     defaultValue: "Static Assessment"
-    description: "See `fcli fod sast-scan setup`"  
-  - group: sast_setup_opts
-    required: false
-    name: use-aviator
     description: "See `fcli fod sast-scan setup`"
-    type: boolean      
-  - group: sast_setup_opts
+  use-aviator:      
+    group: sast_setup_opts
     required: false
-    name: oss
+    description: "See `fcli fod sast-scan setup`"
+    type: boolean  
+  oss:    
+    group: sast_setup_opts
+    required: false
     description: "See `fcli fod sast-scan setup`" 
     type: boolean  
   
@@ -116,7 +116,7 @@ steps:
   - log.progress: "Waiting for release to leave suspended state"
   - run.fcli:
     - args: fod release wait-for "${rel}" --progress=none
-  - if: ${parameters["scan-types"].contains("sast")}
+  - if: ${cli["scan-types"].contains("sast")}
     steps:        
       - log.progress: "Configuring FoD application release ${rel} for SAST scanning"
       - run.fcli:

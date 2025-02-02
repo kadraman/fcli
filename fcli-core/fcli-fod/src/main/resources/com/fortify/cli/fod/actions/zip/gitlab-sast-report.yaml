@@ -10,19 +10,19 @@ usage:
 config:
   rest.target.default: fod
   
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gl-fortify-sast.json"
     required: false
     defaultValue: gl-fortify-sast.json
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Loading static scan summary
   - rest.call:
       - name: staticScanSummary
@@ -46,19 +46,18 @@ steps:
           - name: recommendations
             uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
         do:
-          - var.set:
-              vulnerabilities..: ${#action.fmt('vulnerabilities',#root)}
+          - var.fmt:
+              vulnerabilities..: vulnerabilities
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: gitlab-sast-report
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 formatters:
-  - name: gitlab-sast-report
-    contents:
+  gitlab-sast-report:
       schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.0.0/dist/sast-report-format.json
       version: 15.0.0
       scan:
@@ -82,8 +81,7 @@ formatters:
             name: Fortify
       vulnerabilities: ${vulnerabilities?:{}} 
      
-  - name: vulnerabilities
-    contents:
+  vulnerabilities:
       category: sast
       confidence: ${(issue.severityString matches "(Critical|Medium)") ? "High":"Low" }
       description: ${#abbreviate(#htmlToText(issue.details?.summary), 15000)}

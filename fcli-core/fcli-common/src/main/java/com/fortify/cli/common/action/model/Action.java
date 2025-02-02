@@ -16,21 +16,29 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.springframework.expression.ParseException;
+
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.ValueNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.PublicKeyDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
+import com.fortify.cli.common.json.JsonHelper.AbstractJsonNodeWalker;
+import com.fortify.cli.common.spring.expression.SpelHelper;
+import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.AllArgsConstructor;
@@ -69,24 +77,29 @@ public class Action implements IActionElement {
     @JsonPropertyDescription("Optional object: Action configuration properties.")
     @JsonProperty(required = false) private ActionConfig config;
     
-    @JsonPropertyDescription("Optional list: Action parameters.")
-    @JsonProperty(required = false) private List<ActionParameter> parameters;
+    @JsonPropertyDescription("""
+        Optional map: CLI options accepted by this action. Map keys define option names, values define option \
+        definitions. Option values can be referenced by action steps through the 'cli' variable, for example \
+        ${cli.myOption} or ${cli['my-option']}.   
+        """)
+    @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOptions> cliOptions;
     
     @JsonPropertyDescription("Required list: Steps to be executed when this action is being run.")
     @JsonProperty(required = true) private List<ActionStep> steps;
     
-    @JsonPropertyDescription("Optional list: Formatters that can be referenced in action steps through TODO to format data.")
-    @JsonProperty(required = false) private List<ActionFormatter> formatters;
+    @JsonPropertyDescription("""
+        Optional map: Formatters that can be referenced in action steps to format data. Map keys define formatter \
+        name, map values define how the data should be formatted. The outcome of a formatter can either be a \
+        simple string, or a structured (JSON) object or array.
+        """)
+    @JsonProperty(required = false) private Map<String, JsonNode> formatters;
     
     @JsonIgnore ActionMetadata metadata;
     /** Maps/Collections listing action elements. 
      *  These get filled by the {@link #visit(Action, Object)} method. */ 
-    @ToString.Exclude @JsonIgnore private final Map<String, ActionFormatter> formattersByName = new HashMap<>();
     @ToString.Exclude @JsonIgnore private final List<IActionElement> allActionElements = new ArrayList<>();
-    
-    public Map<String, ActionFormatter> getFormattersByName() {
-        return Collections.unmodifiableMap(formattersByName);
-    }
+    /** Cached mapping from text node property path to corresponding TemplateExpression instance */  
+    @JsonIgnore private final Map<String, TemplateExpression> formatterExpressions = new LinkedHashMap<>();
     
     public List<IActionElement> getAllActionElements() {
         return Collections.unmodifiableList(allActionElements);
@@ -121,10 +134,14 @@ public class Action implements IActionElement {
     public final void postLoad(Action action) {
         checkNotNull("action usage", usage, this);
         checkNotNull("action steps", steps, this);
-        if ( parameters==null ) {
-            parameters = Collections.emptyList();
+        if ( cliOptions==null ) {
+            cliOptions = Collections.emptyMap();
         } if ( config==null ) {
             config = new ActionConfig();
+        }
+        if ( formatters!=null ) {
+            var formatterContentsWalker = new FormatterContentsWalker();
+            formatters.values().forEach(formatterContentsWalker::walk);
         }
     }
     
@@ -172,10 +189,6 @@ public class Action implements IActionElement {
     private void initializeCollections() {
         visit(this, this, elt->{
             allActionElements.add(elt);
-            if ( elt instanceof ActionFormatter ) {
-                var actionValueTemplate = (ActionFormatter)elt;
-                formattersByName.put(actionValueTemplate.getName(), actionValueTemplate);
-            }
         });
     }
     
@@ -239,6 +252,23 @@ public class Action implements IActionElement {
         
         public static final ActionMetadata create(boolean custom) {
             return builder().custom(custom).build();
+        }
+    }
+    
+    private final class FormatterContentsWalker extends AbstractJsonNodeWalker<Void, Void> {
+        @Override
+        protected Void getResult() { return null; }
+        @Override
+        protected void walkValue(Void state, String path, JsonNode parent, ValueNode node) {
+            if ( node instanceof TextNode ) {
+                var expr = node.asText();
+                try {
+                    formatterExpressions.put(path, SpelHelper.parseTemplateExpression(expr));
+                } catch (ParseException e) {
+                    throw new ActionValidationException(String.format("Error parsing template expression '%s'", expr), this, e);
+                }
+            }
+            super.walkValue(state, path, parent, node);
         }
     }
 }

@@ -10,24 +10,24 @@ usage:
 config:
   rest.target.default: fod
   
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: sq-fortify-sast.json"
     required: false
     defaultValue: sq-fortify-sast.json
-  - name: file-path-prefix
-    cliAliases: pfx
+  file-path-prefix:
+    alias: pfx
     description: "Optional prefix for issue file paths"
     required: false
     defaultValue: ""
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
@@ -39,31 +39,29 @@ steps:
       forEach:
         name: issue
         do:
-          - var.set:
-              sq_issues..: ${#action.fmt('sq_issues',#root)}
+          - var.fmt:
+              sq_issues..: sq_issues
 
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: sq-sast-report
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 formatters:
-  - name: sq-sast-report
-    contents:
+  sq-sast-report:
       issues: ${sq_issues?:{}} 
 
-  - name: sq_issues
-    contents:
+  sq_issues:
       engineId: FortifyOnDemand
       ruleId: ${issue.category}
       severity: ${{'Critical':'CRITICAL','High':'MAJOR','Medium':'MINOR','Low':'INFO'}.get(issue.severityString)}
       type: VULNERABILITY
       primaryLocation:
         message: ${issue.category} - ${#fod.issueBrowserUrl(issue)}
-        filePath: ${parameters['file-path-prefix']}${issue.primaryLocationFull}
+        filePath: ${cli['file-path-prefix']}${issue.primaryLocationFull}
         textRange:
           startLine: ${issue.lineNumber==0?1:issue.lineNumber}
       # effortMinutes:

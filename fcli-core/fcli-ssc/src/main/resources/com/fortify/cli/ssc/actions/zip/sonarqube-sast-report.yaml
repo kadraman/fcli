@@ -10,33 +10,33 @@ usage:
 config:
   rest.target.default: ssc
   
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: sq-fortify-sast.json"
     required: false
     defaultValue: sq-fortify-sast.json
-  - name: file-path-prefix
-    cliAliases: pfx
+  file-path-prefix:
+    alias: pfx
     description: "Optional prefix for issue file paths"
     required: false
     defaultValue: ""
-  - name: appversion
-    cliAliases: av
+  appversion:
+    alias: av
     description: "Required application version id or <appName>:<versionName>"
-  - name: filterset
-    cliAliases: fs
+  filterset:
+    alias: fs
     description: "Optional filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
     required: false
-  - name: page-size
+  page-size:
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see --socket-timeout option on fcli ssc session login command). Default value: 100"
     required: false
     defaultValue: "100"
   
 steps:
   - var.set:
-      av: ${#ssc.appVersion(parameters.appversion)}
-      fs: ${#ssc.filterSet(av, parameters.filterset)}
+      av: ${#ssc.appVersion(cli.appversion)}
+      fs: ${#ssc.filterSet(av, cli.filterset)}
   - log.progress: Processing issue data
   - rest.call:
     - name: issues
@@ -44,35 +44,33 @@ steps:
       query:
         filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
         filterset: ${fs.guid}
-        limit: ${parameters['page-size']}
+        limit: ${cli['page-size']}
       pagingProgress:
         postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
       forEach:
         name: issue
         do:
-          - var.set:
-              sq_issues..: ${#action.fmt('sq_issues',#root)}
+          - var.fmt:
+              sq_issues..: sq_issues
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: sq_output 
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
      
 formatters:
-  - name: sq_output
-    contents:
+  sq_output:
       issues: ${sq_issues?:{}}
-  - name: sq_issues
-    contents:
+  sq_issues:
       engineId: FortifySCA
       ruleId: ${issue.issueName}
       severity: ${{'Critical':'CRITICAL','High':'MAJOR','Medium':'MINOR','Low':'INFO'}.get(issue.friority)}
       type: VULNERABILITY
       primaryLocation:
         message: ${issue.issueName} - ${#ssc.issueBrowserUrl(issue,fs)}
-        filePath: ${parameters['file-path-prefix']}${issue.fullFileName}
+        filePath: ${cli['file-path-prefix']}${issue.fullFileName}
         textRange:
           startLine: ${issue.lineNumber==0?1:issue.lineNumber}
       # effortMinutes:

@@ -33,75 +33,92 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
 public final class ActionStep extends AbstractActionStep {
-    @JsonPropertyDescription("Optional list: Add REST request targets for use in rest.request steps.")
+    public static final String VAR_SET_NAME_FORMAT = """
+        This step can either set/replace a single-value variable, set/replace a property on \
+        a variable containing a set of properties, or append a value to an array-type variable. \
+        Following are some examples that show how to specify the operation to perform, and \
+        thereby implicitly declaring the variable type:
+        
+        # Set/replace the single-value variable named 'var1'
+        var1: ...
+        
+        # Set/replace properties 'prop1' and 'prop2' on variable 'var2'
+        var2.prop1: ...
+        var2.prop2: ...
+        
+        # Append two items to the array-type variable 'var3' (two trailing dots) 
+        var3..: ...
+        var3..: ...
+        
+        # The following would be illegal, as a variable cannot contain both
+        # a set of properties and an array:
+        var4.prop1: ...
+        var4..: ...
+        
+        Due to this syntax, variable names cannot contain dots like 'var.1', as '1' would \
+        be interpreted as a property on the 'var' variable. Property names may contain dots \
+        though, so 'var5.x.y' would be intepreted as property name 'x.y' on 'var5'.
+        
+        Within a single 'var.set' or 'var.fmt' step, variables are processed in the order that \
+        they are declared, allowing earlier declared variables to be referenced by variables \
+        that are declared later.
+        """;
+    
+    @JsonPropertyDescription("Add REST request targets for use in 'rest.request' steps.")
     @JsonProperty(value = "rest.target", required = false) private List<ActionStepRestTarget> restTargets;
     
-    @JsonPropertyDescription("Optional list: Execute one or more REST requests.")
+    @JsonPropertyDescription("Execute one or more REST requests.")
     @JsonProperty(value = "rest.call", required = false) private List<ActionStepRestCall> restCalls;
     
-    @JsonPropertyDescription("Optional list: Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
+    @JsonPropertyDescription("Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
     @JsonProperty(value = "run.fcli", required = false) private List<ActionStepRunFcli> runFcli;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Write a progress message.")
+    @JsonPropertyDescription("Write a progress message.")
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Write a warning message to console and log file (if enabled). Note that warning messages will be shown on console only after all action steps have been executed, to not interfere with progress messages.")
+    @JsonPropertyDescription("Write a warning message to console and log file (if enabled). Note that warning messages will be shown on console only after all action steps have been executed, to not interfere with progress messages.")
     @JsonProperty(value = "log.warn", required = false) private TemplateExpression logWarn;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Write a debug message to log file (if enabled).")
+    @JsonPropertyDescription("Write a debug message to log file (if enabled).")
     @JsonProperty(value = "log.debug", required = false) private TemplateExpression logDebug;
     
     @JsonPropertyDescription("""
-        Optional map: Set variables for use in subsequent steps. Both keys and values may be \
-        specified as SpEL template expressions. Variables can either contain a single value, \
-        a set of properties, or an array, based on the following formats for the map keys:
-        # Single value variable:
-        varName
-        # Variable containing a set of properties
-        varName.propName
-        # Variable containing an array of values (two trailing dots) 
-        varName..
-        For example:
-        # Set variable 'var1' to 'val1'
-        var1: val1
-        # Set 'prop1' and 'prop2' in 'var2' to 'val2' and 'val3' respectively
-        var2.prop1: val2
-        var2.prop2: val3
-        # Append 'val4' and 'val5' to the 'var3' array
-        var3..: val4
-        var3..: val5
-        Only a single format is supported for a given variable, for example the following would fails \
-        as 'var' is first defined as a set of properties, whereas the seond step tries to append an \
-        array entry: 
-        var4.prop1: val1
-        var4..: val2
-        Variables are set in the order that they are declared, so the following is supported within a \
-        single 'var.set' block:
-        var5: x
-        var6.${var5}: y
-        var7: ${var6.x}
-        """)
+            Set one or more variables values for use in later action steps. This step takes a map with keys \
+            specifying the variable to set or update, and values specifying the value to set. Both keys and \
+            values accept SpEL template expressions. Note that there's also a 'var.fmt' step that allows for \
+            setting values generated by a formatter.
+            
+            """+VAR_SET_NAME_FORMAT)
     @JsonProperty(value = "var.set", required = false) private LinkedHashMap<TemplateExpression,TemplateExpression> varSet;
     
-    @JsonPropertyDescription("Optional list: Unset variables, supports SpEL template expressions to specify the variable names to be unset.")
+    @JsonPropertyDescription("""
+            Set one or more variables for use in later action steps with the output of the given formatter. \
+            This step takes a map with keys specifying the variable to set or update, and values specifying \
+            the formatter to use as defined in the 'formatters' section. Both keys and values accept SpEL \
+            template expressions.
+            
+            """+VAR_SET_NAME_FORMAT)
+    @JsonProperty(value = "var.fmt", required = false) private LinkedHashMap<TemplateExpression,TemplateExpression> varFmt;
+    
+    @JsonPropertyDescription("Unset variables, supports SpEL template expressions to specify the variable names to be unset.")
     @JsonProperty(value = "var.unset", required = false) private List<TemplateExpression> varUnset;
     
-    @JsonPropertyDescription("Optional list: Write data to a file, stdout, or stderr. Note that output to stdout and stderr will be deferred until action termination as to not interfere with progress messages.")
+    @JsonPropertyDescription("Write data to a file, stdout, or stderr. Note that output to stdout and stderr will be deferred until action termination as to not interfere with progress messages.")
     @JsonProperty(value="file.write", required = false) private List<ActionStepFileWrite> fileWrite;
     
-    @JsonPropertyDescription("Optional object: Iterate over a given array of values.")
+    @JsonPropertyDescription("Iterate over a given array of values.")
     @JsonProperty(required = false) private ActionStepForEach forEach;
     
-    @JsonPropertyDescription("Optional list: Mostly used for security policy and similar actions to define PASS/FAIL criteria. Upon action termination, check results will be written to console and return a non-zero exit code if the outcome of on or more checks was FAIL.")
+    @JsonPropertyDescription("Mostly used for security policy and similar actions to define PASS/FAIL criteria. Upon action termination, check results will be written to console and return a non-zero exit code if the outcome of on or more checks was FAIL.")
     @JsonProperty(required = false) private List<ActionStepCheck> check;
     
-    @JsonPropertyDescription("Optional list: Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
+    @JsonPropertyDescription("Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
     @JsonProperty(required = false) private List<ActionStep> steps;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Throw an exception, thereby terminating action execution.")
+    @JsonPropertyDescription("Throw an exception, thereby terminating action execution.")
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Terminate action execution and return the given exit code.")
+    @JsonPropertyDescription("Terminate action execution and return the given exit code.")
     @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
     
     /**

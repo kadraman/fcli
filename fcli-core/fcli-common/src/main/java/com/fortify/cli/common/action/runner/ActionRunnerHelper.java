@@ -17,7 +17,6 @@ import org.springframework.expression.spel.SpelEvaluationException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
-import com.fortify.cli.common.action.model.ActionFormatter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
@@ -30,21 +29,20 @@ import lombok.RequiredArgsConstructor;
  */
 public final class ActionRunnerHelper {
     public static final JsonNode fmt(ActionRunnerContext ctx, String formatterName, JsonNode input) {
-        var formatter = ctx.getConfig().getAction().getFormattersByName().get(formatterName);
-        return new JsonNodeOutputWalker(ctx, formatter, input).walk(formatter.getContents());
+        var format = ctx.getConfig().getAction().getFormatters().get(formatterName);
+        return new JsonNodeOutputWalker(ctx, input).walk(format);
     }
     
     @RequiredArgsConstructor
     private static final class JsonNodeOutputWalker extends JsonNodeDeepCopyWalker {
         private final ActionRunnerContext ctx;
-        private final ActionFormatter outputDescriptor;
         private final JsonNode input;
         @Override
         protected JsonNode copyValue(JsonNode state, String path, JsonNode parent, ValueNode node) {
             if ( !(node instanceof TextNode) ) {
                 return super.copyValue(state, path, parent, node);
             } else {
-                TemplateExpression expression = outputDescriptor.getValueExpressions().get(path);
+                TemplateExpression expression = ctx.getConfig().getAction().getFormatterExpressions().get(path);
                 if ( expression==null ) { throw new RuntimeException("No expression for "+path); }
                 try {
                     var rawResult = ctx.getSpelEvaluator().evaluate(expression, input, Object.class);

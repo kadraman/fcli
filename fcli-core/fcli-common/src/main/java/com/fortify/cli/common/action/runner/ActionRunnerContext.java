@@ -120,13 +120,15 @@ public class ActionRunnerContext implements AutoCloseable {
         private final ActionRunnerContext ctx;
         public final String copyParametersFromGroup(String group) {
             StringBuilder result = new StringBuilder();
-            for ( var p : ctx.getConfig().getAction().getParameters() ) {
+            for ( var e : ctx.getConfig().getAction().getCliOptions().entrySet() ) {
+                var name = e.getKey();
+                var p = e.getValue();
                 if ( group==null || group.equals(p.getGroup()) ) {
-                    var val = ctx.getParameterValues().get(p.getName());
+                    var val = ctx.getParameterValues().get(name);
                     if ( val!=null && StringUtils.isNotBlank(val.asText()) ) {
                         result
                           .append("\"--")
-                          .append(p.getName())
+                          .append(name)
                           .append("=")
                           .append(val.asText())
                           .append("\" ");

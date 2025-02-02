@@ -12,26 +12,26 @@ usage:
 config:
   rest.target.default: ssc
   
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: stdout"
     required: false
     defaultValue: stdout
-  - name: appversion
-    cliAliases: av
+  appversion:
+    alias: av
     description: "Required application version id or <appName>:<versionName>"
-  - name: filtersets
-    cliAliases: fs
+  filtersets:
+    alias: fs
     description: "Comma-separated list of filter set names, guid's or 'default' to display in the summary. If not specified, all filter sets will be included."
     required: false
   
 steps:
   # Set output date format and convert filtersets parameter to array
   - var.set:
-      av: ${#ssc.appVersion(parameters.appversion)}
+      av: ${#ssc.appVersion(cli.appversion)}
       dateFmt: YYYY-MM-dd HH:mm
-      filtersetsArray: ${parameters.filtersets?.split(',')}
+      filtersetsArray: ${cli.filtersets?.split(',')}
       issueStateNames: ${{'NEW', 'REINTRODUCED', 'REMOVED', 'UPDATED'}}
   # Load SSC issue selector filter by sets
   - log.progress: Loading issue selector sets
@@ -199,16 +199,15 @@ steps:
               
   # Write output based on data collected above, and value template defined below 
   - file.write:
-    - to: ${parameters.file}
+    - to: ${cli.file}
       fmt: summary-md
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Output written to ${parameters.file}
+        Output written to ${cli.file}
 
 formatters:
-  - name: summary-md
-    contents: |
+  summary-md: |
       # SSC Application Version Summary
       
       ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,null)})

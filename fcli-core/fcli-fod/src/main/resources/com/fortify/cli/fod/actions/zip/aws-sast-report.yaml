@@ -12,27 +12,27 @@ usage:
 config:
   rest.target.default: fod
 
-parameters:
-  - name: file
-    cliAliases: f
+cli.options:
+  file:
+    alias: f
     description: "Optional report output file name (or 'stdout' / 'stderr'). Default value: aws-fortify-report.json"
     required: false
     defaultValue: aws-fortify-report.json
-  - name: release
-    cliAliases: rel
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-  - name: aws-region
+  aws-region:
     description: 'Required AWS region. Default value: AWS_REGION environment variable.'
     required: true
     defaultValue: ${#env('AWS_REGION')}    
-  - name: aws-account
+  aws-account:
     description: 'Required AWS account id. Default value: AWS_ACCOUNT_ID environment variable.'
     required: true
     defaultValue: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - log.progress: Loading static scan summary
   - rest.call:
       - name: staticScanSummary
@@ -54,27 +54,25 @@ steps:
           - name: recommendations
             uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
         do:
-          - var.set:
-              vulnerabilities..: ${#action.fmt('issues',#root)}
+          - var.fmt:
+              vulnerabilities..: issues
   - file.write:
-    - to: ${parameters['file']}
+    - to: ${cli['file']}
       fmt: report
-    - if: ${parameters.file!='stdout'}
+    - if: ${cli.file!='stdout'}
       to: stdout
       value: |
-        Report written to ${parameters['report-file']}
+        Report written to ${cli['report-file']}
 
 formatters:
-  - name: report
-    contents:
+  report:
       issues: ${vulnerabilities?:{}} 
      
-  - name: issues
-    contents:
+  issues:
       SchemaVersion: 2018-10-08
       Id: ${rel.releaseId}-${issue.id}
-      ProductArn: "arn:aws:securityhub:${parameters['aws-region']}:${parameters['aws-account']}:product/${parameters['aws-account']}/default"
-      GeneratorId: "arn:aws:securityhub:${parameters['aws-region']}:${parameters['aws-account']}:product/${parameters['aws-account']}/default"
+      ProductArn: "arn:aws:securityhub:${cli['aws-region']}:${cli['aws-account']}:product/${cli['aws-account']}/default"
+      GeneratorId: "arn:aws:securityhub:${cli['aws-region']}:${cli['aws-account']}:product/${cli['aws-account']}/default"
       ProductName: 'Fortify SAST'
       CompanyName: OpenText
       Types: 
@@ -98,7 +96,7 @@ formatters:
         - Type: Application
           Id: ${rel.releaseId}-${issue.id}
           Partition: aws
-          Region: ${parameters['aws-region']}
+          Region: ${cli['aws-region']}
           Details:
             Other:
                 APPLICATION ID: ${rel.applicationId+''}

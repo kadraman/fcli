@@ -13,14 +13,14 @@ usage:
 config:
   rest.target.default: fod
       
-parameters:
-  - name: release
-    cliAliases: rel
+cli.options:
+  release:
+    alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   
 steps:
   - var.set:
-      rel: ${#fod.release(parameters.release)}
+      rel: ${#fod.release(cli.release)}
   - check:
     - displayName: FoD Security Policy must Pass
       passIf:      ${rel.isPassed}

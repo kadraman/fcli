@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.runner.processor.ActionParameterProcessor;
+import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor;
 import com.fortify.cli.common.action.runner.processor.ActionStepsProcessor;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.progress.helper.ProgressWriterType;
@@ -83,7 +83,7 @@ public class ActionRunner {
     }
 
     private ObjectNode getParameterValues(String[] args) {
-        var parameterValues = ActionParameterProcessor.builder()
+        var parameterValues = ActionCliOptionsProcessor.builder()
                 .config(config)
                 .spelEvaluator(config.getSpelEvaluator())
                 .build()
