@@ -68,7 +68,7 @@ steps:
           - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
             var.fmt:
               rules..: rules
-          - var.set:
+          - var.set: # TODO By defining a simple formatter that just returns 'true' we can combine this with the var.fmt step above/below
               ruleCache.${issue.checkId}: true
           - var.fmt:
               results..: results
