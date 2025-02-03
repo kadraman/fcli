@@ -30,15 +30,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.PublicKeyDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
-import com.fortify.cli.common.json.JsonHelper.AbstractJsonNodeWalker;
+import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
 import com.fortify.cli.common.spring.expression.SpelHelper;
-import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.AllArgsConstructor;
@@ -100,8 +100,6 @@ public class Action implements IActionElement {
     /** Maps/Collections listing action elements. 
      *  These get filled by the {@link #visit(Action, Object)} method. */ 
     @ToString.Exclude @JsonIgnore private final List<IActionElement> allActionElements = new ArrayList<>();
-    /** Cached mapping from text node property path to corresponding TemplateExpression instance */  
-    @JsonIgnore private final Map<String, TemplateExpression> formatterExpressions = new LinkedHashMap<>();
     
     public List<IActionElement> getAllActionElements() {
         return Collections.unmodifiableList(allActionElements);
@@ -142,8 +140,13 @@ public class Action implements IActionElement {
             config = new ActionConfig();
         }
         if ( formatters!=null ) {
-            var formatterContentsWalker = new FormatterContentsWalker();
-            formatters.values().forEach(formatterContentsWalker::walk);
+            var convertedFormatters = new LinkedHashMap<String, JsonNode>();
+            for ( var e : formatters.entrySet() ) {
+                var name = e.getKey();
+                var formatter = e.getValue();
+                convertedFormatters.put(name, new FormatterContentsWalker().walk(formatter));
+            }
+            this.formatters = convertedFormatters;
         }
     }
     
@@ -257,20 +260,19 @@ public class Action implements IActionElement {
         }
     }
     
-    private final class FormatterContentsWalker extends AbstractJsonNodeWalker<Void, Void> {
+    private final class FormatterContentsWalker extends JsonNodeDeepCopyWalker {
         @Override
-        protected Void getResult() { return null; }
-        @Override
-        protected void walkValue(Void state, String path, JsonNode parent, ValueNode node) {
+        protected JsonNode copyValue(JsonNode state, String path, JsonNode parent, ValueNode node) {
             if ( node instanceof TextNode ) {
                 var expr = node.asText();
                 try {
-                    formatterExpressions.put(path, SpelHelper.parseTemplateExpression(expr));
+                    return new POJONode(SpelHelper.parseTemplateExpression(expr));
                 } catch (ParseException e) {
                     throw new ActionValidationException(String.format("Error parsing template expression '%s'", expr), this, e);
                 }
+            } else {
+                return super.copyValue(state, path, parent, node);
             }
-            super.walkValue(state, path, parent, node);
         }
     }
 }

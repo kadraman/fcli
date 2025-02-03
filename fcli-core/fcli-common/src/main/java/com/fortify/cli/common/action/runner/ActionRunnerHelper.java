@@ -12,9 +12,8 @@
  */
 package com.fortify.cli.common.action.runner;
 
-import org.springframework.expression.spel.SpelEvaluationException;
-
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fortify.cli.common.json.JsonHelper;
@@ -30,30 +29,26 @@ import lombok.RequiredArgsConstructor;
 public final class ActionRunnerHelper {
     public static final JsonNode fmt(ActionRunnerContext ctx, String formatterName, JsonNode input) {
         var format = ctx.getConfig().getAction().getFormatters().get(formatterName);
-        return new JsonNodeOutputWalker(ctx, input).walk(format);
+        return new JsonNodeSpelEvaluatorWalker(ctx, input).walk(format);
     }
     
     @RequiredArgsConstructor
-    private static final class JsonNodeOutputWalker extends JsonNodeDeepCopyWalker {
+    private static final class JsonNodeSpelEvaluatorWalker extends JsonNodeDeepCopyWalker {
         private final ActionRunnerContext ctx;
         private final JsonNode input;
         @Override
         protected JsonNode copyValue(JsonNode state, String path, JsonNode parent, ValueNode node) {
-            if ( !(node instanceof TextNode) ) {
-                return super.copyValue(state, path, parent, node);
-            } else {
-                TemplateExpression expression = ctx.getConfig().getAction().getFormatterExpressions().get(path);
-                if ( expression==null ) { throw new RuntimeException("No expression for "+path); }
-                try {
-                    var rawResult = ctx.getSpelEvaluator().evaluate(expression, input, Object.class);
+            if ( node instanceof POJONode ) {
+                var pojoValue = ((POJONode)node).getPojo();
+                if ( pojoValue instanceof TemplateExpression ) {
+                    var rawResult = ctx.getSpelEvaluator().evaluate((TemplateExpression)pojoValue, input, Object.class);
                     if ( rawResult instanceof CharSequence ) {
                         rawResult = new TextNode(((String)rawResult).replace("\\n", "\n"));
                     }
                     return JsonHelper.getObjectMapper().valueToTree(rawResult);
-                } catch ( SpelEvaluationException e ) {
-                    throw new RuntimeException("Error evaluating action expression "+expression.getExpressionString(), e);
                 }
             }
+            return super.copyValue(state, path, parent, node);
         }
     }
 
