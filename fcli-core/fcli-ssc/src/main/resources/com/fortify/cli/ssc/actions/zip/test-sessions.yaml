@@ -8,7 +8,7 @@ usage:
 
 config:
   rest.target.default: ssc
-  sessionFromEnvOutput: show
+  session.from-env.output: show
   
 steps:
     - rest.call:

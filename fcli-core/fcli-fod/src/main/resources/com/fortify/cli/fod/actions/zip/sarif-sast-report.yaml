@@ -31,7 +31,7 @@ cli.options:
     alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: fortify-sast.sarif"
     required: false
-    defaultValue: fortify-sast.sarif
+    default: fortify-sast.sarif
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"

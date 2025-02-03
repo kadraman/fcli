@@ -53,10 +53,10 @@ import lombok.ToString;
  * containing elements describing things like:
  * <ul> 
  *  <li>Action metadata like name and description</li> 
- *  <li>Action parameters</li>
+ *  <li>Action configuration options</li>
+ *  <li>Action CLI options</li>
  *  <li>Steps to be executed, like executing REST requests and writing output</li>
- *  <li>Value templates</li>
- *  <Various other action configuration elements</li>
+ *  <li>Formatters</li>
  * </ul> 
  *
  * @author Ruud Senden
@@ -65,17 +65,31 @@ import lombok.ToString;
 @Data
 @JsonClassDescription("Fortify CLI action definition")
 public class Action implements IActionElement {
-    @JsonPropertyDescription("Required string unless `yaml-language-server` comment with schema location is provided: Schema location.")
+    @JsonPropertyDescription("""
+        Required string unless `yaml-language-server` comment with schema location is provided: Defines the fcli \
+        action YAML schema version used by this action. When a user tries to run this action, fcli will check \
+        whether the current fcli version is compatible with the given action schema version.   
+        """)
     @JsonProperty(value = "$schema", required=false) public String schema;
     
-    @JsonPropertyDescription("Required string: Author of this action.")
-    @JsonProperty(required = true) private String author;
+    @JsonPropertyDescription("""
+        Required string: Author of this action. This is a free-format string, allowing action users to see who \
+        provided this action.   
+        """)
+    @JsonProperty(value = "author", required = true) private String author;
     
-    @JsonPropertyDescription("Required object: Action usage help.")
-    @JsonProperty(required = true) private ActionUsage usage;
+    @JsonPropertyDescription("""
+        Required object: Action usage help, providing action usage instructions for users of this action. For \
+        example, this information may be included in action documentation, or can be viewed by users through \
+        the 'fcli * action help' command.
+        """)
+    @JsonProperty(value = "usage", required = true) private ActionUsage usage;
     
-    @JsonPropertyDescription("Optional object: Action configuration properties.")
-    @JsonProperty(required = false) private ActionConfig config;
+    @JsonPropertyDescription("""
+        Optional object: Action configuration properties. This includes configuration properties for setting \
+        default values to be used by some action steps, or how action output should be processed.
+        """)
+    @JsonProperty(value = "config", required = false) private ActionConfig config= new ActionConfig();
     
     @JsonPropertyDescription("""
         Optional map: CLI options accepted by this action. Map keys define option names, values define option \
@@ -84,17 +98,25 @@ public class Action implements IActionElement {
         command line, or, if an alias is defined, through '--alias value'. For single-letter option names/aliases, \
         the CLI option will be preceded by just a single dash, for example '-f' if the option name/alias is 'f'.
         """)
-    @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOptions> cliOptions;
+    @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOptions> cliOptions = Collections.emptyMap();
     
-    @JsonPropertyDescription("Required list: Steps to be executed when this action is being run.")
-    @JsonProperty(required = true) private List<ActionStep> steps;
+    @JsonPropertyDescription("""
+        Required list: Steps to be executed when this action is being run. Each list item should consist of a \
+        single instruction to be executed, optionally together with the 'if:' instruction to allow for conditional \
+        execution. Note that the YAML schema allows for multiple instructions to be present within a single list \
+        item, but this will result in an error.
+        """)
+    @JsonProperty(value = "steps", required = true) private List<ActionStep> steps;
     
     @JsonPropertyDescription("""
         Optional map: Formatters that can be referenced in action steps to format data. Map keys define formatter \
-        name, map values define how the data should be formatted. The outcome of a formatter can either be a \
-        simple string, or a structured (JSON) object or array.
+        name, map values define how the data should be formatted. Each formatter can be defined as either a single \
+        string or a structured YAML object. Every string value in the formatter will be processed as a Spring \
+        Expression Language expression, allowing access to current action variables and SpEL functions. For example, \
+        if action variable 'name' is currently set to 'John Doe', a formatter node like 'hello: Hello ${name}' \
+        will set the property 'hello' to 'Hello John Doe'.
         """)
-    @JsonProperty(required = false) private Map<String, JsonNode> formatters;
+    @JsonProperty(value = "formatters", required = false) private Map<String, JsonNode> formatters = Collections.emptyMap();
     
     @JsonIgnore ActionMetadata metadata;
     /** Maps/Collections listing action elements. 
@@ -122,7 +144,7 @@ public class Action implements IActionElement {
      */
     public final void postLoad(ActionMetadata metadata) {
         this.metadata = metadata;
-        initializeCollections();
+        initializeAllActionElementsCollection();
         allActionElements.forEach(elt->elt.postLoad(this));
     }
     
@@ -134,20 +156,17 @@ public class Action implements IActionElement {
     public final void postLoad(Action action) {
         checkNotNull("action usage", usage, this);
         checkNotNull("action steps", steps, this);
-        if ( cliOptions==null ) {
-            cliOptions = Collections.emptyMap();
-        } if ( config==null ) {
-            config = new ActionConfig();
+        convertFormatters();
+    }
+
+    private void convertFormatters() {
+        var convertedFormatters = new LinkedHashMap<String, JsonNode>();
+        for ( var e : formatters.entrySet() ) {
+            var name = e.getKey();
+            var formatter = e.getValue();
+            convertedFormatters.put(name, new FormatterContentsWalker().walk(formatter));
         }
-        if ( formatters!=null ) {
-            var convertedFormatters = new LinkedHashMap<String, JsonNode>();
-            for ( var e : formatters.entrySet() ) {
-                var name = e.getKey();
-                var formatter = e.getValue();
-                convertedFormatters.put(name, new FormatterContentsWalker().walk(formatter));
-            }
-            this.formatters = convertedFormatters;
-        }
+        this.formatters = convertedFormatters;
     }
     
     /**
@@ -186,12 +205,12 @@ public class Action implements IActionElement {
     }
     
     /**
-     * Initialize the {@link #allActionElements} and {@link #formattersByName}
-     * collections, using the reflective visit methods. We use reflection as
-     * manually navigating the action element tree proved to be too error-prone,
-     * often forgetting to handle newly added action element types.
+     * Initialize the {@link #allActionElements} collection using the reflective 
+     * visit methods. We use reflection as manually navigating the action element 
+     * tree proved to be too error-prone, often forgetting to handle newly added 
+     * action element types.
      */
-    private void initializeCollections() {
+    private void initializeAllActionElementsCollection() {
         visit(this, this, elt->{
             allActionElements.add(elt);
         });
@@ -214,6 +233,9 @@ public class Action implements IActionElement {
             } else if ( actionElement instanceof Collection ) {
                 ((Collection<?>)actionElement).stream()
                     .forEach(o->visit(action, o, consumer));
+            } else if ( actionElement instanceof Map ) {
+                ((Map<?,?>)actionElement).entrySet().stream()
+                    .forEach(e->visit(action, e.getValue(), consumer));
             }
         }
     }

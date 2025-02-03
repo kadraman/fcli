@@ -61,7 +61,7 @@ cli.options:
     required: true
     alias: status
     description: "See `fcli fod release create`. Default value: Development"
-    defaultValue: Development
+    default: Development
   app-description:
     group: rel_create_opts
     required: false
@@ -82,16 +82,16 @@ cli.options:
     group: rel_create_opts
     required: false
     description: "See `fcli fod release create`. Default value: Web"
-    defaultValue: Web
+    default: Web
   app-criticality:
     group: rel_create_opts
     required: false
     description: "See `fcli fod release create`. Default value: Medium"
-    defaultValue: Medium
+    default: Medium
   assessment-type:
     group: sast_setup_opts
     required: false
-    defaultValue: "Static Assessment"
+    default: "Static Assessment"
     description: "See `fcli fod sast-scan setup`"
   use-aviator:      
     group: sast_setup_opts

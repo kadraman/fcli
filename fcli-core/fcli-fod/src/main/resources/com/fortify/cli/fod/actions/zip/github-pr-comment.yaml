@@ -42,36 +42,36 @@ cli.options:
     alias: t
     description: "Scan type for which to list vulnerabilities. Default value: Static"
     required: true
-    defaultValue: Static
+    default: Static
   github-api-url:
     description: 'Required GitHub API URL. Default value: GITHUB_API_URL environment variable.'
     required: true
-    defaultValue: ${#env('GITHUB_API_URL')}
+    default: ${#env('GITHUB_API_URL')}
   github-token:
     description: 'Required GitHub Token. Default value: GITHUB_TOKEN environment variable.'
     required: true
-    defaultValue: ${#env('GITHUB_TOKEN')}
+    default: ${#env('GITHUB_TOKEN')}
   github-owner:
     description: 'Required GitHub repository owner. Default value: GITHUB_REPOSITORY_OWNER environment variable.'
     required: true
-    defaultValue: ${#env('GITHUB_REPOSITORY_OWNER')}
+    default: ${#env('GITHUB_REPOSITORY_OWNER')}
   github-repo:
     description: 'Required GitHub repository. Default value: Taken from GITHUB_REPOSITORY environment variable.'
     required: true
-    defaultValue: ${#substringAfter(#env('GITHUB_REPOSITORY'),'/')}
+    default: ${#substringAfter(#env('GITHUB_REPOSITORY'),'/')}
   pr:
     description: "Required PR number. Default value: Taken from GITHUB_REF_NAME environment variable. Note that default value will only work on GitHub pull_request triggers; if this fcli action is invoked through any other GitHub trigger, it will fail unless an explicit PR number is passed through this option." 
     required: true
-    defaultValue: ${#substringBefore(#env('GITHUB_REF_NAME'),'/')}
+    default: ${#substringBefore(#env('GITHUB_REF_NAME'),'/')}
   commit:
     description: 'Required commit hash. Default value: GITHUB_SHA environment variable.'
     required: true
-    defaultValue: ${#env('GITHUB_SHA')}
+    default: ${#env('GITHUB_SHA')}
   dryrun:
     description: "Set to true to just output PR decoration JSON; don't actually update any PR"
     type: boolean
     required: false
-    defaultValue: false
+    default: false
     
 steps:
   - rest.target:

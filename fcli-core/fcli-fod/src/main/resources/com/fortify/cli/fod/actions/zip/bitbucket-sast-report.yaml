@@ -15,12 +15,12 @@ cli.options:
     alias: r
     description: "Optional report output file name (or 'stdout' / 'stderr'). Default value: bb-fortify-report.json"
     required: false
-    defaultValue: bb-fortify-report.json
+    default: bb-fortify-report.json
   annotations-file:
     alias: a
     description: "Optional annotations output file name (or 'stdout' / 'stderr'). Default value: bb-fortify-annotations.json"
     required: false
-    defaultValue: bb-fortify-annotations.json
+    default: bb-fortify-annotations.json
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"

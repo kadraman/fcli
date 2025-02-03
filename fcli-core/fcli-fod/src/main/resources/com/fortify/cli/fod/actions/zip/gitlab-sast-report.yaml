@@ -15,7 +15,7 @@ cli.options:
     alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gl-fortify-sast.json"
     required: false
-    defaultValue: gl-fortify-sast.json
+    default: gl-fortify-sast.json
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"

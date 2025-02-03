@@ -17,7 +17,7 @@ cli.options:
     alias: f
     description: "Optional report output file name (or 'stdout' / 'stderr'). Default value: aws-fortify-report.json"
     required: false
-    defaultValue: aws-fortify-report.json
+    default: aws-fortify-report.json
   appversion:
     alias: av
     description: "Required application version id or <appName>:<versionName>"
@@ -28,15 +28,15 @@ cli.options:
   page-size:
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see --socket-timeout option on fcli ssc session login command). Default value: 100"
     required: false
-    defaultValue: "100"    
+    default: "100"    
   aws-region:
     description: 'Required AWS region. Default value: AWS_REGION environment variable.'
     required: true
-    defaultValue: ${#env('AWS_REGION')}    
+    default: ${#env('AWS_REGION')}    
   aws-account:
     description: 'Required AWS account id. Default value: AWS_ACCOUNT_ID environment variable.'
     required: true
-    defaultValue: ${#env('AWS_ACCOUNT_ID')}
+    default: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
   - var.set:

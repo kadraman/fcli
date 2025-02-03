@@ -17,18 +17,18 @@ cli.options:
     alias: f
     description: "Optional report output file name (or 'stdout' / 'stderr'). Default value: aws-fortify-report.json"
     required: false
-    defaultValue: aws-fortify-report.json
+    default: aws-fortify-report.json
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
   aws-region:
     description: 'Required AWS region. Default value: AWS_REGION environment variable.'
     required: true
-    defaultValue: ${#env('AWS_REGION')}    
+    default: ${#env('AWS_REGION')}    
   aws-account:
     description: 'Required AWS account id. Default value: AWS_ACCOUNT_ID environment variable.'
     required: true
-    defaultValue: ${#env('AWS_ACCOUNT_ID')}
+    default: ${#env('AWS_ACCOUNT_ID')}
 
 steps:
   - var.set:

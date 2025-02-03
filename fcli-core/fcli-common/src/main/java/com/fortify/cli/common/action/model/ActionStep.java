@@ -12,9 +12,13 @@
  */
 package com.fortify.cli.common.action.model;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -24,6 +28,7 @@ import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 
 /**
  * This class describes a single action step element, which may contain 
@@ -34,6 +39,7 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
 public final class ActionStep extends AbstractActionStep {
+    // Partial description for instructions that set variables like 'var.set' and 'var.fmt'
     public static final String VAR_SET_NAME_FORMAT = """
         This step can either set/replace a single-value variable, set/replace a property on \
         a variable containing a set of properties, or append a value to an array-type variable. \
@@ -66,12 +72,22 @@ public final class ActionStep extends AbstractActionStep {
         """;
     
     @JsonPropertyDescription("""
-        Add REST request targets for use in 'rest.request' steps. This step takes a map, with \
+        Add REST request targets for use in 'rest.call' steps. This step takes a map, with \
         keys defining REST target names, and values defining the REST target definition. 
         """)
     @JsonProperty(value = "rest.target", required = false) private Map<String, ActionStepRestTarget> restTargets;
     
-    @JsonPropertyDescription("Execute one or more REST requests.")
+    @JsonPropertyDescription("""
+        Execute one or more REST calls. This step takes a list, with entries defining the request data \
+        and how to process the response. 
+        Note that multiple REST calls defined within a single 'rest.call' instruction are executed \
+        independent of each other, so they cannot reference each other's output. For example, if \
+        the target system supports bulk requests (like SSC), multiple requests within a single \
+        'rest.call' instruction may be combined into a single bulk request, so none of the REST \
+        responses will be available yet while building the bulk request. If you need to use the \
+        output from one REST call as input for another REST call, these REST calls should be invoked \
+        through separate 'rest.call' instructions.
+        """)
     @JsonProperty(value = "rest.call", required = false) private List<ActionStepRestCall> restCalls;
     
     @JsonPropertyDescription("Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
@@ -111,13 +127,13 @@ public final class ActionStep extends AbstractActionStep {
     @JsonProperty(value="file.write", required = false) private List<ActionStepFileWrite> fileWrite;
     
     @JsonPropertyDescription("Iterate over a given array of values.")
-    @JsonProperty(required = false) private ActionStepForEach forEach;
+    @JsonProperty(value = "forEach", required = false) private ActionStepForEach forEach;
     
     @JsonPropertyDescription("Mostly used for security policy and similar actions to define PASS/FAIL criteria. Upon action termination, check results will be written to console and return a non-zero exit code if the outcome of on or more checks was FAIL.")
-    @JsonProperty(required = false) private List<ActionStepCheck> check;
+    @JsonProperty(value = "check", required = false) private List<ActionStepCheck> check;
     
     @JsonPropertyDescription("Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
-    @JsonProperty(required = false) private List<ActionStep> steps;
+    @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;
     
     @JsonPropertyDescription("Throw an exception, thereby terminating action execution.")
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
@@ -130,5 +146,37 @@ public final class ActionStep extends AbstractActionStep {
      * step element, or the top-level {@link Action} instance).
      * It invokes the postLoad() method on each request descriptor.
      */
-    public final void postLoad(Action action) {}
+    public final void postLoad(Action action) {
+        checkInstructionCount();
+    }
+
+    private void checkInstructionCount() {
+        var nonNullInstructionNames = getNonNullInstructionNames();
+        if ( nonNullInstructionNames.size()==0 ) {
+            throw new ActionValidationException("Action step doesn't define any instruction");
+        }
+        if ( nonNullInstructionNames.size()>1 ) {
+            throw new ActionValidationException("Action step contains multiple instructions: "+nonNullInstructionNames);
+        }
+    }
+
+    @SneakyThrows
+    private ArrayList<String> getNonNullInstructionNames() {
+        var nonNullInstructions = new ArrayList<String>(); 
+        // Note that 'if' is defined in parent class, so not included by getDeclaredFields()
+        for ( var f : this.getClass().getDeclaredFields() ) {
+            var jsonPropertyAnnotation = f.getAnnotation(JsonProperty.class);
+            if ( jsonPropertyAnnotation!=null && f.get(this)!=null ) {
+                nonNullInstructions.add(getInstructionName(f, jsonPropertyAnnotation));
+            }
+        }
+        return nonNullInstructions;
+    }
+
+    private String getInstructionName(Field field, JsonProperty jsonPropertyAnnotation) {
+        var nameFromAnnotation = jsonPropertyAnnotation.value();
+        return StringUtils.isBlank(nameFromAnnotation) ? field.getName() : nameFromAnnotation;
+    }
+    
+    
 }

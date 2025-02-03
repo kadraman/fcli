@@ -29,7 +29,7 @@ cli.options:
     alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gh-fortify-sast.sarif"
     required: false
-    defaultValue: gh-fortify-sast.sarif
+    default: gh-fortify-sast.sarif
   appversion:
     alias: av
     description: "Required application version id or <appName>:<versionName>"
@@ -40,7 +40,7 @@ cli.options:
   page-size:
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see --socket-timeout option on fcli ssc session login command). Default value: 100"
     required: false
-    defaultValue: "100"
+    default: "100"
   
 steps:
   - var.set:

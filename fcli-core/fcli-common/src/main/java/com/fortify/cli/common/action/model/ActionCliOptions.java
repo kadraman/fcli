@@ -26,27 +26,43 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 public final class ActionCliOptions implements IActionElement {
-    @JsonPropertyDescription("Required string: Action parameter description to be shown in action usage help.")
-    @JsonProperty(required = true) private String description;
+    @JsonPropertyDescription("""
+        Required string: Action parameter description to be shown in action usage help.    
+        """)
+    @JsonProperty(value = "description", required = true) private String description;
     
-    @JsonPropertyDescription("Optional string: This will allow the action to also accept a CLI option named `--[alias]` or `-[alias]` for single-letter aliases. Aliases cannot be referenced in SpEL expressions.")
-    @JsonProperty(required = false) private String alias;
+    @JsonPropertyDescription("""
+        Optional string: This will allow the action to also accept a CLI option named \
+        `--[alias]` or `-[alias]` for single-letter aliases. Note that only option \
+        name, not alias, may be referenced through ${cli.*} expressions.
+        """)
+    @JsonProperty(value = "alias", required = false) private String alias;
     
-    @JsonPropertyDescription("Optional string: Action parameter type: string (default), boolean, int, long, double, float, or array.")
-    @JsonProperty(required = false) private String type;
+    @JsonPropertyDescription("""
+        Optional string: Action parameter type: string (default), boolean, int, long, double, float, or array.
+        """)
+    @JsonProperty(value = "type", required = false) private String type;
         
-    @JsonPropertyDescription("Optional SpEL template expression: Default value for this action parameter if no value is specified by the user.")
-    @JsonProperty(required = false) private TemplateExpression defaultValue;
+    @JsonPropertyDescription("""
+        Optional SpEL template expression: Default value for this CLI option if no value is specified by the user. \
+        For example, this can be used to read a default value from an environment variable using ${#env('ENV_NAME')}  
+        """)
+    @JsonProperty(value = "default", required = false) private TemplateExpression defaultValue;
     
-    @JsonPropertyDescription("Optional boolean: All parameters are required by default, unless this property is set to false.")
-    @JsonProperty(required = false, defaultValue = "true") private boolean required = true;
+    @JsonPropertyDescription("""
+        Optional boolean: All parameters are required by default, unless this property is set to false.    
+        """)
+    @JsonProperty(value = "required", required = false, defaultValue = "true") private boolean required = true;
     
-    @JsonPropertyDescription("Optional string: Allows for defining groups of parameters")
-    @JsonProperty(required = false) private String group;
+    @JsonPropertyDescription("""
+        Optional string: Allows for defining groups of parameters, which can for example be used with \
+        ${#action.copyParametersFromGroup("optionGroupName")} 
+        """)
+    @JsonProperty(value = "group", required = false) private String group;
     
     public final void postLoad(Action action) {
-        Action.checkNotNull("parameter description", getDescription(), this);
-        // TODO Check no duplicate names; ideally ActionRunner should also verify
+        Action.checkNotNull("CLI option description", getDescription(), this);
+        // TODO Check no duplicate option names; ideally ActionRunner should also verify
         //      that option names/aliases don't conflict with command options
         //      like --help/-h, --log-file, ...
     }

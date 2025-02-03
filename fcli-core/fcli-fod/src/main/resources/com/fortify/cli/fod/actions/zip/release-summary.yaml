@@ -16,7 +16,7 @@ cli.options:
     alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: stdout"
     required: false
-    defaultValue: stdout
+    default: stdout
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"

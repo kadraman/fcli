@@ -25,14 +25,24 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 public final class ActionConfig implements IActionElement {
-    @JsonPropertyDescription("Optional string: Default target to use for rest.call steps.")
+    @JsonPropertyDescription("""
+        Optional string: Default target to use for rest.call steps.    
+        """)
     @JsonProperty(value = "rest.target.default", required = false) private String restTargetDefault;
     
-    @JsonPropertyDescription("Optional enum value: If set to 'delayed' (default), all output to stdout/stderr except for progress messages will be delayed until the end of action execution. If set to 'immediate', output will be written immediately and progress writer will be configured to 'simple' mode (unless set to 'none') to avoid such output from interfering with progress messages.")
-    @JsonProperty(required = false) private ActionConfigOutput output = ActionConfigOutput.delayed;
+    @JsonPropertyDescription("""
+        Optional enum value: If set to 'delayed' (default), all output to stdout/stderr except for progress \
+        messages will be delayed until the end of action execution. If set to 'immediate', output will be \
+        written immediately and progress writer will be configured to 'simple' mode (unless '--progress=none' \
+        is specified by the user) to avoid such output from interfering with progress messages.    
+        """)
+    @JsonProperty(value = "output", required = false) private ActionConfigOutput output = ActionConfigOutput.delayed;
     
-    @JsonPropertyDescription("Optional enum value: Whether to 'suppress' (default) or 'show' the output of the session login and logout commands when a session is created through --session from-env")
-    @JsonProperty(required = false) private ActionConfigSessionFromEnvOutput sessionFromEnvOutput = ActionConfigSessionFromEnvOutput.suppress;
+    @JsonPropertyDescription("""
+        Optional enum value: Whether to 'suppress' (default) or 'show' the output of the session login and \
+        logout commands when a session is created through --session from-env
+        """)
+    @JsonProperty(value = "session.from-env.output", required = false) private ActionConfigSessionFromEnvOutput sessionFromEnvOutput = ActionConfigSessionFromEnvOutput.suppress;
     
     @Override
     public void postLoad(Action action) {}

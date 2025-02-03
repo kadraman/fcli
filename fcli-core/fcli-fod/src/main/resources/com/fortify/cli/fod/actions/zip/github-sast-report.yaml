@@ -29,7 +29,7 @@ cli.options:
     alias: f
     description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gh-fortify-sast.sarif"
     required: false
-    defaultValue: gh-fortify-sast.sarif
+    default: gh-fortify-sast.sarif
   release:
     alias: rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"

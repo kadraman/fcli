@@ -61,7 +61,7 @@ cli.options:
   refresh-timeout:
     group: av_create_opts
     required: false
-    defaultValue: "300s"
+    default: "300s"
     description: "See 'fcli ssc av create'. Default value: 300s"
   
 steps:
