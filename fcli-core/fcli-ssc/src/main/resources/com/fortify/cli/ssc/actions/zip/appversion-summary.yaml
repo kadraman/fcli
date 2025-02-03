@@ -36,84 +36,84 @@ steps:
   # Load SSC issue selector filter by sets
   - log.progress: Loading issue selector sets
   - rest.call:
-    - name: issueSelectorSet
-      uri:  /api/v1/projectVersions/${av.id}/issueSelectorSet?fields=filterBySet
+      issueSelectorSet:
+        uri:  /api/v1/projectVersions/${av.id}/issueSelectorSet?fields=filterBySet
   - var.set:
       analysisTypes: ${issueSelectorSet.filterBySet.^[displayName=='Analysis Type'].selectorOptions}
   - rest.call:
-    - if: ${analysisTypes!=null && analysisTypes.size()>0}
-      name: artifactsResponse
-      uri:  /api/v1/projectVersions/${av.id}/artifacts
-      type: paged
-      query:
-        embed: scans
-      forEach:
-        name: artifact
-        breakIf: ${analysizedScans?.![type]?.containsAll(analysisTypes.![displayName])?:false}
-        do:
-          - forEach:
-              values: ${artifact._embed.scans}
-              name: scan
-              do:
-                - if: ${lastScans==null || lastScans[scan.type]==null}
-                  var.set:
-                    lastScans.${analysisTypes?.^[guid==#root.scan.type].displayName}: ${scan}
-                - var.set:
-                    analyzedScans..: ${scan}
+      artifactsResponse:
+        if: ${analysisTypes!=null && analysisTypes.size()>0} 
+        uri:  /api/v1/projectVersions/${av.id}/artifacts
+        type: paged
+        query:
+          embed: scans
+        forEach:
+          name: artifact
+          breakIf: ${analysizedScans?.![type]?.containsAll(analysisTypes.![displayName])?:false}
+          do:
+            - forEach:
+                values: ${artifact._embed.scans}
+                name: scan
+                do:
+                  - if: ${lastScans==null || lastScans[scan.type]==null}
+                    var.set:
+                      lastScans.${analysisTypes?.^[guid==#root.scan.type].displayName}: ${scan}
+                  - var.set:
+                      analyzedScans..: ${scan}
                     
   # Collect SSC filter set data, together with issue counts by analysis type & folder
   # TODO Can we use ${#ssc.filterSet(av, filtersetTitleOrId)} instead?
   - rest.call:
-    - name: filterSetsResponse
-      uri:  /api/v1/projectVersions/${av.id}/filterSets
-      type: paged
-      forEach:
-        # Process each filter set if included by filtersets parameter value
-        name: filterset
-        if:   ${filtersetsArray==null || filtersetsArray.contains(filterset.title) || filtersetsArray.contains(filterset.guid) || (filtersetsArray.contains('default') && filterset.defaultFilterSet)}
-        do: 
-          - log.progress: Loading ${filterset.title} filter set data
-          # Collect filter sets
-          - var.set:
-              filtersets..: ${filterset}
-          # Collect issue counts for current filter set and each analysis type
-          - forEach:
-              name: analysisType
-              values: ${analysisTypes}
-              do:
-                # Load SSC issue counts by folder for current filter set and analysis type
-                - rest.call:
-                  - name: issueGroupsByFolder
-                    uri:  /api/v1/projectVersions/${av.id}/issueGroups
-                    query:
-                      qm: issues
-                      groupingtype: FOLDER
-                      filter: ISSUE[11111111-1111-1111-1111-111111111151]:${analysisType.guid}
-                      filterset: ${filterset.guid}
-                    type: paged
-                    forEach:
-                      name: issueGroupFolder
-                      do:
-                        # Collect issue count by filter set, analysis type & folder
-                        - var.set:
-                            folder: ${filterset.title+':'+analysisType.displayName+':'+issueGroupFolder.id}
-                            issueCountsByFolder.${folder}: ${issueGroupFolder.visibleCount}
-                  - name: issueGroupsByState
-                    uri:  /api/v1/projectVersions/${av.id}/issueGroups
-                    query:
-                      qm: issues
-                      groupingtype: 11111111-1111-1111-1111-111111111167
-                      filter: ISSUE[11111111-1111-1111-1111-111111111151]:${analysisType.guid}
-                      filterset: ${filterset.guid}
-                      showremoved: true
-                    type: paged
-                    forEach:
-                      name: issueGroupState
-                      do:
-                        # Collect issue count by filter set, analysis type & issue state
-                        - var.set:
-                            state: ${filterset.title+':'+analysisType.displayName+':'+issueGroupState.id}
-                            issueCountsByState.${state}: ${issueGroupState.visibleCount}
+      filterSetsResponse:
+        uri:  /api/v1/projectVersions/${av.id}/filterSets
+        type: paged
+        forEach:
+          # Process each filter set if included by filtersets parameter value
+          name: filterset
+          if:   ${filtersetsArray==null || filtersetsArray.contains(filterset.title) || filtersetsArray.contains(filterset.guid) || (filtersetsArray.contains('default') && filterset.defaultFilterSet)}
+          do: 
+            - log.progress: Loading ${filterset.title} filter set data
+            # Collect filter sets
+            - var.set:
+                filtersets..: ${filterset}
+            # Collect issue counts for current filter set and each analysis type
+            - forEach:
+                name: analysisType
+                values: ${analysisTypes}
+                do:
+                  # Load SSC issue counts by folder for current filter set and analysis type
+                  - rest.call:
+                      issueGroupsByFolder:
+                        uri:  /api/v1/projectVersions/${av.id}/issueGroups
+                        query:
+                          qm: issues
+                          groupingtype: FOLDER
+                          filter: ISSUE[11111111-1111-1111-1111-111111111151]:${analysisType.guid}
+                          filterset: ${filterset.guid}
+                        type: paged
+                        forEach:
+                          name: issueGroupFolder
+                          do:
+                            # Collect issue count by filter set, analysis type & folder
+                            - var.set:
+                                folder: ${filterset.title+':'+analysisType.displayName+':'+issueGroupFolder.id}
+                                issueCountsByFolder.${folder}: ${issueGroupFolder.visibleCount}
+                      issueGroupsByState:
+                        uri:  /api/v1/projectVersions/${av.id}/issueGroups
+                        query:
+                          qm: issues
+                          groupingtype: 11111111-1111-1111-1111-111111111167
+                          filter: ISSUE[11111111-1111-1111-1111-111111111151]:${analysisType.guid}
+                          filterset: ${filterset.guid}
+                          showremoved: true
+                        type: paged
+                        forEach:
+                          name: issueGroupState
+                          do:
+                            # Collect issue count by filter set, analysis type & issue state
+                            - var.set:
+                                state: ${filterset.title+':'+analysisType.displayName+':'+issueGroupState.id}
+                                issueCountsByState.${state}: ${issueGroupState.visibleCount}
                             
   - log.progress: Generating output data
   

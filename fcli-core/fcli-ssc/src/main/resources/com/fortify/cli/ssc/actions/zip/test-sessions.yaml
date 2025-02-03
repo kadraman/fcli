@@ -12,17 +12,17 @@ config:
   
 steps:
     - rest.call:
-        - name: apps
-          uri: /api/v1/projects
-          forEach:
-            name: app
-            do:
-              - file.write:
-                - to: stdout
-                  value: ${app}
-        - name: ping
-          uri: /rest/v2/ping
-          target: sc-sast
+          apps:
+            uri: /api/v1/projects
+            forEach:
+              name: app
+              do:
+                - file.write:
+                  - to: stdout
+                    value: ${app}
+          ping:
+            uri: /rest/v2/ping
+            target: sc-sast
     - file.write:
         - to: stdout
           value: ${ping}

@@ -35,27 +35,27 @@ steps:
       rel: ${#fod.release(cli.release)}
   - log.progress: Loading static scan summary
   - rest.call:
-      - name: staticScanSummary
+      staticScanSummary:
         uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
         if:   ${rel.currentStaticScanId!=null}
   - log.progress: Processing issue data
   - rest.call:
-    - name: issues
-      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
-      query:
-        filters: scantype:Static
-      pagingProgress:
-        postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-      forEach:
-        name: issue
-        embed:
-          - name: details
-            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
-          - name: recommendations
-            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
-        do:
-          - var.fmt:
-              vulnerabilities..: issues
+      issues:
+        uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
+        query:
+          filters: scantype:Static
+        pagingProgress:
+          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        forEach:
+          name: issue
+          embed:
+            details:
+                uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
+            recommendations:
+                uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
+          do:
+            - var.fmt:
+                vulnerabilities..: issues
   - file.write:
     - to: ${cli['file']}
       fmt: report

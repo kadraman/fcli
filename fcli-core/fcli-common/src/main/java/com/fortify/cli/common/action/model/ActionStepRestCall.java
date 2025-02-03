@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.model;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -31,9 +32,8 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRestCall extends AbstractActionStep {
-    @JsonPropertyDescription("Required string: Name to assign to the JSON response for this REST request. Can be referenced in subsequent steps using ${[name]} to access transformed data (if applicable) or ${[name]_raw} to access raw, untransformed data.")
-    @JsonProperty(required = true) private String name;
+public final class ActionStepRestCall extends AbstractActionStep implements IStringKeyAware {
+    @JsonIgnore private String key;
     
     @JsonPropertyDescription("Optional string: HTTP method like GET or POST to use for this REST request. Defaults to 'GET'.")
     @JsonProperty(required = false, defaultValue = "GET") private String method = HttpMethod.GET.name();
@@ -70,7 +70,6 @@ public final class ActionStepRestCall extends AbstractActionStep {
      * method. It checks that required properties are set.
      */
     public final void postLoad(Action action) {
-        Action.checkNotBlank("request name", name, this);
         Action.checkNotNull("request uri", uri, this);
         if ( StringUtils.isBlank(target) && action.getConfig()!=null ) {
             target = action.getConfig().getRestTargetDefault();
@@ -89,7 +88,7 @@ public final class ActionStepRestCall extends AbstractActionStep {
     @Reflectable @NoArgsConstructor
     @Data @EqualsAndHashCode(callSuper = true)
     public static final class ActionStepRequestForEachDescriptor extends AbstractActionStepForEach implements IActionStepIfSupplier {
-        private List<ActionStepRestCall> embed;
+        private Map<String, ActionStepRestCall> embed;
         
         protected final void _postLoad(Action action) {
             //throw new RuntimeException("test");

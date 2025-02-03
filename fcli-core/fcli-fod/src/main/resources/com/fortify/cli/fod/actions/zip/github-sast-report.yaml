@@ -39,39 +39,39 @@ steps:
       rel: ${#fod.release(cli.release)}
   - log.progress: Loading static scan summary
   - rest.call:
-      - name: staticScanSummary
+      staticScanSummary:
         uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
         if:   ${rel.currentStaticScanId!=null}
         onFail: 
           - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
   - log.progress: Processing issue data
   - rest.call:
-    - name: issues
-      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
-      query:
-        filters: scantype:Static
-      pagingProgress:
-        postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-      onResponse:
-        - if: ${issues_raw.totalCount>5000}
-          throw: GitHub does not support importing more than 5000 vulnerabilities. Please clean the scan results or update vulnerability search criteria.
-      forEach:
-        name: issue
-        embed:
-          - name: details
-            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
-          - name: recommendations
-            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
-          - name: traces
-            uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
-        do:
-          - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
-            var.fmt:
-              rules..: rules
-          - var.set: # TODO By defining a simple formatter that just returns 'true' we can combine this with the var.fmt step above/below
-              ruleCache.${issue.checkId}: true
-          - var.fmt:
-              results..: results
+      issues:
+        uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
+        query:
+          filters: scantype:Static
+        pagingProgress:
+          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        onResponse:
+          - if: ${issues_raw.totalCount>5000}
+            throw: GitHub does not support importing more than 5000 vulnerabilities. Please clean the scan results or update vulnerability search criteria.
+        forEach:
+          name: issue
+          embed:
+            details:
+              uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
+            recommendations:
+              uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
+            traces:
+              uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
+          do:
+            - if: ${ruleCache==null || ruleCache[issue.checkId]==null}
+              var.fmt:
+                rules..: rules
+            - var.set: # TODO By defining a simple formatter that just returns 'true' we can combine this with the var.fmt step above/below
+                ruleCache.${issue.checkId}: true
+            - var.fmt:
+                results..: results
   - file.write:
     - to: ${cli.file}
       fmt: github-sast-report

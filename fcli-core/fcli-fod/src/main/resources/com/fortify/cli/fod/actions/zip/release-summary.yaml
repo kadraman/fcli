@@ -28,21 +28,21 @@ steps:
   # Update Note: although open source counts are now available on the release object, the date of last open source scan is not so still need below 
   - log.progress: Loading Scans
   - rest.call:
-    - name: scans
-      # we can't filter on scan type so we have to trawl through scans to find "latest" open source scan :(
-      uri: /api/v3/releases/${r.releaseId}/scans?limit=50
-      query:
-        orderBy: completedDateTime
-        orderByDirection: DESC
-      type: paged
-      forEach:
-        name: scan
-        breakIf: ${ossScanDate!=null}
-        if: ${scan.scanType=='OpenSource'}
-        do:
-          - var.set:
-              scanType: ${scan.scanType}
-              ossScanDate: ${scan.completedDateTime} 
+      scans:
+        # we can't filter on scan type so we have to trawl through scans to find "latest" open source scan :(
+        uri: /api/v3/releases/${r.releaseId}/scans?limit=50
+        query:
+          orderBy: completedDateTime
+          orderByDirection: DESC
+        type: paged
+        forEach:
+          name: scan
+          breakIf: ${ossScanDate!=null}
+          if: ${scan.scanType=='OpenSource'}
+          do:
+            - var.set:
+                scanType: ${scan.scanType}
+                ossScanDate: ${scan.completedDateTime} 
 
   - file.write:
     - to: ${cli.file}

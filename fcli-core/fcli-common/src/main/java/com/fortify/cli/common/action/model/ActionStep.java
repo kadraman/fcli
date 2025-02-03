@@ -78,8 +78,9 @@ public final class ActionStep extends AbstractActionStep {
     @JsonProperty(value = "rest.target", required = false) private Map<String, ActionStepRestTarget> restTargets;
     
     @JsonPropertyDescription("""
-        Execute one or more REST calls. This step takes a list, with entries defining the request data \
-        and how to process the response. 
+        Execute one or more REST calls. This step takes a map, with keys defining an indentifier
+        for the REST call, and values defining the request data and how to process the response.
+         
         Note that multiple REST calls defined within a single 'rest.call' instruction are executed \
         independent of each other, so they cannot reference each other's output. For example, if \
         the target system supports bulk requests (like SSC), multiple requests within a single \
@@ -88,7 +89,7 @@ public final class ActionStep extends AbstractActionStep {
         output from one REST call as input for another REST call, these REST calls should be invoked \
         through separate 'rest.call' instructions.
         """)
-    @JsonProperty(value = "rest.call", required = false) private List<ActionStepRestCall> restCalls;
+    @JsonProperty(value = "rest.call", required = false) private Map<String, ActionStepRestCall> restCalls;
     
     @JsonPropertyDescription("Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
     @JsonProperty(value = "run.fcli", required = false) private List<ActionStepRunFcli> runFcli;

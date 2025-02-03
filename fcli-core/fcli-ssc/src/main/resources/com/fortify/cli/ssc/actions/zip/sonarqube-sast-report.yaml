@@ -39,19 +39,19 @@ steps:
       fs: ${#ssc.filterSet(av, cli.filterset)}
   - log.progress: Processing issue data
   - rest.call:
-    - name: issues
-      uri: /api/v1/projectVersions/${av.id}/issues
-      query:
-        filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
-        filterset: ${fs.guid}
-        limit: ${cli['page-size']}
-      pagingProgress:
-        postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
-      forEach:
-        name: issue
-        do:
-          - var.fmt:
-              sq_issues..: sq_issues
+      issues:
+        uri: /api/v1/projectVersions/${av.id}/issues
+        query:
+          filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
+          filterset: ${fs.guid}
+          limit: ${cli['page-size']}
+        pagingProgress:
+          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
+        forEach:
+          name: issue
+          do:
+            - var.fmt:
+                sq_issues..: sq_issues
   - file.write:
     - to: ${cli.file}
       fmt: sq_output 

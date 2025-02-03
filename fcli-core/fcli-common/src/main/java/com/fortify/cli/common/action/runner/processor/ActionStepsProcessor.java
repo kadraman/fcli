@@ -428,7 +428,7 @@ public final class ActionStepsProcessor {
         }
     }
 
-    private void processRestCallStep(List<ActionStepRestCall> requests) {
+    private void processRestCallStep(Map<String, ActionStepRestCall> requests) {
         if ( requests!=null ) {
             var requestsProcessor = new ActionStepRequestsProcessor(ctx);
             requestsProcessor.addRequests(requests, this::processResponse, this::processFailure, vars);
@@ -437,7 +437,7 @@ public final class ActionStepsProcessor {
     }
     
     private final void processResponse(ActionStepRestCall requestDescriptor, JsonNode rawBody) {
-        var name = requestDescriptor.getName();
+        var name = requestDescriptor.getKey();
         var body = ctx.getRequestHelper(requestDescriptor.getTarget()).transformInput(rawBody);
         vars.setLocal(name+"_raw", rawBody);
         vars.setLocal(name, body);
@@ -460,7 +460,7 @@ public final class ActionStepsProcessor {
     private final void processRequestStepForEach(ActionStepRestCall requestDescriptor) {
         var forEach = requestDescriptor.getForEach();
         if ( forEach!=null ) {
-            var input = vars.get(requestDescriptor.getName());
+            var input = vars.get(requestDescriptor.getKey());
             if ( input!=null ) {
                 if ( input instanceof ArrayNode ) {
                     updateRequestStepForEachTotalCount(forEach, (ArrayNode)input);
@@ -519,7 +519,7 @@ public final class ActionStepsProcessor {
                 throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getName());
             }
             requestExecutor.addRequests(forEach.getEmbed(), 
-                    (rd,r)->((ObjectNode)currentNode).set(rd.getName(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
+                    (rd,r)->((ObjectNode)currentNode).set(rd.getKey(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
                     this::processFailure, newVars);
         };
     }
@@ -530,9 +530,9 @@ public final class ActionStepsProcessor {
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> simpleRequests = new LinkedHashMap<>();
         private final Map<String, List<IActionRequestHelper.ActionRequestDescriptor>> pagedRequests = new LinkedHashMap<>();
         
-        final void addRequests(List<ActionStepRestCall> requestDescriptors, BiConsumer<ActionStepRestCall, JsonNode> responseConsumer, BiConsumer<ActionStepRestCall, UnirestException> failureConsumer, ActionRunnerVars vars) {
+        final void addRequests(Map<String, ActionStepRestCall> requestDescriptors, BiConsumer<ActionStepRestCall, JsonNode> responseConsumer, BiConsumer<ActionStepRestCall, UnirestException> failureConsumer, ActionRunnerVars vars) {
             if ( requestDescriptors!=null ) {
-                requestDescriptors.forEach(r->addRequest(r, responseConsumer, failureConsumer, vars));
+                requestDescriptors.values().forEach(r->addRequest(r, responseConsumer, failureConsumer, vars));
             }
         }
         
