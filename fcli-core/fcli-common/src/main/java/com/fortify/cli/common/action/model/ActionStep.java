@@ -126,11 +126,19 @@ public final class ActionStep extends AbstractActionStep {
     @JsonPropertyDescription("Write data to a file, stdout, or stderr. Note that output to stdout and stderr will be deferred until action termination as to not interfere with progress messages.")
     @JsonProperty(value="file.write", required = false) private List<ActionStepFileWrite> fileWrite;
     
+    @JsonPropertyDescription("""
+        Mostly used for security policy and similar actions to define PASS/FAIL criteria. Upon action termination, \
+        check results will be written to console and return a non-zero exit code if the outcome of one or more checks \
+        was FAIL. This instructions takes a map, with keys defining the check name, and values defining the check \
+        definition. Current check status can be accessed through ${checkStatus.checkName}, for example allowing to \
+        conditionally execute additional checks based on earlier check outcome. Note that if the same check name \
+        (map key) is used in different 'check' steps, they will be treated as separate checks, and ${checkStatus.checkName} \
+        will contain the status of the last executed check for the given check name.
+        """)
+    @JsonProperty(value = "check", required = false) private Map<String, ActionStepCheck> check;
+    
     @JsonPropertyDescription("Iterate over a given array of values.")
     @JsonProperty(value = "forEach", required = false) private ActionStepForEach forEach;
-    
-    @JsonPropertyDescription("Mostly used for security policy and similar actions to define PASS/FAIL criteria. Upon action termination, check results will be written to console and return a non-zero exit code if the outcome of on or more checks was FAIL.")
-    @JsonProperty(value = "check", required = false) private List<ActionStepCheck> check;
     
     @JsonPropertyDescription("Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
     @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;

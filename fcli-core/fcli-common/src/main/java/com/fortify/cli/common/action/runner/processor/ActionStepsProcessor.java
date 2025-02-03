@@ -358,15 +358,15 @@ public final class ActionStepsProcessor {
         return true;
     }
     
-    private void processCheckStep(ActionStepCheck check) {
-        var displayName = check.getDisplayName();
-        var failIf = check.getFailIf();
-        var passIf = check.getPassIf();
+    private void processCheckStep(String key, ActionStepCheck checkStep) {
+        var failIf = checkStep.getFailIf();
+        var passIf = checkStep.getPassIf();
         var pass = passIf!=null 
                 ? vars.eval(passIf, Boolean.class)
                 : !vars.eval(failIf, Boolean.class);
         var currentStatus = pass ? CheckStatus.PASS : CheckStatus.FAIL;
-        ctx.getCheckStatuses().compute(displayName, (name,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
+        var newCheckStatus = ctx.getCheckStatuses().compute(checkStep, (s,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
+        appendToObject("checkStatus", key, new TextNode(newCheckStatus.name()));
     }
     
     private void processRestTargetsStep(String name, ActionStepRestTarget descriptor) {

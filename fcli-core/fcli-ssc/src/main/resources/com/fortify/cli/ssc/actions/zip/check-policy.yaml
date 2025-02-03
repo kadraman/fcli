@@ -26,17 +26,20 @@ steps:
     - name: countsByNewIssue
       args: ssc issue count --av ${av.id} --by "New Issue"
   - check:
-    - displayName: No critical issues allowed
-      failIf:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
-    - displayName: No new issues allowed
-      failIf:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
+      noCritical:
+        displayName: No critical issues allowed
+        failIf:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
+      noNew:
+        displayName: No new issues allowed
+        failIf:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
   - run.fcli:
     - args: ssc issue ls --av ${av.id}
       forEach:
         name: issue
         do:
           - check:
-            - displayName: No new critical issues allowed
-              failIf:      ${issue.scanStatus=='NEW' && issue.friority=='Critical'}
-              ifSkipped:   PASS # If no issues
+              noNewCritical:
+                displayName: No new critical issues allowed
+                failIf:      ${issue.scanStatus=='NEW' && issue.friority=='Critical'}
+                ifSkipped:   PASS # If no issues
       

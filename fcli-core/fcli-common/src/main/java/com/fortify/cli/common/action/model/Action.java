@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
 import com.fortify.cli.common.json.JsonHelper.JsonNodeDeepCopyWalker;
 import com.fortify.cli.common.spring.expression.SpelHelper;
+import com.fortify.cli.common.util.JavaHelper;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.AllArgsConstructor;
@@ -144,7 +146,7 @@ public class Action implements IActionElement {
      */
     public final void postLoad(ActionMetadata metadata) {
         this.metadata = metadata;
-        initializeAllActionElementsCollection();
+        initializeAllActionElements();
         allActionElements.forEach(elt->elt.postLoad(this));
     }
     
@@ -210,9 +212,11 @@ public class Action implements IActionElement {
      * tree proved to be too error-prone, often forgetting to handle newly added 
      * action element types.
      */
-    private void initializeAllActionElementsCollection() {
-        visit(this, this, elt->{
-            allActionElements.add(elt);
+    private void initializeAllActionElements() {
+        visit(this, this, elt->allActionElements.add(elt),
+        (k,v)->{
+            JavaHelper.as(v, IObjectKeyAware.class).ifPresent(e->e.setKey(k));
+            JavaHelper.as(v, IStringKeyAware.class).ifPresent(e->e.setKey((String)k));
         });
     }
     
@@ -224,37 +228,50 @@ public class Action implements IActionElement {
      * If the given action element is a collection, we recurse into each
      * collection element.
      */
-    private final void visit(Action action, Object actionElement, Consumer<IActionElement> consumer) {
+    private final void visit(Action action, Object actionElement, Consumer<IActionElement> consumer, BiConsumer<Object, Object> mapEntryConsumer) {
         if ( actionElement!=null ) {
             if ( actionElement instanceof IActionElement ) {
                 var instance = (IActionElement)actionElement;
                 consumer.accept(instance);
-                visitFields(action, instance.getClass(), instance, consumer);
+                visitFields(action, instance.getClass(), instance, consumer, mapEntryConsumer);
             } else if ( actionElement instanceof Collection ) {
                 ((Collection<?>)actionElement).stream()
-                    .forEach(o->visit(action, o, consumer));
+                    .forEach(o->visit(action, o, consumer, mapEntryConsumer));
             } else if ( actionElement instanceof Map ) {
                 ((Map<?,?>)actionElement).entrySet().stream()
-                    .forEach(e->visit(action, e.getValue(), consumer));
+                    .forEach(e->visitMapEntry(action, e.getKey(), e.getValue(), consumer, mapEntryConsumer));
             }
         }
+    }
+
+    /**
+     * Visit the given action element that's contained in a Map. This will check whether
+     * the action element implements any of the I[type]KeyAware interface to inform the
+     * action element about their associated map key, then call {@link #visit(Action, Object, Consumer)}
+     * to further process the action element.
+     * Note that this is somewhat of a code smell, as we're only supposed to be visiting
+     * action elements, not perform any operation on them.
+     */
+    private void visitMapEntry(Action action, Object key, Object value, Consumer<IActionElement> consumer, BiConsumer<Object, Object> mapEntryConsumer) {
+        mapEntryConsumer.accept(key,  value);
+        visit(action, value, consumer, mapEntryConsumer);
     }
 
     /**
      * Visit all fields of the given class, with field values being
      * retrieved from the given action element. 
      */
-    private void visitFields(Action action, Class<?> clazz, Object actionElement, Consumer<IActionElement> consumer) {
+    private void visitFields(Action action, Class<?> clazz, Object actionElement, Consumer<IActionElement> consumer, BiConsumer<Object,Object> mapEntryConsumer) {
         if ( clazz!=null && IActionElement.class.isAssignableFrom(clazz) ) {
             // Visit fields provided by any superclasses of the given class.
-            visitFields(action, clazz.getSuperclass(), actionElement, consumer);
+            visitFields(action, clazz.getSuperclass(), actionElement, consumer, mapEntryConsumer);
             // Iterate over all declared fields, and invoke the
             // postLoad(action, actionElement) for each field value.
             Stream.of(clazz.getDeclaredFields())
                 .peek(f->f.setAccessible(true))
                 .filter(f->f.getAnnotation(JsonIgnore.class)==null)
                 .map(f->getFieldValue(actionElement, f))
-                .forEach(o->visit(action, o, consumer));
+                .forEach(o->visit(action, o, consumer, mapEntryConsumer));
         }
     }
 

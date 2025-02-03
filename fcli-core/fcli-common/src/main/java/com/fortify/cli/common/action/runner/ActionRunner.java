@@ -95,20 +95,19 @@ public class ActionRunner {
         for ( var elt : ctx.getConfig().getAction().getAllActionElements() ) {
             if ( elt instanceof ActionStepCheck ) {
                 var checkStep = (ActionStepCheck)elt;
-                var displayName = checkStep.getDisplayName();
-                var value = CheckStatus.combine(ctx.getCheckStatuses().get(displayName), checkStep.getIfSkipped());
-                ctx.getCheckStatuses().put(displayName, value);
+                var value = CheckStatus.combine(ctx.getCheckStatuses().get(checkStep), checkStep.getIfSkipped());
+                ctx.getCheckStatuses().put(checkStep, value);
             }
         }
     }
 
-    private static final void printCheckResult(ActionRunnerContext ctx, CheckStatus status, String displayName) {
+    private static final void printCheckResult(ActionRunnerContext ctx, CheckStatus status, ActionStepCheck checkStep) {
         if ( status!=CheckStatus.HIDE ) {
             // Even when flushing, output may appear in incorrect order if some 
             // check statuses are written to stdout and others to stderr.
             //var out = status==CheckStatus.PASS?stdout:stderr;
             var out = ctx.getStdout();
-            out.println(String.format("%s: %s", status, displayName));
+            out.println(String.format("%s: %s", status, checkStep.getDisplayName()));
             //out.flush();
         }
     }

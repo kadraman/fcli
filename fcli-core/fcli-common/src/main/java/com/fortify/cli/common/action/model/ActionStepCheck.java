@@ -16,6 +16,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -31,21 +34,47 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepCheck extends AbstractActionStep {
-    @JsonPropertyDescription("Required string: Display name of this check, to be displayed in PASS/FAIL messages.")
+public final class ActionStepCheck extends AbstractActionStep implements IStringKeyAware {
+    // Shared property description for passIf/failIf
+    private static final String PASS_FAIL_IF = """
+        Either 'passIf' or 'failIf' must be defined, both taking an SpEL template expression that \
+        evaluates to 'true' or 'false'. 
+        
+        For 'passIf', the outcome of the check will be 'PASS' if the given expression evaluates to \
+        'true', or 'FAIL' is the given expression evaluates to 'false'.
+        
+        For 'failIf', the outcome of the check will be 'FAIL' if the given expression evaluates to \
+        'true', or 'PASS' is the given expression evaluates to 'false'.
+        """;
+    
+    // Map key under which this instance was declared
+    @JsonIgnore private String key;
+    
+    @JsonPropertyDescription("""
+        Optional string: Display name of this check, to be displayed in PASS/FAIL messages. \
+        If not defined, the display name will be set to the map key under which this check \
+        is defined.
+        """)
     @JsonProperty(required = true) private String displayName;
     
-    @JsonPropertyDescription("Required SpEL template expression if 'passIf' not specified: The outcome of this check will be 'FAIL' if the given expression evaluates to 'true', outcome will be 'PASS' otherwise.")
+    @JsonPropertyDescription(PASS_FAIL_IF)
     @JsonProperty(required = false) private TemplateExpression failIf;
     
-    @JsonPropertyDescription("Required SpEL template expression if 'failIf' not specified: The outcome of this check will be 'SUCCESS' if the given expression evaluates to 'true', outcome will be 'FAIL' otherwise.")
+    @JsonPropertyDescription(PASS_FAIL_IF)
     @JsonProperty(required = false) private TemplateExpression passIf;
     
-    @JsonPropertyDescription("Optional enum value: Define the check result in case the check is being skipped due to conditional execution or no records to be processed in forEach blocks.")
+    @JsonPropertyDescription("""
+        Optional enum value: Define the check result in case the check is being skipped due to \
+        conditional execution or no records to be processed in forEach blocks. Allowed values:
+        FAIL: Fail the check if it was not executed
+        PASS: Pass the check if it was not executed
+        SKIP: Report that the test was skipped
+        HIDE: Hide the check from output
+        """)
     @JsonProperty(required = false, defaultValue = "SKIP") private CheckStatus ifSkipped = CheckStatus.SKIP;
     
     public final void postLoad(Action action) {
-        Action.checkNotBlank("check displayName", displayName, this);
+        if ( StringUtils.isBlank(displayName) ) { displayName = key; }
         Action.throwIf(failIf==null && passIf==null, this, ()->"Either passIf or failIf must be specified on check step");
         Action.throwIf(failIf!=null && passIf!=null, this, ()->"Only one of passIf or failIf may be specified on check step");
     }
