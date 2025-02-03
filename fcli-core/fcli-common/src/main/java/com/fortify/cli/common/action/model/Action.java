@@ -215,8 +215,8 @@ public class Action implements IActionElement {
     private void initializeAllActionElements() {
         visit(this, this, elt->allActionElements.add(elt),
         (k,v)->{
-            JavaHelper.as(v, IObjectKeyAware.class).ifPresent(e->e.setKey(k));
-            JavaHelper.as(v, IStringKeyAware.class).ifPresent(e->e.setKey((String)k));
+            JavaHelper.as(v, IMapObjectKeyAware.class).ifPresent(e->e.setKey(k));
+            JavaHelper.as(v, IMapStringKeyAware.class).ifPresent(e->e.setKey((String)k));
         });
     }
     

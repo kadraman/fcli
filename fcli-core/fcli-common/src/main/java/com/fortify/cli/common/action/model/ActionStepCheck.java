@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepCheck extends AbstractActionStep implements IStringKeyAware {
+public final class ActionStepCheck extends AbstractActionStep implements IMapStringKeyAware {
     // Shared property description for passIf/failIf
     private static final String PASS_FAIL_IF = """
         Either 'passIf' or 'failIf' must be defined, both taking an SpEL template expression that \

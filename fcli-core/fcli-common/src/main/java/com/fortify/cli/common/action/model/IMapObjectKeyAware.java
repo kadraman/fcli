@@ -18,6 +18,6 @@ package com.fortify.cli.common.action.model;
  * any object type as the map key.
  * @author Ruud Senden
  */
-public interface IObjectKeyAware {
+public interface IMapObjectKeyAware {
     void setKey(Object key);
 }

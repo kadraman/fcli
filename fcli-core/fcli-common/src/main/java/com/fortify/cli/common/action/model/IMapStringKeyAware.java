@@ -18,6 +18,6 @@ package com.fortify.cli.common.action.model;
  * only String keys.
  * @author Ruud Senden
  */
-public interface IStringKeyAware {
+public interface IMapStringKeyAware {
     void setKey(String key);
 }

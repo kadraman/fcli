@@ -32,7 +32,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRestCall extends AbstractActionStep implements IStringKeyAware {
+public final class ActionStepRestCall extends AbstractActionStep implements IMapStringKeyAware {
     @JsonIgnore private String key;
     
     @JsonPropertyDescription("Optional string: HTTP method like GET or POST to use for this REST request. Defaults to 'GET'.")
