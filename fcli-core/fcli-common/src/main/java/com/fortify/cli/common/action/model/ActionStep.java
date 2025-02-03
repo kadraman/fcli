@@ -78,8 +78,13 @@ public final class ActionStep extends AbstractActionStep {
     @JsonProperty(value = "rest.target", required = false) private Map<String, ActionStepRestTarget> restTargets;
     
     @JsonPropertyDescription("""
-        Execute one or more REST calls. This step takes a map, with keys defining an indentifier
-        for the REST call, and values defining the request data and how to process the response.
+        Execute one or more REST calls. This step takes a map, with keys defining an indentifier \
+        for the REST call, and values defining the request data and how to process the response. \
+        For paged REST requests, a single 'rest.call' instruction will execute multiple REST \
+        requests to load the individual pages. The response of each individual REST request \
+        will be stored as local action variables; the processed response is accessible through an \
+        action variable named after the map key/request indentifier, the raw response is \
+        accessible through the same name appended with '_raw'.
          
         Note that multiple REST calls defined within a single 'rest.call' instruction are executed \
         independent of each other, so they cannot reference each other's output. For example, if \
