@@ -45,7 +45,7 @@ Hidden commands are not listed in fcli help output and not included in the link:
 == Migration from v2.x
 
 Upgrading from fcli v2.x to fcli v3.x may require you to update your workflows and, if applicable, updating any
-custom fcli actions. Please see the link:../v2.x-v3.x-migration.html[migration guide] for details.
+custom fcli actions. Please see the link:../migration-v2.x-v3.x.html[migration guide] for details.
 
 == Release Assets
 
@@ -526,7 +526,7 @@ Apart from built-in actions, users can also develop and run custom actions, whic
 
 Custom actions must specify a schema version, which is used to check compatibility between current fcli version and the provided custom action. Some examples:
 
-* Actions developed for fcli 2.x will fail to run on fcli 3.x (see link:../v2.x-v3.x-migration.html[migration guide])
+* Actions developed for fcli 2.x will fail to run on fcli 3.x (see link:../migration-v2.x-v3.x.html[migration guide])
 * Actions developed for fcli 3.0.0 can be run on any future fcli 3.x version, but may fail to run on future fcli 4.x versions
 * Actions developed for a later fcli 3.x version may fail to run on earlier fcli 3.x versions
 
