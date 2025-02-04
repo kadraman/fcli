@@ -14,8 +14,8 @@ steps:
     - rest.call:
           apps:
             uri: /api/v1/projects
-            forEach:
-              name: app
+            records.for-each:
+              record.var-name: app
               do:
                 - file.write:
                   - to: stdout

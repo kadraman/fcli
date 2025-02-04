@@ -28,7 +28,7 @@ steps:
       staticScanSummary:
         uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
         if:   ${rel.currentStaticScanId!=null}
-        onFail: 
+        on.fail: 
           - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
   - log.progress: Processing issue data
   - rest.call:
@@ -36,10 +36,10 @@ steps:
         uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
         query:
           filters: scantype:Static
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-        forEach:
-          name: issue
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        records.for-each:
+          record.var-name: issue
           embed:
             details:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details

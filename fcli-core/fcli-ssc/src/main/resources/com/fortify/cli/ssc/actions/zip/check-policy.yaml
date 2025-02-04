@@ -20,26 +20,29 @@ steps:
       av: ${#ssc.appVersion(cli.appversion)}
       fs: ${#ssc.filterSet(av, cli.filterset)}
   - run.fcli:
-    - name: countsByFolder
-      args: ssc issue count --av ${av.id} --by FOLDER
+      countsByFolder:
+        cmd: ssc issue count --av ${av.id} --by FOLDER
+        records.collect: true
   - run.fcli:
-    - name: countsByNewIssue
-      args: ssc issue count --av ${av.id} --by "New Issue"
+      countsByNewIssue:
+        cmd: ssc issue count --av ${av.id} --by "New Issue"
+        records.collect: true
   - check:
       noCritical:
-        displayName: No critical issues allowed
-        failIf:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
+        display-name: No critical issues allowed
+        fail.if:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
       noNew:
-        displayName: No new issues allowed
-        failIf:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
+        display-name: No new issues allowed
+        fail.if:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
   - run.fcli:
-    - args: ssc issue ls --av ${av.id}
-      forEach:
-        name: issue
-        do:
-          - check:
-              noNewCritical:
-                displayName: No new critical issues allowed
-                failIf:      ${issue.scanStatus=='NEW' && issue.friority=='Critical'}
-                ifSkipped:   PASS # If no issues
+      listIssues:
+        cmd: ssc issue ls --av ${av.id}
+        records.for-each:
+          record.var-name: issue
+          do:
+            - check:
+                noNewCritical:
+                  display-name: No new critical issues allowed
+                  fail.if:      ${issue.scanStatus=='NEW' && issue.friority=='Critical'}
+                  ifSkipped:   PASS # If no issues
       

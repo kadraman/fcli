@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepFileWrite extends AbstractActionStep {
+public final class ActionStepFileWrite extends AbstractActionElementIf {
     @JsonPropertyDescription("Required SpEL template expression: Specify where to write the given data; either 'stdout', 'stderr' or a filename.")
     @JsonProperty(required = true) private TemplateExpression to;
     

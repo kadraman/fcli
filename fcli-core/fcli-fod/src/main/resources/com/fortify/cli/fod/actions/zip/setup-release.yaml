@@ -107,23 +107,15 @@ cli.options:
 steps:
   - log.progress: "Creating FoD application & release if non-existing" 
   - run.fcli:
-    - name: createRelease
-      args: fod release create "${rel}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup("rel_create_opts")}
-  - file.write:
-      - to: stdout
-        value: |
-          Create application release ${rel} (id ${createRelease[0].releaseId}): ${createRelease[0].__action__.replaceAll('\n', ', ')}
+      createRelease:
+        cmd: fod release create "${cli.release}" --skip-if-exists --auto-required-attrs ${#action.copyParametersFromGroup("rel_create_opts")}
   - log.progress: "Waiting for release to leave suspended state"
   - run.fcli:
-    - args: fod release wait-for "${rel}" --progress=none
+      waitForRelease:
+        cmd: fod release wait-for "${cli.release}" --progress=none
   - if: ${cli["scan-types"].contains("sast")}
     steps:        
       - log.progress: "Configuring FoD application release ${rel} for SAST scanning"
       - run.fcli:
-        - name: setupSast
-          args: fod sast-scan setup --rel "${rel}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup("sast_setup_opts")}
-      - file.write:
-        - to: stdout
-          value: |
-            SAST scan setup status: ${setupSast[0].__action__}
-      
+          setupSast:
+            cmd: fod sast-scan setup --rel "${cli.release}" --skip-if-exists --frequency "Subscription" --audit-preference Automated ${#action.copyParametersFromGroup("sast_setup_opts")}

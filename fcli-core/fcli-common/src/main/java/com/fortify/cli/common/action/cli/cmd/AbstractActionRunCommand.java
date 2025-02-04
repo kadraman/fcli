@@ -31,6 +31,7 @@ import com.fortify.cli.common.progress.cli.mixin.ProgressWriterFactoryMixin;
 import com.fortify.cli.common.util.DisableTest;
 import com.fortify.cli.common.util.DisableTest.TestType;
 import com.fortify.cli.common.util.EnvHelper;
+import com.fortify.cli.common.util.OutputHelper.OutputType;
 
 import lombok.SneakyThrows;
 import picocli.CommandLine;
@@ -104,12 +105,9 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
+            var showStdout = config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show;
             var baseCmd = getSessionFromEnvLoginCommand();
-            var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
-            if ( config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show) {
-                System.err.println(output.getErr());
-                System.out.println(output.getOut());
-            }
+            runSessionCmd(showStdout, baseCmd);
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
         }
@@ -125,17 +123,23 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
         // session only on the first 'fcli * action run' invocation.
         if ( currentActionRunInitializedSessionFromEnv ) {
             try {
+                var showStdout = config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show;
                 var baseCmd = getSessionFromEnvLogoutCommand();
-                var output = new FcliCommandExecutor(getRootCommandLine(), String.format("%s --session from-env", baseCmd)).execute();
-                if ( config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show) {
-                    System.err.println(output.getErr());
-                    System.out.println(output.getOut());
-                }
+                runSessionCmd(showStdout, baseCmd);
             } finally {
                 currentActionRunInitializedSessionFromEnv = false;
                 System.setProperty("fcli.action.initializedSessionFromEnv", "false");
             }
         }
+    }
+
+    private void runSessionCmd(boolean showStdout, String baseCmd) {
+        FcliCommandExecutor.builder()
+            .rootCommandLine(getRootCommandLine())
+            .cmd(String.format("%s --session from-env", baseCmd))
+            .stdoutOutputType(showStdout ? OutputType.show : OutputType.suppress)
+            .build()
+            .execute();
     }
 
     private void setOrClearSystemProperty(String name, String value) {

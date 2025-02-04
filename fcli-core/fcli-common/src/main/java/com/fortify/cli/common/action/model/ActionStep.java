@@ -38,7 +38,7 @@ import lombok.SneakyThrows;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStep extends AbstractActionStep {
+public final class ActionStep extends AbstractActionElementIf {
     // Partial description for instructions that set variables like 'var.set' and 'var.fmt'
     public static final String VAR_SET_NAME_FORMAT = """
         This step can either set/replace a single-value variable, set/replace a property on \
@@ -82,22 +82,44 @@ public final class ActionStep extends AbstractActionStep {
         for the REST call, and values defining the request data and how to process the response. \
         For paged REST requests, a single 'rest.call' instruction will execute multiple REST \
         requests to load the individual pages. The response of each individual REST request \
-        will be stored as local action variables; the processed response is accessible through an \
-        action variable named after the map key/request indentifier, the raw response is \
-        accessible through the same name appended with '_raw'.
+        will be stored as local action variables. For example, given a rest.call identifier 'x' \
+        the following local action variables will be set:
+        
+        x: The processed response
+        x_raw: The raw, unprocessed response
+        
+        These variables can be referenced only within the current 'rest.call' map entry, for \
+        example by 'log.progress', 'on.success', and 'records.for-each'. They are not accessible 
+        by later steps or other map entries within the same 'rest.call' step. If you wish to make \
+        any data produced by the REST call available to later steps, you'll need to use 'var.*' \
+        steps in either 'on.success' or 'records.for-each' instructions.
          
-        Note that multiple REST calls defined within a single 'rest.call' instruction are executed \
-        independent of each other, so they cannot reference each other's output. For example, if \
-        the target system supports bulk requests (like SSC), multiple requests within a single \
-        'rest.call' instruction may be combined into a single bulk request, so none of the REST \
-        responses will be available yet while building the bulk request. If you need to use the \
-        output from one REST call as input for another REST call, these REST calls should be invoked \
-        through separate 'rest.call' instructions.
+        Note that multiple REST calls defined within a single 'rest.call' step will be executed \
+        in the specified order, but the requests are built independent of each other. As such, \
+        within a single 'rest.call' step, variables set by one 'rest.call' map entry cannot be \
+        accessed in the request definition (uri, query, body, ...) of another map entry. The \
+        reason is that for target systems that supports bulk requests (like SSC), multiple \
+        requests within a single 'rest.call' instruction may be combined into a single bulk \
+        request, so none of the REST responses will be available yet while building the bulk \
+        request. If you need to use the output from one REST call as input for another REST \
+        call, these REST calls should be defined in separate 'rest.call' steps.
         """)
-    @JsonProperty(value = "rest.call", required = false) private Map<String, ActionStepRestCall> restCalls;
+    @JsonProperty(value = "rest.call", required = false) private LinkedHashMap<String, ActionStepRestCall> restCalls;
     
-    @JsonPropertyDescription("Execute one or more fcli commands. For now, only fcli commands that support the standard output options (--output/--store/--to-file) may be used, allowing the JSON output of those commands to be used in subsequent or nested steps. Any console output is suppressed, and any non-zero exit codes will produce an error.")
-    @JsonProperty(value = "run.fcli", required = false) private List<ActionStepRunFcli> runFcli;
+    @JsonPropertyDescription("""
+        Execute one or more fcli commands. This step takes a map, with map keys defining an identifier \
+        for the fcli invocation, and values defining the fcli command to run and how to process the \
+        output and exit code. The identifier can be used in later steps (or later fcli invocations in \
+        the same 'run.fcli' step) to access the output of the fcli command, like stdout, stderr, and \
+        exit code that were produced by the fcli command, depending on step configuration. For example, 
+        given an fcli invocation identifier named 'x', the following action variables may be set: 
+        
+        x: Array of records produced by the fcli invocation if 'records.collect' is set to 'true'
+        x_stdout': Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
+        x_stderr': Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
+        x_exitCode': Exit code of the fcli invocation
+        """)
+    @JsonProperty(value = "run.fcli", required = false) private LinkedHashMap<String, ActionStepRunFcli> runFcli;
     
     @JsonPropertyDescription("Write a progress message.")
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
@@ -143,16 +165,24 @@ public final class ActionStep extends AbstractActionStep {
         """)
     @JsonProperty(value = "check", required = false) private Map<String, ActionStepCheck> check;
     
-    @JsonPropertyDescription("Iterate over a given array of values.")
-    @JsonProperty(value = "forEach", required = false) private ActionStepForEach forEach;
+    @JsonPropertyDescription("""
+        Execute the steps defined in the 'do' block for every record provided by the 'from' expression.    
+        """)
+    @JsonProperty(value = "records.for-each", required = false) private ActionStepForEach forEachRecord;
     
-    @JsonPropertyDescription("Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.")
+    @JsonPropertyDescription("""
+        Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
+        """)
     @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;
     
-    @JsonPropertyDescription("Throw an exception, thereby terminating action execution.")
+    @JsonPropertyDescription("""
+        Throw an exception, thereby terminating action execution.
+        """)
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
     
-    @JsonPropertyDescription("Terminate action execution and return the given exit code.")
+    @JsonPropertyDescription("""
+        Terminate action execution and return the given exit code.
+        """)
     @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
     
     /**

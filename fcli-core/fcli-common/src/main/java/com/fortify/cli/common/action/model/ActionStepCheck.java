@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepCheck extends AbstractActionStep implements IMapStringKeyAware {
+public final class ActionStepCheck extends AbstractActionElementIf implements IMapStringKeyAware {
     // Shared property description for passIf/failIf
     private static final String PASS_FAIL_IF = """
         Either 'passIf' or 'failIf' must be defined, both taking an SpEL template expression that \
@@ -55,13 +55,13 @@ public final class ActionStepCheck extends AbstractActionStep implements IMapStr
         If not defined, the display name will be set to the map key under which this check \
         is defined.
         """)
-    @JsonProperty(required = true) private String displayName;
+    @JsonProperty(value = "display-name", required = true) private String displayName;
     
     @JsonPropertyDescription(PASS_FAIL_IF)
-    @JsonProperty(required = false) private TemplateExpression failIf;
+    @JsonProperty(value = "fail.if", required = false) private TemplateExpression failIf;
     
     @JsonPropertyDescription(PASS_FAIL_IF)
-    @JsonProperty(required = false) private TemplateExpression passIf;
+    @JsonProperty(value = "pass.if", required = false) private TemplateExpression passIf;
     
     @JsonPropertyDescription("""
         Optional enum value: Define the check result in case the check is being skipped due to \
@@ -75,8 +75,8 @@ public final class ActionStepCheck extends AbstractActionStep implements IMapStr
     
     public final void postLoad(Action action) {
         if ( StringUtils.isBlank(displayName) ) { displayName = key; }
-        Action.throwIf(failIf==null && passIf==null, this, ()->"Either passIf or failIf must be specified on check step");
-        Action.throwIf(failIf!=null && passIf!=null, this, ()->"Only one of passIf or failIf may be specified on check step");
+        Action.throwIf(failIf==null && passIf==null, this, ()->"Either pass.if or fail.if must be specified on check step");
+        Action.throwIf(failIf!=null && passIf!=null, this, ()->"Only one of pass.if or fail.if may be specified on check step");
     }
     
     public static enum CheckStatus {

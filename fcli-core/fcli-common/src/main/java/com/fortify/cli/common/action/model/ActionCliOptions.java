@@ -50,7 +50,7 @@ public final class ActionCliOptions implements IActionElement {
     @JsonProperty(value = "default", required = false) private TemplateExpression defaultValue;
     
     @JsonPropertyDescription("""
-        Optional boolean: All parameters are required by default, unless this property is set to false.    
+        Optional boolean: CLI options are required by default, unless this property is set to false.    
         """)
     @JsonProperty(value = "required", required = false, defaultValue = "true") private boolean required = true;
     

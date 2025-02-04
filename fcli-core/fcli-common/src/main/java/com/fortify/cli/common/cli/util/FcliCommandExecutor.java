@@ -21,77 +21,68 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.action.runner.StepProcessingException;
 import com.fortify.cli.common.output.cli.cmd.IOutputHelperSupplier;
 import com.fortify.cli.common.output.writer.output.standard.StandardOutputWriter;
 import com.fortify.cli.common.util.JavaHelper;
-import com.fortify.cli.common.util.OutputCollector;
-import com.fortify.cli.common.util.OutputCollector.Output;
+import com.fortify.cli.common.util.OutputHelper;
+import com.fortify.cli.common.util.OutputHelper.OutputType;
+import com.fortify.cli.common.util.OutputHelper.Result;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParseResult;
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE) @Data
+@Builder @Data
 public final class FcliCommandExecutor {
     private final CommandLine rootCommandLine;
-    private final ParseResult parseResult;
+    private final String cmd;
+    private final Consumer<ObjectNode> recordConsumer;
+    private final OutputType stdoutOutputType;
+    private final OutputType stderrOutputType;
+    @Getter(lazy = true, value = AccessLevel.PRIVATE) private final ParseResult parseResult = createParseResult(); 
     
-    public FcliCommandExecutor(CommandLine rootCommandLine, String cmd) {
-        this(rootCommandLine, parse(rootCommandLine, cmd));
+    @SneakyThrows // TODO Can fcli commands actually throw an exception? Or would this be catched by picocli
+    public final Result execute() {
+        if ( recordConsumer!=null && canCollectRecords() ) {
+            StandardOutputWriter.collectRecords(recordConsumer, stdoutOutputType!=OutputType.show);
+        }
+        return OutputHelper.call(()->_execute(), stdoutOutputType, stderrOutputType, StandardCharsets.UTF_8);
+    }
+
+    private final int _execute() {
+        try {
+            rootCommandLine.clearExecutionResults();
+            return rootCommandLine.getExecutionStrategy().execute(getParseResult());
+        } catch ( Exception e ) {
+            throw new IllegalStateException("Fcli command threw an exception", e);
+        }
     }
     
-    public FcliCommandExecutor(CommandLine rootCommandLine, String[] args) {
-        this(rootCommandLine, parse(rootCommandLine, args));
+    public final boolean canCollectRecords() {
+        return getLeafCommand(IOutputHelperSupplier.class).isPresent();
     }
     
-    public final CommandSpec getLeafCommandSpec(ParseResult parseResult) {
-        var leafCommand = parseResult.subcommand();
+    private final CommandSpec getLeafCommandSpec() {
+        var leafCommand = getParseResult().subcommand();
         while (leafCommand.hasSubcommand() ) {
             leafCommand = leafCommand.subcommand();
         }
         return leafCommand.commandSpec();
     }
     
-    public final <T> Optional<T> getLeafCommand(ParseResult parseResult, Class<T> type) {
-        return JavaHelper.as(getLeafCommandSpec(parseResult).userObject(), type);
+    private final <T> Optional<T> getLeafCommand(Class<T> type) {
+        return JavaHelper.as(getLeafCommandSpec().userObject(), type);
     }
     
-    public final Output execute() {
-        return OutputCollector.collectOutput(StandardCharsets.UTF_8, ()->_execute());
-    }
-    
-    public final boolean canCollectRecords() {
-        return getLeafCommand(getParseResult(), IOutputHelperSupplier.class).isPresent();
-    }
-    
-    public final Output execute(Consumer<ObjectNode> recordConsumer, boolean collectOutput) {
-        if ( canCollectRecords() && recordConsumer!=null ) {
-            StandardOutputWriter.collectRecords(recordConsumer, !collectOutput);
-        }
-        return execute();
-    }
-
-    private final int _execute() {
-        try {
-            rootCommandLine.clearExecutionResults();
-            return rootCommandLine.getExecutionStrategy().execute(parseResult);
-        } catch ( Exception e ) {
-            throw new StepProcessingException("Fcli command threw an exception", e);
-        }
-    }
-    
-    private static final ParseResult parse(CommandLine rootCommandLine, String cmd) {
+    private final ParseResult createParseResult() {
         List<String> argsList = new ArrayList<String>();
         Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(cmd);
         while (m.find()) { argsList.add(m.group(1).replace("\"", "")); }
-        return parse(rootCommandLine, argsList.toArray(String[]::new));
-    }
-    
-    private static final ParseResult parse(CommandLine rootCommandLine, String[] args) {
-        return rootCommandLine.parseArgs(args);
+        return rootCommandLine.parseArgs(argsList.toArray(String[]::new));
     }
 }

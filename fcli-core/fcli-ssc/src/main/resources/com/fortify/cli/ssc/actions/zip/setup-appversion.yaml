@@ -67,10 +67,6 @@ cli.options:
 steps:
   - log.progress: "Creating SSC application version if non-existing"
   - run.fcli:
-    - name: createAppVersion
-      args: ssc av create ${av} --skip-if-exists --auto-required-attrs --refresh ${#action.copyParametersFromGroup("av_create_opts")}
-  - file.write:
-      - to: stdout
-        value: |
-          Create application version ${av} (id ${createAppVersion[0].id}): ${createAppVersion[0].__action__}
+      createAppVersion:
+        cmd: ssc av create ${cli.appversion} --skip-if-exists --auto-required-attrs --refresh ${#action.copyParametersFromGroup("av_create_opts")}
       

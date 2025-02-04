@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fortify.cli.common.action.model.AbstractActionStepForEach;
+import com.fortify.cli.common.action.model.AbstractActionElementForEachRecord;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepCheck;
@@ -44,11 +45,12 @@ import com.fortify.cli.common.action.model.ActionStepFileWrite;
 import com.fortify.cli.common.action.model.ActionStepForEach;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.model.ActionStepRestCall;
-import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestForEachDescriptor;
-import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestPagingProgressDescriptor;
+import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestForEachResponseRecord;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestType;
+import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRestCallLogProgressDescriptor;
 import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepRunFcli;
+import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -65,9 +67,11 @@ import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
 import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
 import com.fortify.cli.common.spring.expression.SpelHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
+import com.fortify.cli.common.util.OutputHelper.OutputType;
 import com.fortify.cli.common.util.StringUtils;
 
 import kong.unirest.UnirestException;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -96,7 +100,7 @@ public final class ActionStepsProcessor {
             processStepEntries(step::getFileWrite, this::processFileWriteStep);
             processStepSupplier(step::get_throw, this::processThrowStep);
             processStepSupplier(step::get_exit, this::processExitStep);
-            processStepSupplier(step::getForEach, this::processForEachStep);
+            processStepSupplier(step::getForEachRecord, this::processForEachRecordStep);
             processStepEntries(step::getSteps, this::processStep);
         }
     }
@@ -329,31 +333,34 @@ public final class ActionStepsProcessor {
         ctx.setExitRequested(true);
     }
     
-    private void processForEachStep(ActionStepForEach forEach) {
-        var processorExpression = forEach.getProcessor();
-        var valuesExpression = forEach.getValues();
-        if ( processorExpression!=null ) {
-            var processor = vars.eval(processorExpression, IActionStepForEachProcessor.class);
-            if ( processor!=null ) { processor.process(node->processForEachStepNode(forEach, node)); }
-        } else if ( valuesExpression!=null ) {
-            var values = vars.eval(valuesExpression, ArrayNode.class);
-            if ( values!=null ) { 
-                // Process values until processForEachStepNode() returns false
-                JsonHelper.stream(values)
-                    .allMatch(value->processForEachStepNode(forEach, value));
-            }
+    private void processForEachRecordStep(ActionStepForEach forEachStep) {
+        // TODO Clean up this method
+        var from = vars.eval(forEachStep.getFrom(), Object.class);
+        if ( from==null ) { return; }
+        if ( from instanceof IActionStepForEachProcessor ) {
+            ((IActionStepForEachProcessor)from).process(node->processForEachStepNode(forEachStep, node));
+            return;
+        }
+        if ( from instanceof Collection<?> ) {
+            from = JsonHelper.getObjectMapper().valueToTree(from);
+        }
+        if ( from instanceof ArrayNode ) {
+            JsonHelper.stream((ArrayNode)from)
+                .allMatch(value->processForEachStepNode(forEachStep, value));
+        } else {
+            throw new StepProcessingException("steps:records.for-each:from must evaluate to either an array or IActionStepForEachProcessor instance");
         }
     }
     
-    private boolean processForEachStepNode(AbstractActionStepForEach forEach, JsonNode node) {
-        if ( forEach==null ) { return false; }
-        var breakIf = forEach.getBreakIf();
-        vars.set(forEach.getName(), node);
+    private boolean processForEachStepNode(AbstractActionElementForEachRecord forEachRecord, JsonNode node) {
+        if ( forEachRecord==null ) { return false; }
+        var breakIf = forEachRecord.getBreakIf();
+        vars.set(forEachRecord.getVarName(), node);
         if ( breakIf!=null && vars.eval(breakIf, Boolean.class) ) {
             return false;
         }
-        if ( _if(forEach) ) {
-            processSteps(forEach.get_do());
+        if ( _if(forEachRecord) ) {
+            processSteps(forEachRecord.get_do());
         }
         return true;
     }
@@ -384,46 +391,73 @@ public final class ActionStepsProcessor {
         return new BasicActionRequestHelper(unirestInstanceSupplier, null);
     }
     
-    private void processRunFcliStep(ActionStepRunFcli fcli) {
-        var args = vars.eval(fcli.getArgs(), String.class);
-        ctx.getProgressWriter().writeProgress("Executing fcli %s", args);
-        var cmdExecutor = new FcliCommandExecutor(ctx.getConfig().getRootCommandLine(), args);
-        Consumer<ObjectNode> recordConsumer = null;
-        var forEach = fcli.getForEach();
-        var name = fcli.getName();
-        if ( StringUtils.isNotBlank(name) ) {
-            vars.set(name, ctx.getObjectMapper().createArrayNode());
+    private void processRunFcliStep(String name, ActionStepRunFcli fcli) {
+        var cmd = vars.eval(fcli.getCmd(), String.class).replaceFirst("^fcli\s+", "");
+        ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd);
+        var recordConsumer = createFcliRecordConsumer(fcli);
+        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
+        var requestedStderrOutputType = getFcliOutputTypeOrDefault(fcli.getStderrOutputType(), OutputType.show );
+        var actualStdoutOutputType = overrideShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
+        var actualStderrOutputType = overrideShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);;
+        var cmdExecutor = FcliCommandExecutor.builder()
+                .rootCommandLine(ctx.getConfig().getRootCommandLine())
+                .cmd(cmd)
+                .stdoutOutputType(actualStdoutOutputType)
+                .stderrOutputType(actualStderrOutputType)
+                .recordConsumer(recordConsumer).build();
+        if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
+            throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
         }
-        if ( forEach!=null || StringUtils.isNotBlank(name) ) {
-            if ( !cmdExecutor.canCollectRecords() ) {
-                throw new IllegalStateException("Can't use forEach or name on fcli command: "+args);
-            } else {
-                recordConsumer = new FcliRecordConsumer(fcli);
-            }
+        var output = cmdExecutor.execute();
+        // Set records variable if recordConsumer!=null 
+        if ( recordConsumer!=null ) {
+            vars.set(name, recordConsumer.getRecords());
         }
-        
-        // TODO Implement optional output suppression
-        var output = cmdExecutor.execute(recordConsumer, true);
-        writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
-        writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
+        // Write output if 'show' was requested, but output needed to be delayed
+        if ( requestedStderrOutputType!=actualStderrOutputType ) { 
+            writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
+        }
+        if ( requestedStdoutOutputType!=actualStdoutOutputType ) {
+            writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
+        }
         if ( output.getExitCode() >0 ) { 
+            // TODO Make this optional
             throw new StepProcessingException("Fcli command returned non-zero exit code "+output.getExitCode()); 
         }
     }
+
+    private OutputType getFcliOutputTypeOrDefault(OutputType outputType, OutputType _default) {
+        return outputType==null ? _default : outputType;
+    }
+    
+    private OutputType overrideShowWithCollectOutputTypeIfDelayed(OutputType requestedOutputType) {
+        return ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
+                && requestedOutputType==OutputType.show
+                ? OutputType.collect
+                : requestedOutputType;
+    }
+
+    private final FcliRecordConsumer createFcliRecordConsumer(ActionStepRunFcli fcli) {
+        var forEachRecord = fcli.getForEachRecord();
+        var collectRecords = fcli.isCollectRecords();
+        return forEachRecord!=null || collectRecords 
+                ? new FcliRecordConsumer(forEachRecord, collectRecords)
+                : null;
+    }
     @RequiredArgsConstructor
     private class FcliRecordConsumer implements Consumer<ObjectNode> {
-        private final ActionStepRunFcli fcli;
-        private boolean continueProcessing = true;
+        private final ActionStepFcliForEachDescriptor fcliForEach;
+        private final boolean collectRecords;
+        
+        @Getter(lazy=true) private final ArrayNode records = JsonHelper.getObjectMapper().createArrayNode();
+        private boolean continueDoSteps = true;
         @Override
         public void accept(ObjectNode record) {
-            var name = fcli.getName();
-            if ( StringUtils.isNotBlank(name) ) {
-                // For name attribute, we want to collect all records,
-                // independent of break condition in the forEach block.
-                appendToArray(name, record);
+            if ( collectRecords ) {
+                getRecords().add(record);
             }
-            if ( continueProcessing ) {
-                continueProcessing = processForEachStepNode(fcli.getForEach(), record);
+            if ( continueDoSteps && fcliForEach!=null ) {
+                continueDoSteps = processForEachStepNode(fcliForEach, record);
             }
         }
     }
@@ -473,7 +507,7 @@ public final class ActionStepsProcessor {
         }
     }
     
-    private final void processRequestStepForEachEmbed(ActionStepRequestForEachDescriptor forEach, ArrayNode source) {
+    private final void processRequestStepForEachEmbed(ActionStepRequestForEachResponseRecord forEach, ArrayNode source) {
         var requestExecutor = new ActionStepRequestsProcessor(ctx);
         processRequestStepForEach(forEach, source, getRequestForEachEntryEmbedProcessor(requestExecutor));
         requestExecutor.executeRequests();
@@ -481,14 +515,14 @@ public final class ActionStepsProcessor {
     
     @FunctionalInterface
     private interface IRequestStepForEachEntryProcessor {
-        void process(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerVars vars);
+        void process(ActionStepRequestForEachResponseRecord forEach, JsonNode currentNode, ActionRunnerVars vars);
     }
     
-    private final void processRequestStepForEach(ActionStepRequestForEachDescriptor forEach, ArrayNode source, IRequestStepForEachEntryProcessor entryProcessor) {
+    private final void processRequestStepForEach(ActionStepRequestForEachResponseRecord forEach, ArrayNode source, IRequestStepForEachEntryProcessor entryProcessor) {
         for ( int i = 0 ; i < source.size(); i++ ) {
             var currentNode = source.get(i);
             var newVars = vars.createChild();
-            newVars.setLocal(forEach.getName(), currentNode);
+            newVars.setLocal(forEach.getVarName(), currentNode);
             var breakIf = forEach.getBreakIf();
             if ( breakIf!=null && newVars.eval(breakIf, Boolean.class) ) {
                 break;
@@ -500,14 +534,14 @@ public final class ActionStepsProcessor {
         }
     }
     
-    private void updateRequestStepForEachTotalCount(ActionStepRequestForEachDescriptor forEach, ArrayNode array) {
-        var totalCountName = String.format("total%sCount", StringUtils.capitalize(forEach.getName()));
+    private void updateRequestStepForEachTotalCount(ActionStepRequestForEachResponseRecord forEach, ArrayNode array) {
+        var totalCountName = String.format("total%sCount", StringUtils.capitalize(forEach.getVarName()));
         var totalCount = vars.get(totalCountName);
         if ( totalCount==null ) { totalCount = new IntNode(0); }
         vars.setLocal(totalCountName, new IntNode(totalCount.asInt()+array.size()));
     }
 
-    private void processRequestStepForEachEntryDo(ActionStepRequestForEachDescriptor forEach, JsonNode currentNode, ActionRunnerVars newVars) {
+    private void processRequestStepForEachEntryDo(ActionStepRequestForEachResponseRecord forEach, JsonNode currentNode, ActionRunnerVars newVars) {
         var processor = new ActionStepsProcessor(ctx, newVars);
         processor.processSteps(forEach.get_do());
     }
@@ -516,7 +550,7 @@ public final class ActionStepsProcessor {
         return (forEach, currentNode, newVars) -> {
             if ( !currentNode.isObject() ) {
                 // TODO Improve exception message?
-                throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getName());
+                throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getVarName());
             }
             requestExecutor.addRequests(forEach.getEmbed(), 
                     (rd,r)->((ObjectNode)currentNode).set(rd.getKey(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
@@ -545,7 +579,7 @@ public final class ActionStepsProcessor {
                 var query = vars.eval(requestDescriptor.getQuery(), Object.class);
                 var body = requestDescriptor.getBody()==null ? null : vars.eval(requestDescriptor.getBody(), Object.class);
                 var requestData = new IActionRequestHelper.ActionRequestDescriptor(method, uri, query, body, r->responseConsumer.accept(requestDescriptor, r), e->failureConsumer.accept(requestDescriptor, e));
-                addPagingProgress(requestData, requestDescriptor.getPagingProgress(), vars);
+                addLogProgress(requestData, requestDescriptor.getLogProgress(), vars);
                 if ( requestDescriptor.getType()==ActionStepRequestType.paged ) {
                     pagedRequests.computeIfAbsent(requestDescriptor.getTarget(), s->new ArrayList<IActionRequestHelper.ActionRequestDescriptor>()).add(requestData);
                 } else {
@@ -568,7 +602,7 @@ public final class ActionStepsProcessor {
             }
         }
 
-        private void addPagingProgress(ActionRequestDescriptor requestData, ActionStepRequestPagingProgressDescriptor pagingProgress, ActionRunnerVars vars) {
+        private void addLogProgress(ActionRequestDescriptor requestData, ActionStepRestCallLogProgressDescriptor pagingProgress, ActionRunnerVars vars) {
             if ( pagingProgress!=null ) {
                 addPagingProgress(pagingProgress.getPrePageLoad(), requestData::setPrePageLoad, vars);
                 addPagingProgress(pagingProgress.getPostPageLoad(), requestData::setPostPageLoad, vars);

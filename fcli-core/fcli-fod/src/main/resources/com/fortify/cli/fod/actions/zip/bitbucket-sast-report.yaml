@@ -34,10 +34,10 @@ steps:
         uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
         query:
           filters: scantype:Static
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-        forEach:
-          name: issue
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        records.for-each:
+          record.var-name: issue
           embed:
             details:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details

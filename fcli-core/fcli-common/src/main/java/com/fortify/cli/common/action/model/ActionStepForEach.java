@@ -30,16 +30,21 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper=true)
-public final class ActionStepForEach extends AbstractActionStepForEach {
-    /** Processor that runs the forEach steps. This expression must evaluate to an
-     *  IActionStepForEachProcessor instance. */
-    @JsonPropertyDescription("Required SpEL template expression if 'values' not specified: Reference to a processor that generates JSON records and executes the given steps for each record. For now, the only available processor is ${#ssc.ruleDescriptionsProcessor(parameters.appversion.id)} for processing rule descriptions from the current state FPR file, used by some built-in actions.")
-    @JsonProperty(required = false) private TemplateExpression processor;
+public final class ActionStepForEach extends AbstractActionElementForEachRecord {
+    @JsonPropertyDescription("""
+        Required SpEL template expression, evaluating to either an array of values to be iterated over, \
+        or an IActionStepForEachProcessor instance like returned by ${#ssc.ruleDescriptionsProcessor(appVersionId)}. \
+        For each of the records in the given array or as produced by the IActionStepForEachProcessor, \
+        the steps given in the 'do' instruction will be executed until the breakIf condition (is specified) \
+        evaluates to true. The steps in the 'do' instruction may reference the current record through the \
+        action variable name specified through 'record.var-name'.
+        """)
+    @JsonProperty(value = "from", required = true) private TemplateExpression from;
     
-    @JsonPropertyDescription("Required SpEL template expression if 'processor' not specified: Array of values to be iterated over.")
-    @JsonProperty(required = false) private TemplateExpression values;
+    public final void _postLoad(Action action) {
+        Action.checkNotNull("from", action, this);
+    }
     
-    public final void _postLoad(Action action) {}
     
     @FunctionalInterface
     public static interface IActionStepForEachProcessor {

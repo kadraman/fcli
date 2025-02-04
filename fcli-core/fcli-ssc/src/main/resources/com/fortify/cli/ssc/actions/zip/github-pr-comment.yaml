@@ -93,10 +93,10 @@ steps:
           showremoved: true
           filter: ISSUE[11111111-1111-1111-1111-111111111151]:${cli['analysis-type']}
           filterset: ${fs.guid}
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
-        forEach:
-          name: issue
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
+        records.for-each:
+          record.var-name: issue
           if: ${issue.scanStatus!='UPDATED'}
           embed:
             details:

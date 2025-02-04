@@ -35,8 +35,8 @@ steps:
           orderBy: completedDateTime
           orderByDirection: DESC
         type: paged
-        forEach:
-          name: scan
+        records.for-each:
+          record.var-name: scan
           breakIf: ${ossScanDate!=null}
           if: ${scan.scanType=='OpenSource'}
           do:

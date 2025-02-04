@@ -89,10 +89,10 @@ steps:
         query:
           includeFixed: true
           filters: scantype:${cli['scan-type']}
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-        forEach:
-          name: issue
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        records.for-each:
+          record.var-name: issue
           if: ${issue.status!='Existing'}
           embed:
             details:

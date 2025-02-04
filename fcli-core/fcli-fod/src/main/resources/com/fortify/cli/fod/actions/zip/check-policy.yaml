@@ -23,6 +23,6 @@ steps:
       rel: ${#fod.release(cli.release)}
   - check:
       fodSecurityPolicy:
-        displayName: FoD Security Policy must Pass
-        passIf:      ${rel.isPassed}
+        display-name: FoD Security Policy must Pass
+        pass.if:      ${rel.isPassed}
       

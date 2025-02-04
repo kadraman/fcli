@@ -42,7 +42,7 @@ steps:
       staticScanSummary:
         uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
         if:   ${rel.currentStaticScanId!=null}
-        onFail: 
+        on.fail: 
           - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
   - log.progress: Processing issue data
   - rest.call:
@@ -50,13 +50,13 @@ steps:
         uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
         query:
           filters: scantype:Static
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-        onResponse:
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+        on.success:
           - if: ${issues_raw.totalCount>5000}
             throw: GitHub does not support importing more than 5000 vulnerabilities. Please clean the scan results or update vulnerability search criteria.
-        forEach:
-          name: issue
+        records.for-each:
+          record.var-name: issue
           embed:
             details:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details

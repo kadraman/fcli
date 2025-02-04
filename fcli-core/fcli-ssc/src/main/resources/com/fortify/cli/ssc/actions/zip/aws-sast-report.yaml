@@ -49,8 +49,8 @@ steps:
         type: paged
         query:
           embed: scans
-        forEach:
-          name: artifact
+        records.for-each:
+          record.var-name: artifact
           breakIf: ${lastStaticScan!=null}
           do:
             - var.set: 
@@ -63,10 +63,10 @@ steps:
           filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
           filterset: ${fs.guid}
           limit: ${cli['page-size']}
-        pagingProgress:
-          postPageProcess: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
-        forEach:
-          name: issue
+        log.progress:
+          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
+        records.for-each:
+          record.var-name: issue
           embed:
             details:
               uri: /api/v1/issueDetails/${issue.id}

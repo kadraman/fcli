@@ -28,15 +28,24 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public abstract class AbstractActionStepForEach extends AbstractActionStep {
-    @JsonPropertyDescription("Required string: Name to assign to each individual record being processed. Can be referenced in other forEach properties and nested steps using ${[name]}.")
-    @JsonProperty(required = true) private String name;
+public abstract class AbstractActionElementForEachRecord extends AbstractActionElementIf {
+    @JsonPropertyDescription("""
+        Required string: Variable name to assign to each individual record being processed, allowing \
+        the record to be accessed by other instructions like 'if' or 'breakIf' and the steps defined \
+        in the 'do' block through the specified variable name.
+        """)
+    @JsonProperty(value = "record.var-name", required = true) private String varName;
     
-    @JsonPropertyDescription("Required list: Steps to be executed for each individual record.")
+    @JsonPropertyDescription("""
+        Required list: Steps to be executed for each individual record.
+        """)
     @JsonProperty(value = "do", required = true)  private List<ActionStep> _do;
     
-    @JsonPropertyDescription("Optional SpEL template expression: Stop processing any further records if the breakIf expression evaluates to 'true'.")
-    @JsonProperty(required = false) private TemplateExpression breakIf;
+    @JsonPropertyDescription("""
+        Optional SpEL template expression: Stop execution of the steps configured in the \
+        'do' instruction if the breakIf expression evaluates to 'true'.
+        """)
+    @JsonProperty(value = "breakIf", required = false) private TemplateExpression breakIf;
     
     /**
      * This method is invoked by the {@link ActionStep#postLoad()}
@@ -44,10 +53,7 @@ public abstract class AbstractActionStepForEach extends AbstractActionStep {
      * each sub-step.
      */
     public final void postLoad(Action action) {
-        Action.checkNotBlank("forEach name", name, this);
+        Action.checkNotBlank("forEach name", varName, this);
         Action.checkNotNull("forEach do", _do, this);
-        _postLoad(action);
     }
-
-    protected void _postLoad(Action action) {}
 }
