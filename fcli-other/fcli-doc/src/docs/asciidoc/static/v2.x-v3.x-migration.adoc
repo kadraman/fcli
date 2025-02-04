@@ -1,0 +1,65 @@
+= Fortify CLI v2.x to v3.x migration guide
+
+For users that wish to migrate from fcli v2.x to v3.x, the sections below provide detailed migration instructions.
+
+TODO Review section headers; these might be too long to show in table of contents.
+
+== `fcli sc-sast/sc-dast session` commands
+
+With fcli v2.x, if you needed to interact with for example both `sc-sast` and `ssc` modules, you would need to run both `fcli sc-sast session login` and `fcli ssc session login` commands (and corresponding `logout` commands), repeating similar options on each of these commands to specify SSC URL, credentials, ... 
+
+With fcli v3.x, the `sc-sast` and `sc-dast` modules share their sessions with the `ssc` module; running a single `fcli ssc session login` command allows for interacting with all three modules. As a consequence, the `fcli sc-sast session` and `fcli sc-dast session` commands have been removed.
+
+For interactive use, this means that running the `fcli ssc session login` command is sufficient to interact with all three modules. Before upgrading from fcli 2.x to 3.x, it is recommended to explicitly logout from any existing sessions through the `fcli ssc/sc-sast/sc-dast session logout` commands to clear any existing session files. Then, after upgrading to fcli 3.x, you can run `fcli ssc session login` to create a session that's shared across all three modules.
+
+Pipelines and other automation workflows that run `fcli ssc/sc-sast/sc-dast session` commands will need to be updated to merge all `fcli ssc/sc-sast/sc-dast session login` invocations into a single `fcli ssc session login` invocation, and similarly for `logout` and any other `session` commands that are invoked by the workflow.
+
+TODO Add examples, both for workflows that already invoke `fcli ssc session login` and for workflows that only invoke `fcli sc-sast/sc-dast session` commands without existing `fcli ssc session` commands. Pay special attention to the fact that for SC SAST, the client-auth-token now needs to be specified on `fcli ssc session login`.
+
+== `fcli ssc appversion create --copy` option
+
+TODO; deprecated option values removed
+
+== Fcli action syntax
+
+TODO; intro as to why action syntax has changed, old and new schema locations, and summary of high-level changes like 'most instructions have been renamed', 'most instructions now take a map instead of list', ...
+
+The following sections provide examples of old and new syntax for each of the action instructions.
+
+TODO Add sections for each of the changed instructions in alphabetical order, with each section providing a summary of changes and examples of old/new syntax.
+
+=== `defaults:requestTarget`
+
+TODO (now `config:rest.target.default`)
+
+=== `parameters`
+
+Summary of changes:
+
+- `parameters` renamed to `cli.options`
+- `cli.options` takes a map, with option names as keys, and option definitions as values
+- `cliAliases` property renamed to `alias`, now supporting only single alias
+- `defaultValue` property renamed to `default`
+
+TODO; examples of old and new syntax
+
+=== `steps:append`
+
+Summary of changes:
+
+- `steps:append` functionality merged into new `var.set` & `var.fmt` instructions
+
+TODO; examples of old and new syntax
+
+=== `steps:...`
+
+TODO; list all other step changes
+
+=== `valueTemplates`
+
+Summary of changes:
+
+- `valueTemplates` renamed to `formatters`
+- `formatters` takes a map, with formatter names as keys, and formatter definitions as values
+
+TODO; examples of old and new syntax
