@@ -39,7 +39,7 @@ steps:
       issueSelectorSet:
         uri:  /api/v1/projectVersions/${av.id}/issueSelectorSet?fields=filterBySet
   - var.set:
-      analysisTypes: ${issueSelectorSet.filterBySet.^[display-name=='Analysis Type'].selectorOptions}
+      analysisTypes: ${issueSelectorSet.filterBySet.^[displayName=='Analysis Type'].selectorOptions}
   - rest.call:
       artifactsResponse:
         if: ${analysisTypes!=null && analysisTypes.size()>0} 
@@ -49,7 +49,7 @@ steps:
           embed: scans
         records.for-each:
           record.var-name: artifact
-          breakIf: ${analysizedScans?.![type]?.containsAll(analysisTypes.![display-name])?:false}
+          breakIf: ${analysizedScans?.![type]?.containsAll(analysisTypes.![displayName])?:false}
           do:
             - records.for-each:
                 from: ${artifact._embed.scans}
@@ -57,7 +57,7 @@ steps:
                 do:
                   - if: ${lastScans==null || lastScans[scan.type]==null}
                     var.set:
-                      lastScans.${analysisTypes?.^[guid==#root.scan.type].display-name}: ${scan}
+                      lastScans.${analysisTypes?.^[guid==#root.scan.type].displayName}: ${scan}
                   - var.set:
                       analyzedScans..: ${scan}
                     
@@ -96,7 +96,7 @@ steps:
                           do:
                             # Collect issue count by filter set, analysis type & folder
                             - var.set:
-                                folder: ${filterset.title+':'+analysisType.display-name+':'+issueGroupFolder.id}
+                                folder: ${filterset.title+':'+analysisType.displayName+':'+issueGroupFolder.id}
                                 issueCountsByFolder.${folder}: ${issueGroupFolder.visibleCount}
                       issueGroupsByState:
                         uri:  /api/v1/projectVersions/${av.id}/issueGroups
@@ -112,7 +112,7 @@ steps:
                           do:
                             # Collect issue count by filter set, analysis type & issue state
                             - var.set:
-                                state: ${filterset.title+':'+analysisType.display-name+':'+issueGroupState.id}
+                                state: ${filterset.title+':'+analysisType.displayName+':'+issueGroupState.id}
                                 issueCountsByState.${state}: ${issueGroupState.visibleCount}
                             
   - log.progress: Generating output data
@@ -141,7 +141,7 @@ steps:
         - records.for-each: 
             record.var-name: analysisTypeName
             if:   ${analysisTypes!=null}
-            from: ${analysisTypes.![display-name]}
+            from: ${analysisTypes.![displayName]}
             do:
               # Clear counts for each analysis type being processed
               - var.rm:
@@ -163,7 +163,7 @@ steps:
         - records.for-each: 
             record.var-name: analysisTypeName
             if:   ${analysisTypes!=null}
-            from: ${analysisTypes.![display-name]}
+            from: ${analysisTypes.![displayName]}
             do:
               # Clear counts for each analysis type being processed
               - var.rm:
