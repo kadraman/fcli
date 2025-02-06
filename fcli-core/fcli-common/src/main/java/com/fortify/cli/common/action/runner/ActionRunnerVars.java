@@ -23,6 +23,7 @@ import org.springframework.expression.Expression;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
@@ -95,6 +96,10 @@ public final class ActionRunnerVars {
     
     public final JsonNode get(String name) {
         return values.get(name);
+    }
+    
+    public final void set(String name, String value) {
+        set(name, new TextNode(value));
     }
     
     /**

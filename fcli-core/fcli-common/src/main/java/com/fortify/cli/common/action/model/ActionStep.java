@@ -124,6 +124,7 @@ public final class ActionStep extends AbstractActionElementIf {
         
         x: The processed response
         x_raw: The raw, unprocessed response
+        x_exception: Java Exception instance if the request failed
         
         These variables can be referenced only within the current 'rest.call' map entry, for \
         example by 'log.progress', 'on.success', and 'records.for-each'. They are not accessible 
@@ -152,9 +153,10 @@ public final class ActionStep extends AbstractActionElementIf {
         given an fcli invocation identifier named 'x', the following action variables may be set: 
         
         x: Array of records produced by the fcli invocation if 'records.collect' is set to 'true'
-        x_stdout': Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
-        x_stderr': Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
-        x_exitCode': Exit code of the fcli invocation
+        x_stdout: Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
+        x_stderr: Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
+        x_exitCode: Exit code of the fcli invocation
+        x_exception: Java Exception instance if fcli invocation threw an exception
         """)
     @JsonProperty(value = "run.fcli", required = false) private LinkedHashMap<String, ActionStepRunFcli> runFcli;
     

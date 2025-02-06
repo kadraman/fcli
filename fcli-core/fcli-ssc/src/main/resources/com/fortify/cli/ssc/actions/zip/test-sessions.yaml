@@ -8,6 +8,7 @@ usage:
 
 config:
   rest.target.default: ssc
+  output: immediate
   session.from-env.output: show
   
 steps:
@@ -24,4 +25,13 @@ steps:
             target: sc-sast
     - out.write:
         stdout: ${ping}
+    - run.fcli:
+        testError:
+          cmd: fcli ssc av get dsgsdda:dsagsgdsa
+          on.exit-fail:
+            - out.write:
+                stderr: "Exit code: ${testError_exitCode}"
+          on.exception:
+            - out.write:
+                stderr: "Exception: ${testError_exception.getMessage()}" 
       

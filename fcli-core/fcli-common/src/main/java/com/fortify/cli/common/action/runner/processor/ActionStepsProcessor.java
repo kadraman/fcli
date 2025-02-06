@@ -66,6 +66,7 @@ import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
 import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
+import com.fortify.cli.common.util.OutputHelper.Result;
 import com.fortify.cli.common.util.StringUtils;
 
 import kong.unirest.UnirestException;
@@ -405,15 +406,15 @@ public final class ActionStepsProcessor {
                 .cmd(cmd)
                 .stdoutOutputType(actualStdoutOutputType)
                 .stderrOutputType(actualStderrOutputType)
+                .onException(e->handleFcliException(fcli, e))
+                .onNonZeroExitCode(r->handleFcliNonZeroExitCode(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r))
                 .recordConsumer(recordConsumer).build();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
         }
         var output = cmdExecutor.execute();
-        // Set records variable if recordConsumer!=null 
-        if ( recordConsumer!=null ) {
-            vars.set(name, recordConsumer.getRecords());
-        }
+        setFcliVars(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, output);
+        
         // Write output if 'show' was requested, but output needed to be delayed
         if ( requestedStderrOutputType!=actualStderrOutputType ) { 
             writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
@@ -421,9 +422,33 @@ public final class ActionStepsProcessor {
         if ( requestedStdoutOutputType!=actualStdoutOutputType ) {
             writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
         }
-        if ( output.getExitCode() >0 ) { 
-            // TODO Make this optional
-            throw new StepProcessingException("Fcli command returned non-zero exit code "+output.getExitCode()); 
+    }
+
+    private void setFcliVars(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, OutputType requestedStdoutOutputType, OutputType requestedStderrOutputType, Result output) {
+        var name = fcli.getKey();
+        vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
+        vars.set(name+"_stdout", requestedStdoutOutputType==OutputType.collect ? output.getOut() : "");
+        vars.set(name+"_stderr", requestedStderrOutputType==OutputType.collect ? output.getErr() : "");
+        vars.set(name+"_exitCode", new IntNode(output.getExitCode()));
+    }
+
+    private void handleFcliNonZeroExitCode(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, OutputType requestedStdoutOutputType, OutputType requestedStderrOutputType, Result r) {
+        setFcliVars(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r);
+        List<ActionStep> onNonZeroExitCode = fcli.getOnNonZeroExitCode();
+        if ( onNonZeroExitCode==null ) {
+            throw new StepProcessingException("Fcli command returned non-zero exit code "+r.getExitCode());
+        } else {
+            processSteps(onNonZeroExitCode);
+        }
+    }
+
+    private void handleFcliException(ActionStepRunFcli fcli, Throwable t) {
+        vars.set(fcli.getKey()+"_exception", new POJONode(t));
+        List<ActionStep> onException = fcli.getOnException();
+        if ( onException==null ) {
+            throw new StepProcessingException("Fcli command terminated with an exception", t);
+        } else {
+            processSteps(onException);
         }
     }
 
@@ -483,7 +508,7 @@ public final class ActionStepsProcessor {
     private final void processFailure(ActionStepRestCall requestDescriptor, UnirestException e) {
         var onFailSteps = requestDescriptor.getOnFail();
         if ( onFailSteps==null ) { throw e; }
-        vars.setLocal("exception", new POJONode(e));
+        vars.setLocal(requestDescriptor.getKey()+"_exception", new POJONode(e));
         processSteps(onFailSteps);
     }
     

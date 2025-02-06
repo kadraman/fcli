@@ -92,8 +92,8 @@ public final class ActionStepRestCall extends AbstractActionElementIf implements
     
     @JsonPropertyDescription("""
         Optional list: Steps to be executed on request failure. If not specified, an exception will be thrown \
-        on request failure. Steps can reference a variable named 'exception' to access the Java Exception object \
-        that represents the failure that occurred.
+        on request failure. Steps can reference a variable named after the identifier for this REST call, for \
+        example 'x_exception', to access the Java Exception object that represents the failure that occurred.
         """)
     @JsonProperty(value = "on.fail", required = false) private List<ActionStep> onFail;
 
