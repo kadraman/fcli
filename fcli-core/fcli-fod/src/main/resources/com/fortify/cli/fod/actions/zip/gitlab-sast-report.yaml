@@ -48,12 +48,11 @@ steps:
           do:
             - var.fmt:
                 vulnerabilities..: vulnerabilities
-  - file.write:
-    - to: ${cli.file}
-      fmt: gitlab-sast-report
-    - if: ${cli.file!='stdout'}
-      to: stdout
-      value: |
+  - out.fmt:
+      ${cli.file}: gitlab-sast-report
+  - if: ${cli.file!='stdout'}
+    out.write:
+      stdout: |
         Output written to ${cli.file}
 
 formatters:

@@ -17,13 +17,11 @@ steps:
             records.for-each:
               record.var-name: app
               do:
-                - file.write:
-                  - to: stdout
-                    value: ${app}
+                - out.write:
+                    stdout: ${app}
           ping:
             uri: /rest/v2/ping
             target: sc-sast
-    - file.write:
-        - to: stdout
-          value: ${ping}
+    - out.write:
+        stdout: ${ping}
       

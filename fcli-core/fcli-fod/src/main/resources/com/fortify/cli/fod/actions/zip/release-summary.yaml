@@ -44,12 +44,11 @@ steps:
                 scanType: ${scan.scanType}
                 ossScanDate: ${scan.completedDateTime} 
 
-  - file.write:
-    - to: ${cli.file}
-      fmt: summary-md
-    - if: ${cli.file!='stdout'}
-      to: stdout
-      value: |
+  - out.fmt:
+      ${cli.file}: summary-md
+  - if: ${cli.file!='stdout'}
+    out.write:
+      stdout: |
         Output written to ${cli.file}
 
 # Note: update ossScanDate when it is available on release object ...

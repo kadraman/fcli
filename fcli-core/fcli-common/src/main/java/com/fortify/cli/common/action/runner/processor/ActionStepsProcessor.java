@@ -41,7 +41,6 @@ import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.model.ActionStepFileWrite;
 import com.fortify.cli.common.action.model.ActionStepForEach;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.model.ActionStepRestCall;
@@ -65,7 +64,6 @@ import com.fortify.cli.common.rest.unirest.GenericUnirestFactory;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
 import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
-import com.fortify.cli.common.spring.expression.SpelHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
 import com.fortify.cli.common.util.StringUtils;
@@ -94,10 +92,11 @@ public final class ActionStepsProcessor {
             processStepSupplier(step::getRestCalls, this::processRestCallStep);
             processStepSupplier(step::getVarSet, this::processVarSetStep);
             processStepSupplier(step::getVarFmt, this::processVarFmtStep);
-            processStepSupplier(step::getVarUnset, this::processVarUnsetStep);
+            processStepSupplier(step::getVarRemove, this::processVarRemoveStep);
             processStepEntries(step::getRunFcli, this::processRunFcliStep);
             processStepEntries(step::getCheck, this::processCheckStep);
-            processStepEntries(step::getFileWrite, this::processFileWriteStep);
+            processStepEntries(step::getOutWrite, this::processOutWriteStep);
+            processStepEntries(step::getOutFmt, this::processOutFmtStep);
             processStepSupplier(step::get_throw, this::processThrowStep);
             processStepSupplier(step::get_exit, this::processExitStep);
             processStepSupplier(step::getForEachRecord, this::processForEachRecordStep);
@@ -197,8 +196,7 @@ public final class ActionStepsProcessor {
     
     private final void processVarFmtStepEntry(Map.Entry<TemplateExpression, TemplateExpression> entry) {
         var name = vars.eval(entry.getKey(), String.class);
-        var formatter = vars.eval(entry.getValue(), String.class);
-        var value = ActionRunnerHelper.fmt(ctx, formatter, vars.getValues());
+        var value = format(entry.getValue());
         setVar(name, value);
     }
     
@@ -252,35 +250,33 @@ public final class ActionStepsProcessor {
         return v;
     }
 
-    private final void processVarUnsetStep(List<TemplateExpression> list) {
-        list.forEach(this::processVarUnsetStepEntry);
+    private final void processVarRemoveStep(List<TemplateExpression> list) {
+        list.forEach(this::processVarRemoveStepEntry);
     }
     
-    private final void processVarUnsetStepEntry(TemplateExpression entry) {
+    private final void processVarRemoveStepEntry(TemplateExpression entry) {
         vars.unset(vars.eval(entry, String.class));
     }
     
-    private void processFileWriteStep(ActionStepFileWrite fileWrite) {
-        var to = vars.eval(fileWrite.getTo(), String.class);
-        var valueExpression = fileWrite.getValue();
-        var fmt = fileWrite.getFmt();
-        String value;
-        if (StringUtils.isBlank(fmt) ) {
-            value = asString(vars.eval(valueExpression, Object.class));
-        } else {
-            if ( valueExpression==null ) {
-                valueExpression = SpelHelper.parseTemplateExpression("${#root}");
-            }
-            value = asString(ActionRunnerHelper.fmt(ctx, fmt, vars.eval(valueExpression, JsonNode.class)));
-        }
+    private void processOutWriteStep(TemplateExpression destinationExpression, TemplateExpression valueExpression) {
+        write(destinationExpression, vars.eval(valueExpression, Object.class));
+    }
+    
+    private void processOutFmtStep(TemplateExpression destinationExpression, TemplateExpression formatterExpression) {
+        write(destinationExpression, format(formatterExpression));
+    }
+    
+    private void write(TemplateExpression destinationExpression, Object valueObject) {
+        var destination = vars.eval(destinationExpression, String.class);
+        var value = asString(valueObject);
         try {
-            switch (to.toLowerCase()) {
+            switch (destination.toLowerCase()) {
             case "stdout": writeImmediateOrDelayed(ctx.getStdout(), value); break;
             case "stderr": writeImmediateOrDelayed(ctx.getStderr(), value); break;
-            default: write(new File(to), value);
+            default: write(new File(destination), value);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error writing action output to "+to);
+            throw new RuntimeException("Error writing action output to "+destination);
         }
     }
     
@@ -300,6 +296,11 @@ public final class ActionStepsProcessor {
         try ( var out = new PrintStream(file, StandardCharsets.UTF_8) ) {
             out.println(output);
         }
+    }
+    
+    private JsonNode format(TemplateExpression formatterExpression) {
+        var formatter = vars.eval(formatterExpression, String.class);
+        return ActionRunnerHelper.fmt(ctx, formatter, vars.getValues());
     }
 
     private final String asString(Object output) {

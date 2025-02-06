@@ -114,9 +114,8 @@ steps:
       reviewBody: reviewBody
       reviewRequestBody: reviewRequestBody
   - if: ${cli.dryrun}
-    file.write:
-      - to: stdout
-        value: ${reviewRequestBody}
+    out.write:
+      stdout: ${reviewRequestBody}
   - if: ${!cli.dryrun}
     rest.call:
       postPRComment:

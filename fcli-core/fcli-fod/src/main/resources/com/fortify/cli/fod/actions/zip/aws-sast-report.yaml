@@ -56,12 +56,11 @@ steps:
           do:
             - var.fmt:
                 vulnerabilities..: issues
-  - file.write:
-    - to: ${cli['file']}
-      fmt: report
-    - if: ${cli.file!='stdout'}
-      to: stdout
-      value: |
+  - out.fmt:
+      ${cli['file']}: report
+  - if: ${cli.file!='stdout'}
+    out.write:
+      stdout: |
         Report written to ${cli['report-file']}
 
 formatters:

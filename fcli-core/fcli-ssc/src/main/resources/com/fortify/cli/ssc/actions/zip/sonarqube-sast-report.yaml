@@ -52,12 +52,11 @@ steps:
           do:
             - var.fmt:
                 sq_issues..: sq_issues
-  - file.write:
-    - to: ${cli.file}
-      fmt: sq_output 
-    - if: ${cli.file!='stdout'}
-      to: stdout
-      value: |
+  - out.fmt:
+      ${cli.file}: sq_output 
+  - if: ${cli.file!='stdout'}
+    out.write:
+      stdout: |
         Output written to ${cli.file}
      
 formatters:

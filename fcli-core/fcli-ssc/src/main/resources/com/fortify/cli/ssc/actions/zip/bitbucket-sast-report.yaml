@@ -82,14 +82,14 @@ steps:
           do:
             - var.fmt:
                 annotations..: annotations
-  - file.write:
-    - to: ${cli['annotations-file']}
-      value: ${annotations?:{}}
-    - to: ${cli['report-file']}
-      fmt: report
-    - if: ${cli['annotations-file']!='stdout' && cli['report-file']!='stdout'}
-      to: stdout
-      value: |
+  - var.fmt:
+      report: report
+  - out.write:
+      ${cli['annotations-file']}: ${annotations?:{}}
+      ${cli['report-file']}: ${report}
+  - if: ${cli['annotations-file']!='stdout' && cli['report-file']!='stdout'}
+    out.write:
+      stdout: |
         Report written to ${cli['report-file']}
         Annotations written to ${cli['annotations-file']}
 

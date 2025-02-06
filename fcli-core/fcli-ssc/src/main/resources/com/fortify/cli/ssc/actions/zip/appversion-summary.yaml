@@ -123,7 +123,7 @@ steps:
       from: ${filtersets}
       do:
         # Clear variables for each filter set being processed
-        - var.unset:
+        - var.rm:
           - folderNames
           - issueCountByFolderRows
           - issueCountByStateRows
@@ -144,7 +144,7 @@ steps:
             from: ${analysisTypes.![display-name]}
             do:
               # Clear counts for each analysis type being processed
-              - var.unset:
+              - var.rm:
                 - issueCountByFolderRowValues
               # For each folder, collect issue counts for current filter set & analysis type
               - records.for-each:
@@ -166,7 +166,7 @@ steps:
             from: ${analysisTypes.![display-name]}
             do:
               # Clear counts for each analysis type being processed
-              - var.unset:
+              - var.rm:
                 - issueCountByStateRowValues
               # For each issue state, collect issue counts for current filter set & analysis type
               - records.for-each:
@@ -198,12 +198,11 @@ steps:
               `*` The 'Removed' column shows the total number of removed issues for this application version, which includes issues removed in previous scans.
               
   # Write output based on data collected above, and value template defined below 
-  - file.write:
-    - to: ${cli.file}
-      fmt: summary-md
-    - if: ${cli.file!='stdout'}
-      to: stdout
-      value: |
+  - out.fmt:
+      ${cli.file}: summary-md
+  - if: ${cli.file!='stdout'}
+    out.write:
+      stdout: |
         Output written to ${cli.file}
 
 formatters:
