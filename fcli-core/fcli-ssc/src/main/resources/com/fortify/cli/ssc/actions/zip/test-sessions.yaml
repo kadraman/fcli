@@ -26,12 +26,9 @@ steps:
     - out.write:
         stdout: ${ping}
     - run.fcli:
-        testError:
-          cmd: fcli ssc av get dsgsdda:dsagsgdsa
-          on.exit-fail:
-            - out.write:
-                stderr: "Exit code: ${testError_exitCode}"
-          on.exception:
-            - out.write:
-                stderr: "Exception: ${testError_exception.getMessage()}" 
+        ci:
+          cmd: fcli ssc action run test-ci
+          stdout.parse: json
+    - out.write:
+        stdout: 'ci.x: ${ci.x}'
       

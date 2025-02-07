@@ -33,7 +33,7 @@ public final class ActionCliOptions implements IActionElement {
     
     @JsonPropertyDescription("""
         Optional string: This will allow the action to also accept a CLI option named \
-        `--[alias]` or `-[alias]` for single-letter aliases. Note that only option \
+        `--[alias]` (or `-[alias]` for single-letter aliases). Note that only option \
         name, not alias, may be referenced through ${cli.*} expressions.
         """)
     @JsonProperty(value = "alias", required = false) private String alias;

@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.output.cli.cmd.IOutputHelperSupplier;
 import com.fortify.cli.common.output.writer.output.standard.StandardOutputWriter;
+import com.fortify.cli.common.progress.helper.ProgressWriterType;
 import com.fortify.cli.common.util.JavaHelper;
 import com.fortify.cli.common.util.OutputHelper;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
@@ -48,6 +49,7 @@ public final class FcliCommandExecutor {
     @Builder.Default private final OutputType stderrOutputType = OutputType.show;
     private final Consumer<Throwable> onException;
     private final Consumer<Result> onNonZeroExitCode;
+    private final boolean suppressProgress;
     @Getter(lazy = true, value = AccessLevel.PRIVATE) private final ParseResult parseResult = createParseResult(); 
     
     public final Result execute() {
@@ -77,6 +79,7 @@ public final class FcliCommandExecutor {
 
     private final int _execute() throws Exception {
         rootCommandLine.clearExecutionResults();
+        disableProgressIfRequested();
         return rootCommandLine.getExecutionStrategy().execute(getParseResult());
     }
     
@@ -94,6 +97,19 @@ public final class FcliCommandExecutor {
     
     private final <T> Optional<T> getLeafCommand(Class<T> type) {
         return JavaHelper.as(getLeafCommandSpec().userObject(), type);
+    }
+    
+    private final void disableProgressIfRequested() {
+        if ( suppressProgress ) {
+            var commandSpec = getLeafCommandSpec();
+            var progress = commandSpec.optionsMap().get("--progress");
+            if ( progress!=null ) {
+                var type = progress.type();
+                if ( ProgressWriterType.class.isAssignableFrom(type) ) {
+                    progress.setValue(ProgressWriterType.none);
+                }
+            }
+        }
     }
     
     private final ParseResult createParseResult() {

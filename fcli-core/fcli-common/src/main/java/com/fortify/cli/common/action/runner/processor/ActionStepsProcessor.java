@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -50,6 +51,7 @@ import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRestCall
 import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
+import com.fortify.cli.common.action.model.ActionStepRunFcli.FcliOutputParser;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -397,10 +399,10 @@ public final class ActionStepsProcessor {
         var cmd = vars.eval(fcli.getCmd(), String.class).replaceFirst("^fcli\s+", "");
         ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd);
         var recordConsumer = createFcliRecordConsumer(fcli);
-        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
+        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null && fcli.getStdoutParser()==FcliOutputParser.none ? OutputType.show : OutputType.suppress );
         var requestedStderrOutputType = getFcliOutputTypeOrDefault(fcli.getStderrOutputType(), OutputType.show );
-        var actualStdoutOutputType = overrideShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
-        var actualStderrOutputType = overrideShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);;
+        var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(fcli.getStdoutParser(), requestedStdoutOutputType);
+        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(fcli.getStderrParser(), requestedStderrOutputType);;
         var cmdExecutor = FcliCommandExecutor.builder()
                 .rootCommandLine(ctx.getConfig().getRootCommandLine())
                 .cmd(cmd)
@@ -408,6 +410,7 @@ public final class ActionStepsProcessor {
                 .stderrOutputType(actualStderrOutputType)
                 .onException(e->handleFcliException(fcli, e))
                 .onNonZeroExitCode(r->handleFcliNonZeroExitCode(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r))
+                .suppressProgress(fcli.getStdoutParser()!=FcliOutputParser.none)
                 .recordConsumer(recordConsumer).build();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
@@ -415,11 +418,11 @@ public final class ActionStepsProcessor {
         var output = cmdExecutor.execute();
         setFcliVars(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, output);
         
-        // Write output if 'show' was requested, but output needed to be delayed
-        if ( requestedStderrOutputType!=actualStderrOutputType ) { 
+        // Write output if 'show' was requested, but output needed to be delayed or parsed
+        if ( requestedStderrOutputType!=actualStderrOutputType && requestedStdoutOutputType==OutputType.show) { 
             writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
         }
-        if ( requestedStdoutOutputType!=actualStdoutOutputType ) {
+        if ( requestedStdoutOutputType!=actualStdoutOutputType && requestedStdoutOutputType==OutputType.show ) {
             writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
         }
     }
@@ -429,6 +432,18 @@ public final class ActionStepsProcessor {
         vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
         vars.set(name+"_stdout", requestedStdoutOutputType==OutputType.collect ? output.getOut() : "");
         vars.set(name+"_stderr", requestedStderrOutputType==OutputType.collect ? output.getErr() : "");
+        var stdoutParser = fcli.getStdoutParser();
+        var stderrParser = fcli.getStderrParser();
+        var stdoutParsed = stdoutParser!=FcliOutputParser.none ? stdoutParser.parse(output.getOut()) : NullNode.instance;
+        var stderrParsed = stderrParser!=FcliOutputParser.none ? stderrParser.parse(output.getErr()) : NullNode.instance;
+        vars.set(name+"_stdout_parsed", stdoutParsed);
+        vars.set(name+"_stderr_parsed", stderrParsed);
+        if ( stdoutParser!=FcliOutputParser.none && stderrParser==FcliOutputParser.none ) {
+            vars.set(name, stdoutParsed);
+        }
+        if ( stderrParser!=FcliOutputParser.none && stdoutParser==FcliOutputParser.none ) {
+            vars.set(name, stderrParsed);
+        }
         vars.set(name+"_exitCode", new IntNode(output.getExitCode()));
     }
 
@@ -456,9 +471,10 @@ public final class ActionStepsProcessor {
         return outputType==null ? _default : outputType;
     }
     
-    private OutputType overrideShowWithCollectOutputTypeIfDelayed(OutputType requestedOutputType) {
-        return ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
-                && requestedOutputType==OutputType.show
+    private OutputType overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(FcliOutputParser fcliOutputParser, OutputType requestedOutputType) {
+        return fcliOutputParser!=FcliOutputParser.none || (
+                ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
+                && requestedOutputType==OutputType.show)
                 ? OutputType.collect
                 : requestedOutputType;
     }
