@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+
+author: Fortify
+usage:
+  header: Collect CI-specific data
+  description: |
+    (Work in progress)
+    This action collects CI-specific data, for example from CI-specific environment
+    variables, and outputs this data in a CI-agnostic JSON object. This is primarily
+    used by the SSC/FoD-specific 'ci' actions, but may also be useful for other (custom)
+    actions.
+
+config:
+  output: immediate
+  
+steps:
+  - var.set:
+      ci.x: X value
+      ci.y: Y value
+  - out.write:
+      stdout: ${ci}

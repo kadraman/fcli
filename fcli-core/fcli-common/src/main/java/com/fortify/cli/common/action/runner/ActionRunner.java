@@ -42,11 +42,8 @@ public class ActionRunner {
             var parameterValues = getParameterValues(args);
             try ( var ctx = createContext(progressWriter, parameterValues) ) {
                 initializeCheckStatuses(ctx);
-                progressWriter.writeProgress("Processing action parameters");
                 ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
-                progressWriter.writeProgress("Processing action steps");
                 new ActionStepsProcessor(ctx, vars).processSteps(config.getAction().getSteps());
-                progressWriter.writeProgress("Action processing finished");
              
                 return ()->{
                     ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);

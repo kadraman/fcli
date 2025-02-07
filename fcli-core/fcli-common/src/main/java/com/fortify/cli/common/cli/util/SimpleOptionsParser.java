@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,6 +55,7 @@ public final class SimpleOptionsParser {
             var name = getName();
             List<String> aliases = getAliases()==null ? Collections.emptyList() : getAliases();
             return Stream.concat(Stream.of(name), aliases.stream())
+                    .filter(Objects::nonNull)
                     .collect(Collectors.joining(delimiter));
         }
     }

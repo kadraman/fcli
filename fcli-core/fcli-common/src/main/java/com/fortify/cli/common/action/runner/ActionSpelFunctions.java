@@ -12,6 +12,7 @@
  *******************************************************************************/
 package com.fortify.cli.common.action.runner;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.ZoneId;
@@ -43,6 +44,10 @@ public class ActionSpelFunctions {
     private static final String CODE_END   = "\n===== CODE END =====\n";
     private static final Pattern CODE_PATTERN = Pattern.compile(String.format("%s(.*?)%s", CODE_START, CODE_END), Pattern.DOTALL);
     private static final Pattern uriPartsPattern = Pattern.compile("^(?<serverUrl>(?:(?<protocol>[A-Za-z]+):)?(\\/{0,3})(?<host>[0-9.\\-A-Za-z]+)(?::(?<port>\\d+))?)(?<path>\\/(?<relativePath>[^?#]*))?(?:\\?(?<query>[^#]*))?(?:#(?<fragment>.*))?$");
+    
+    public static final String resolveAgainstCurrentWorkDir(String path) {
+        return Path.of(".").resolve(path).toAbsolutePath().normalize().toString();
+    }
     
     public static final String join(String separator, List<Object> elts) {
         switch (separator) {

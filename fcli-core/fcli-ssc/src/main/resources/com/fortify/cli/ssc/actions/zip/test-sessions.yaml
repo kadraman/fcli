@@ -27,7 +27,7 @@ steps:
         stdout: ${ping}
     - run.fcli:
         ci:
-          cmd: fcli ssc action run test-ci
+          cmd: fcli action run ci-vars
           stdout.parse: json
     - out.write:
         stdout: 'ci.x: ${ci.x}'

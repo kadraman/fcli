@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+
+author: Fortify
+usage:
+  header: Package source code
+  description: |
+    This action can be used to package source code using ScanCentral Client.
+
+config:
+  output: immediate
+  
+cli.options:
+  sc-client-version:
+    alias: v
+    description: |
+      Specify the ScanCentral Client version to be used for packaging. Defaults to
+      the value of the SC_CLIENT_VERSION environment variable, or 'latest' if not
+      specified.
+    required: true
+    default: ${#env('SC_CLIENT_VERSION')?:'latest'}
+  source-dir:
+    alias: d
+    description: |
+      Specify the source directory to be packaged. Defaults to the value of the 
+      PACKAGE_SOURCE_DIR environment variable, or current working directory if
+      not specified.
+    default: ${#env('PACKAGE_SOURCE_DIR')?:'.'}
+    required: true
+  debug:
+    description: |
+      Add the -debug flag to the ScanCentral Client command. Defaults to the value of
+      the DO_PACKAGE_DEBUG environment variable, or false if not specified. 
+    required: false
+    type: boolean
+    default: ${#env('DO_PACKAGE_DEBUG')?:false}
+  tool-definitions:
+    description: |
+      Custom tool definitions to use for identifying available ScanCentral Client versions
+      and download URLs. Defaults to the value of the TOOL_DEFINITIONS environment variable,
+      or the built-in default if not specified.
+    required: false 
+  extra-opts:
+    description: |
+      Extra options to be passed to the 'scancentral package' command. Defaults to the
+      options specified in the EXTRA_PACKAGE_OPTS environment variable, or no extra 
+      options if not specified. 
+    required: false
+    default: ${#env('PACKAGE_EXTRA_OPTS')}
+  output:
+    alias: o
+    description: |
+      Name of the zip file in which packaged source code should be stored. Defaults to
+      package.zip in the current working directory.
+    required: true
+    default: package.zip
+      
+steps:
+  - var.set:
+      absolutePackageOutputPath: ${#resolveAgainstCurrentWorkDir(cli.output)}
+  - run.fcli:
+      update-tool-defs:
+        cmd: fcli tool definitions update ${cli['tool-definitions']?:""}
+      install-sc-client:
+        cmd: fcli tool sc-client install -v ${cli['sc-client-version']}
+      run-sc-client:
+        cmd: fcli tool sc-client run -v ${cli['sc-client-version']} --workdir ${cli['source-dir']} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli['extra-opts']}
+      

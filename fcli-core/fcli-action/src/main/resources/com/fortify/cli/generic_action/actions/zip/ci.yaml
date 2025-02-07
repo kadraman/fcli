@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+
+author: Fortify
+usage:
+  header: Run CI pipeline
+  description: |
+    (Work in progress)
+    This action can be used to run a full, standardized CI pipeline that performs the
+    following activities:
+    - Create & configure SSC application version / FoD release if needed
+    - Package source code
+    - Submit SAST scan request
+    - Wait for SAST scan completion
+    - Perform post-scan activities, like checking policy outcome, exporting results, ...
+
+config:
+  output: immediate
+  
+steps:
+  - if: ${#isNotBlank(#env('FOD_URL'))}
+    run.fcli:
+      fod_ci:
+        cmd: fcli fod action run ci --session=from-env
+  - if: ${#isNotBlank(#env('SSC_URL'))}
+    run.fcli:
+      fod_ci:
+        cmd: fcli ssc action run ci --session=from-env
+      

@@ -16,7 +16,7 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
+import com.fortify.cli.common.action.cli.cmd.AbstractActionRunWithSessionCommand;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
@@ -35,7 +35,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "run")
-public class FoDActionRunCommand extends AbstractActionRunCommand {
+public class FoDActionRunCommand extends AbstractActionRunWithSessionCommand {
     @Getter @Mixin private FoDUnirestInstanceSupplierMixin unirestInstanceSupplier;
     
     @Override
@@ -66,7 +66,7 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
             throw new IllegalStateException("Either FOD_TENANT, FOD_USER, and FOD_PASSWORD, or FOD_CLIENT_ID and FOD_CLIENT_SECRET environment variables must be defined");
         }
         return String.format(
-                "fod session login --url \"%s\" %s -c \"%s\" %s",
+                "fod session login --url \"%s\" %s %s",
                 fodUrl, fodCredentialArgs, extraOpts);
     }
     

@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
+import com.fortify.cli.common.action.cli.cmd.AbstractActionRunWithSessionCommand;
 import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -61,7 +61,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "run")
-public class SSCActionRunCommand extends AbstractActionRunCommand {
+public class SSCActionRunCommand extends AbstractActionRunWithSessionCommand {
     @Mixin private SSCAndScanCentralUnirestInstanceSupplierMixin unirestInstanceSupplier;
     
     @Override
