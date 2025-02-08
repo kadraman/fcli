@@ -25,10 +25,4 @@ steps:
             target: sc-sast
     - out.write:
         stdout: ${ping}
-    - run.fcli:
-        ci:
-          cmd: fcli action run ci-vars
-          stdout.parse: json
-    - out.write:
-        stdout: 'ci.x: ${ci.x}'
       

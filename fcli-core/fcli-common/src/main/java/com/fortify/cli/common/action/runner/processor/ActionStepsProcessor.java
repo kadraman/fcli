@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -51,7 +50,6 @@ import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRestCall
 import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
-import com.fortify.cli.common.action.model.ActionStepRunFcli.FcliOutputParser;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -96,6 +94,9 @@ public final class ActionStepsProcessor {
             processStepSupplier(step::getVarSet, this::processVarSetStep);
             processStepSupplier(step::getVarFmt, this::processVarFmtStep);
             processStepSupplier(step::getVarRemove, this::processVarRemoveStep);
+            processStepSupplier(step::getVarSetGlobal, this::processVarSetGlobalStep);
+            processStepSupplier(step::getVarFmtGlobal, this::processVarFmtGlobalStep);
+            processStepSupplier(step::getVarRemoveGlobal, this::processVarRemoveGlobalStep);
             processStepEntries(step::getRunFcli, this::processRunFcliStep);
             processStepEntries(step::getCheck, this::processCheckStep);
             processStepEntries(step::getOutWrite, this::processOutWriteStep);
@@ -194,71 +195,56 @@ public final class ActionStepsProcessor {
     }
     
     private final void processVarFmtStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
-        map.entrySet().forEach(this::processVarFmtStepEntry);
+        processVarFmt(map, vars::set);
     }
     
-    private final void processVarFmtStepEntry(Map.Entry<TemplateExpression, TemplateExpression> entry) {
-        var name = vars.eval(entry.getKey(), String.class);
-        var value = format(entry.getValue());
-        setVar(name, value);
+    private final void processVarFmtGlobalStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+        processVarFmt(map, vars::setGlobal);
+    }
+    
+    private final void processVarFmt(LinkedHashMap<TemplateExpression, TemplateExpression> map, BiConsumer<String, JsonNode> setter) {
+        map.entrySet().forEach(e->processVarFmt(e.getKey(), e.getValue(), setter));
+    }
+    
+    private final void processVarFmt(TemplateExpression key, TemplateExpression value, BiConsumer<String, JsonNode> setter) {
+        var name = vars.eval(key, String.class);
+        var jsonValue = format(value);
+        setter.accept(name, jsonValue);
     }
     
     private final void processVarSetStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
-        map.entrySet().forEach(this::processVarSetStepEntry);
+        processVarSet(map, vars::set);
     }
     
-    private final void processVarSetStepEntry(Map.Entry<TemplateExpression, TemplateExpression> entry) {
-        var name = vars.eval(entry.getKey(), String.class);
-        var rawValue = vars.eval(entry.getValue(), Object.class);
-        var value = ctx.getObjectMapper().valueToTree(rawValue);
-        setVar(name, value);
-    }
-
-    private final void setVar(String name, JsonNode value) {
-        if ( name.endsWith("..") ) { 
-            appendToArray(name.substring(0, name.length()-2), value); 
-        } else {
-            var varName = StringUtils.substringBefore(name, ".");
-            var propName = StringUtils.substringAfter(name, ".");
-            if ( StringUtils.isBlank(propName) ) {
-                vars.set(name, value);
-            } else {
-                appendToObject(varName, propName, value);
-            }
-        }
+    private final void processVarSetGlobalStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+        processVarSet(map, vars::setGlobal);
     }
     
-    private final void appendToArray(String name, JsonNode value) {
-        var array = getOrCreateVar(name, ()->ctx.getObjectMapper().createArrayNode());
-        if ( !array.isArray() ) {
-            throw new StepProcessingException("Variable "+name+" is not an array; cannot append value");
-        }
-        ((ArrayNode)array).add(value);
-    }
-
-    private final void appendToObject(String name, String property, JsonNode value) {
-        var obj = getOrCreateVar(name, ()->ctx.getObjectMapper().createObjectNode());
-        if ( !obj.isObject() ) {
-            throw new StepProcessingException("Variable "+name+" is not a set of properties; can't set property "+property);
-        }
-        ((ObjectNode)obj).set(property, value);
+    private final void processVarSet(LinkedHashMap<TemplateExpression, TemplateExpression> map, BiConsumer<String, JsonNode> setter) {
+        map.entrySet().forEach(e->processVarSet(e.getKey(), e.getValue(), setter));
     }
     
-    private final JsonNode getOrCreateVar(String name, Supplier<JsonNode> supplier) {
-        var v = vars.get(name);
-        if ( v==null || v.isNull() ) {
-            v = supplier.get();
-            vars.set(name, v);
-        }
-        return v;
+    private final void processVarSet(TemplateExpression key, TemplateExpression value, BiConsumer<String, JsonNode> setter) {
+        var name = vars.eval(key, String.class);
+        var rawValue = vars.eval(value, Object.class);
+        var jsonValue = ctx.getObjectMapper().valueToTree(rawValue);
+        setter.accept(name, jsonValue);
     }
-
+    
+    private final void processVarRemoveGlobalStep(List<TemplateExpression> list) {
+        processVarRemove(list, vars::unsetGlobal);
+    }
+    
     private final void processVarRemoveStep(List<TemplateExpression> list) {
-        list.forEach(this::processVarRemoveStepEntry);
+        processVarRemove(list, vars::unset);
+    }
+
+    private final void processVarRemove(List<TemplateExpression> list, Consumer<String> remover) {
+        list.forEach(i->processVarRemove(i, remover));
     }
     
-    private final void processVarRemoveStepEntry(TemplateExpression entry) {
-        vars.unset(vars.eval(entry, String.class));
+    private final void processVarRemove(TemplateExpression entry, Consumer<String> remover) {
+        remover.accept(vars.eval(entry, String.class));
     }
     
     private void processOutWriteStep(TemplateExpression destinationExpression, TemplateExpression valueExpression) {
@@ -377,7 +363,7 @@ public final class ActionStepsProcessor {
                 : !vars.eval(failIf, Boolean.class);
         var currentStatus = pass ? CheckStatus.PASS : CheckStatus.FAIL;
         var newCheckStatus = ctx.getCheckStatuses().compute(checkStep, (s,oldStatus)->CheckStatus.combine(oldStatus, currentStatus));
-        appendToObject("checkStatus", key, new TextNode(newCheckStatus.name()));
+        vars.set("checkStatus."+key, new TextNode(newCheckStatus.name()));
     }
     
     private void processRestTargetsStep(String name, ActionStepRestTarget descriptor) {
@@ -399,10 +385,10 @@ public final class ActionStepsProcessor {
         var cmd = vars.eval(fcli.getCmd(), String.class).replaceFirst("^fcli\s+", "");
         ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd);
         var recordConsumer = createFcliRecordConsumer(fcli);
-        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null && fcli.getStdoutParser()==FcliOutputParser.none ? OutputType.show : OutputType.suppress );
+        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
         var requestedStderrOutputType = getFcliOutputTypeOrDefault(fcli.getStderrOutputType(), OutputType.show );
-        var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(fcli.getStdoutParser(), requestedStdoutOutputType);
-        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(fcli.getStderrParser(), requestedStderrOutputType);;
+        var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
+        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);;
         var cmdExecutor = FcliCommandExecutor.builder()
                 .rootCommandLine(ctx.getConfig().getRootCommandLine())
                 .cmd(cmd)
@@ -410,7 +396,6 @@ public final class ActionStepsProcessor {
                 .stderrOutputType(actualStderrOutputType)
                 .onException(e->handleFcliException(fcli, e))
                 .onNonZeroExitCode(r->handleFcliNonZeroExitCode(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r))
-                .suppressProgress(fcli.getStdoutParser()!=FcliOutputParser.none)
                 .recordConsumer(recordConsumer).build();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
@@ -432,18 +417,6 @@ public final class ActionStepsProcessor {
         vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
         vars.set(name+"_stdout", requestedStdoutOutputType==OutputType.collect ? output.getOut() : "");
         vars.set(name+"_stderr", requestedStderrOutputType==OutputType.collect ? output.getErr() : "");
-        var stdoutParser = fcli.getStdoutParser();
-        var stderrParser = fcli.getStderrParser();
-        var stdoutParsed = stdoutParser!=FcliOutputParser.none ? stdoutParser.parse(output.getOut()) : NullNode.instance;
-        var stderrParsed = stderrParser!=FcliOutputParser.none ? stderrParser.parse(output.getErr()) : NullNode.instance;
-        vars.set(name+"_stdout_parsed", stdoutParsed);
-        vars.set(name+"_stderr_parsed", stderrParsed);
-        if ( stdoutParser!=FcliOutputParser.none && stderrParser==FcliOutputParser.none ) {
-            vars.set(name, stdoutParsed);
-        }
-        if ( stderrParser!=FcliOutputParser.none && stdoutParser==FcliOutputParser.none ) {
-            vars.set(name, stderrParsed);
-        }
         vars.set(name+"_exitCode", new IntNode(output.getExitCode()));
     }
 
@@ -471,10 +444,9 @@ public final class ActionStepsProcessor {
         return outputType==null ? _default : outputType;
     }
     
-    private OutputType overrideFcliShowWithCollectOutputTypeIfDelayedOrParsed(FcliOutputParser fcliOutputParser, OutputType requestedOutputType) {
-        return fcliOutputParser!=FcliOutputParser.none || (
-                ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
-                && requestedOutputType==OutputType.show)
+    private OutputType overrideFcliShowWithCollectOutputTypeIfDelayed(OutputType requestedOutputType) {
+        return ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
+                && requestedOutputType==OutputType.show
                 ? OutputType.collect
                 : requestedOutputType;
     }

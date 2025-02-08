@@ -14,8 +14,6 @@ config:
   output: immediate
   
 steps:
-  - var.set:
+  - var.set-global:
       ci.x: X value
       ci.y: Y value
-  - out.write:
-      stdout: ${ci}
