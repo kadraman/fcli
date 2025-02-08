@@ -84,7 +84,7 @@ public final class ActionRunnerVars {
      * and convert the result to the given return type.
      */
     public final <T> T eval(Expression expression, Class<T> returnType) {
-        return spelEvaluator.evaluate(expression, values, returnType);
+        return expression==null ? null : spelEvaluator.evaluate(expression, values, returnType);
     }
     
     /**
@@ -92,7 +92,7 @@ public final class ActionRunnerVars {
      * and convert the result to the given return type.
      */
     public final <T> T eval(String expression, Class<T> returnType) {
-        return spelEvaluator.evaluate(expression, values, returnType);
+        return expression==null ? null : spelEvaluator.evaluate(expression, values, returnType);
     }
     
     public final <T> Map<String, T> eval(Map<String, TemplateExpression> expressions, Class<T> valueType) {
