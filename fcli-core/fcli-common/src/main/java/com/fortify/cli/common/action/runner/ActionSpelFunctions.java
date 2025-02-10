@@ -34,6 +34,7 @@ import org.jsoup.safety.Safelist;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
+import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.NoArgsConstructor;
@@ -263,6 +264,39 @@ public class ActionSpelFunctions {
     public static final <T> Iterable<T> asIterable(Iterator<T> iterator) { 
         return () -> iterator; 
     } 
+    
+    /**
+     * Given a module name and built-in fcli action name, this method returns
+     * the fcli command for running the action, allowing the action name to
+     * overridden through the actionName_ACTION environment variable, and
+     * automatically adding options from the actionName_ACTION_EXTRA_OPTS
+     * environment variable.
+     */
+    public static final String actionCmd(String moduleName, String actionName) {
+        return String.format("fcli %s action run \"%s\" %s",
+                moduleName,
+                _envOrDefault(actionName, "ACTION", actionName),
+                _envOrDefault(actionName, "ACTION_EXTRA_OPTS", ""));
+    }
+
+    /**
+     * Given a command name, this method returns the value of the command_EXTRA_OPTS
+     * environment variable if defined, or an empty string if not.
+     */
+    public static final String extraOpts(String cmdName) {
+        return _envOrDefault(cmdName, "EXTRA_OPTS", "");
+    }
+    
+    /**
+     * Given an environment variable base name and suffix, this method will return
+     * the value of the combined environment variable name, or the given default
+     * value if the combined environment variable is not defined. 
+     */
+    private static final String _envOrDefault(String baseName, String suffix, String defaultValue) {
+        var envName = String.format("%s_%s", baseName, suffix).toUpperCase().replace('-', '_');
+        var envValue = EnvHelper.env(envName);
+        return StringUtils.isNotBlank(envValue) ? envValue : defaultValue; 
+    }
     
     public static final String copyright() {
         return String.format("Copyright (c) %s Open Text", Year.now().getValue());
