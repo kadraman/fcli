@@ -42,10 +42,10 @@ steps:
             details:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
           do:
-          - var.fmt:
-              annotations..: annotations
-  - var.fmt:
-      report: report
+          - var.set:
+              annotations..: {fmt: annotations}
+  - var.set:
+      report: {fmt: report}
   - out.write:
       ${cli['annotations-file']}: ${annotations?:{}}
       ${cli['report-file']}: ${report}

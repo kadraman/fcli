@@ -198,8 +198,8 @@ steps:
               `*` The 'Removed' column shows the total number of removed issues for this application version, which includes issues removed in previous scans.
               
   # Write output based on data collected above, and value template defined below 
-  - out.fmt:
-      ${cli.file}: summary-md
+  - out.write:
+      ${cli.file}: {fmt: summary-md}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

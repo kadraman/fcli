@@ -71,10 +71,10 @@ steps:
             details:
               uri: /api/v1/issueDetails/${issue.id}
           do:
-            - var.fmt:
-                vulnerabilities..: issues
-  - out.fmt:
-      ${cli.file}: aws-sast-report
+            - var.set:
+                vulnerabilities..: {fmt: issues}
+  - out.write:
+      ${cli.file}: {fmt: aws-sast-report}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

@@ -80,8 +80,7 @@ steps:
           do:
             - var.set:
                 ruleCategories.${issue.primaryRuleGuid}: ${issue.issueName}
-            - var.fmt:
-                results..: results
+                results..: {fmt: results}
   - log.progress: Processing rule data
   - records.for-each:
       if: ${ruleCategories!=null}
@@ -89,10 +88,10 @@ steps:
       record.var-name: rule
       do:
         - if: ${#isNotBlank(ruleCategories[rule.id])}
-          var.fmt:
-            rules..: rules
-  - out.fmt:
-      ${cli.file}: github-sast-report
+          var.set:
+            rules..: {fmt: rules}
+  - out.write:
+      ${cli.file}: {fmt: github-sast-report}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

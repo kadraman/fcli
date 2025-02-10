@@ -54,10 +54,10 @@ steps:
             recommendations:
                 uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/recommendations
           do:
-            - var.fmt:
-                vulnerabilities..: issues
-  - out.fmt:
-      ${cli['file']}: report
+            - var.set:
+                vulnerabilities..: {fmt: issues}
+  - out.write:
+      ${cli['file']}: {fmt: report}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

@@ -98,17 +98,14 @@ steps:
             details:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
           do:
-            - if: ${issue.status=='Fix Validated'}
-              var.fmt:
-                removedIssues..: mdIssueListItem
-            - if: ${(issue.status=='New' || issue.status=='Reopen')}
-              var.fmt:
-                newIssues..: mdIssueListItem
+            - var.set:
+                removedIssues..: {fmt: mdIssueListItem, if: "${issue.status=='Fix Validated'}"}
+                newIssues..: {fmt: mdIssueListItem, if: "${(issue.status=='New' || issue.status=='Reopen')}"}
           
   - log.progress: Generating GitHub request
-  - var.fmt:
-      reviewBody: reviewBody
-      reviewRequestBody: reviewRequestBody
+  - var.set:
+      reviewBody: {fmt: reviewBody}
+      reviewRequestBody: {fmt: reviewRequestBody}
   - if: ${cli.dryrun}
     out.write:
       stdout: ${reviewRequestBody}

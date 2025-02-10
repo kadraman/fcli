@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+# yaml-language-server: $schema=/home/rsenden/workspace/fcli/fcli-other/fcli-doc/build/generated-docs/gh-pages/static/output/schemas/action/fcli-action-schema-dev-2.x-8.json
 
 author: Fortify
 usage:
@@ -47,7 +47,5 @@ steps:
       ci.commitSHA:         ${#env('Build.SourceVersion')}
   - out.write:
       stdout: ${global.ci}
-        
-            
         
         

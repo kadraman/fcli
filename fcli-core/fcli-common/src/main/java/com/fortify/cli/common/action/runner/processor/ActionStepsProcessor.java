@@ -52,6 +52,7 @@ import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
 import com.fortify.cli.common.action.model.ActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
+import com.fortify.cli.common.action.model.TemplateExpressionWithFormatter;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerHelper;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
@@ -92,15 +93,12 @@ public final class ActionStepsProcessor {
             processStepEntries(step::getRestTargets, this::processRestTargetsStep);
             processStepSupplier(step::getRestCalls, this::processRestCallStep);
             processStepSupplier(step::getVarSet, this::processVarSetStep);
-            processStepSupplier(step::getVarFmt, this::processVarFmtStep);
             processStepSupplier(step::getVarRemove, this::processVarRemoveStep);
             processStepSupplier(step::getVarSetGlobal, this::processVarSetGlobalStep);
-            processStepSupplier(step::getVarFmtGlobal, this::processVarFmtGlobalStep);
             processStepSupplier(step::getVarRemoveGlobal, this::processVarRemoveGlobalStep);
             processStepEntries(step::getRunFcli, this::processRunFcliStep);
             processStepEntries(step::getCheck, this::processCheckStep);
             processStepEntries(step::getOutWrite, this::processOutWriteStep);
-            processStepEntries(step::getOutFmt, this::processOutFmtStep);
             processStepSupplier(step::get_throw, this::processThrowStep);
             processStepSupplier(step::get_exit, this::processExitStep);
             processStepSupplier(step::getForEachRecord, this::processForEachRecordStep);
@@ -194,41 +192,24 @@ public final class ActionStepsProcessor {
         return true;
     }
     
-    private final void processVarFmtStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
-        processVarFmt(map, vars::set);
-    }
-    
-    private final void processVarFmtGlobalStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
-        processVarFmt(map, vars::setGlobal);
-    }
-    
-    private final void processVarFmt(LinkedHashMap<TemplateExpression, TemplateExpression> map, BiConsumer<String, JsonNode> setter) {
-        map.entrySet().forEach(e->processVarFmt(e.getKey(), e.getValue(), setter));
-    }
-    
-    private final void processVarFmt(TemplateExpression key, TemplateExpression value, BiConsumer<String, JsonNode> setter) {
-        var name = vars.eval(key, String.class);
-        var jsonValue = format(value);
-        setter.accept(name, jsonValue);
-    }
-    
-    private final void processVarSetStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+    private final void processVarSetStep(Map<TemplateExpression, TemplateExpressionWithFormatter> map) {
         processVarSet(map, vars::set);
     }
     
-    private final void processVarSetGlobalStep(LinkedHashMap<TemplateExpression, TemplateExpression> map) {
+    private final void processVarSetGlobalStep(Map<TemplateExpression, TemplateExpressionWithFormatter> map) {
         processVarSet(map, vars::setGlobal);
     }
     
-    private final void processVarSet(LinkedHashMap<TemplateExpression, TemplateExpression> map, BiConsumer<String, JsonNode> setter) {
-        map.entrySet().forEach(e->processVarSet(e.getKey(), e.getValue(), setter));
+    private final void processVarSet(Map<TemplateExpression, TemplateExpressionWithFormatter> map, BiConsumer<String, JsonNode> setter) {
+        if ( map!=null ) { map.entrySet().forEach(e->processVarSet(e.getKey(), e.getValue(), setter)); }
     }
-    
-    private final void processVarSet(TemplateExpression key, TemplateExpression value, BiConsumer<String, JsonNode> setter) {
-        var name = vars.eval(key, String.class);
-        var rawValue = vars.eval(value, Object.class);
-        var jsonValue = ctx.getObjectMapper().valueToTree(rawValue);
-        setter.accept(name, jsonValue);
+
+    private final void processVarSet(TemplateExpression nameExpression, TemplateExpressionWithFormatter templateExpressionWithFormatter, BiConsumer<String, JsonNode> setter) {
+        if ( templateExpressionWithFormatter==null || _if(templateExpressionWithFormatter) ) {
+            var name = vars.eval(nameExpression, String.class);
+            var value = ActionRunnerHelper.formatValueAsJsonNode(ctx, vars, templateExpressionWithFormatter);
+            setter.accept(name, value);
+        }
     }
     
     private final void processVarRemoveGlobalStep(List<TemplateExpression> list) {
@@ -247,12 +228,8 @@ public final class ActionStepsProcessor {
         remover.accept(vars.eval(entry, String.class));
     }
     
-    private void processOutWriteStep(TemplateExpression destinationExpression, TemplateExpression valueExpression) {
-        write(destinationExpression, vars.eval(valueExpression, Object.class));
-    }
-    
-    private void processOutFmtStep(TemplateExpression destinationExpression, TemplateExpression formatterExpression) {
-        write(destinationExpression, format(formatterExpression));
+    private void processOutWriteStep(TemplateExpression target, TemplateExpressionWithFormatter templateExpressionWithFormatter) {
+        write(target, ActionRunnerHelper.formatValueAsObject(ctx, vars, templateExpressionWithFormatter));
     }
     
     private void write(TemplateExpression destinationExpression, Object valueObject) {
@@ -285,11 +262,6 @@ public final class ActionStepsProcessor {
         try ( var out = new PrintStream(file, StandardCharsets.UTF_8) ) {
             out.println(output);
         }
-    }
-    
-    private JsonNode format(TemplateExpression formatterExpression) {
-        var formatter = vars.eval(formatterExpression, String.class);
-        return ActionRunnerHelper.fmt(ctx, formatter, vars.getValues());
     }
 
     private final String asString(Object output) {

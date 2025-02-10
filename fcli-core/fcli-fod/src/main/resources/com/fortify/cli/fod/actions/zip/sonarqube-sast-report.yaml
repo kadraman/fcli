@@ -39,11 +39,11 @@ steps:
         records.for-each:
           record.var-name: issue
           do:
-            - var.fmt:
-                sq_issues..: sq_issues
+            - var.set:
+                sq_issues..: {fmt: sq_issues}
 
-  - out.fmt:
-      ${cli.file}: sq-sast-report
+  - out.write:
+      ${cli.file}: {fmt: sq-sast-report}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

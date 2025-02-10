@@ -102,17 +102,14 @@ steps:
             details:
               uri: /api/v1/issueDetails/${issue.id}
           do:
-            - if: ${issue.scanStatus=='REMOVED'}
-              var.fmt:
-                removedIssues..: mdIssueListItem
-            - if: ${(issue.scanStatus=='NEW' || issue.scanStatus=='REINTRODUCED')}
-              var.fmt:
-                newIssues..: mdIssueListItem
-          
+            - var.set:
+                removedIssues..: {fmt: mdIssueListItem, if: "${issue.scanStatus=='REMOVED'}"}
+                newIssues..: {fmt: mdIssueListItem, if: "${(issue.scanStatus=='NEW' || issue.scanStatus=='REINTRODUCED')}"} 
+                       
   - log.progress: Generating GitHub request
-  - var.fmt:
-      reviewBody: reviewBody
-      reviewRequestBody: reviewRequestBody
+  - var.set:
+      reviewBody: {fmt: reviewBody}
+      reviewRequestBody: {fmt: reviewRequestBody}
   - if: ${cli.dryrun}
     out.write:
       stdout: ${reviewRequestBody}

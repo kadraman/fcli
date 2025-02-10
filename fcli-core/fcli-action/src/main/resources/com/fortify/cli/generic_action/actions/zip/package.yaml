@@ -58,10 +58,7 @@ steps:
   - var.set:
       absolutePackageOutputPath: ${#resolveAgainstCurrentWorkDir(cli.output)}
   - run.fcli:
-      update-tool-defs:
-        cmd: fcli tool definitions update ${cli['tool-definitions']?:""}
-      install-sc-client:
-        cmd: fcli tool sc-client install -v ${cli['sc-client-version']}
-      run-sc-client:
-        cmd: fcli tool sc-client run -v ${cli['sc-client-version']} --workdir ${cli['source-dir']} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli['extra-opts']}
+      update-tool-defs: fcli tool definitions update ${cli['tool-definitions']?:""}
+      install-sc-client: fcli tool sc-client install -v ${cli['sc-client-version']}
+      run-sc-client: fcli tool sc-client run -v ${cli['sc-client-version']} --workdir ${cli['source-dir']} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli['extra-opts']}
       

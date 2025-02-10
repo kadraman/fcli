@@ -119,7 +119,7 @@ public final class ActionRunnerVars {
      * Set a variable on both this instance and any parent instances
      */
     public final void set(String name, JsonNode value) {
-        logDebug(()->String.format("Set %s: %s", name, value.toPrettyString()));
+        logDebug(()->String.format("Set %s: %s", name, value==null ? null : value.toPrettyString()));
         _set(name, value, values::get, this::_setLocalAndParents);
     }
     
@@ -127,7 +127,7 @@ public final class ActionRunnerVars {
      * Set a variable on this instance only
      */
     public final void setLocal(String name, JsonNode value) {
-        logDebug(()->String.format("Set Local %s: %s", name, value.toPrettyString()));
+        logDebug(()->String.format("Set Local %s: %s", name, value==null ? null : value.toPrettyString()));
         _set(name, value, values::get, values::set);
     }
     
@@ -136,7 +136,7 @@ public final class ActionRunnerVars {
      * the same JVM through the 'global' variable.
      */
     public final void setGlobal(String name, JsonNode value) {
-        logDebug(()->String.format("Set global %s: %s", name, value.toPrettyString()));
+        logDebug(()->String.format("Set global %s: %s", name, value==null ? null : value.toPrettyString()));
         _set(name, value, globalValues::get, globalValues::set);
     }
     

@@ -50,10 +50,10 @@ steps:
         records.for-each:
           record.var-name: issue
           do:
-            - var.fmt:
-                sq_issues..: sq_issues
-  - out.fmt:
-      ${cli.file}: sq_output 
+            - var.set:
+                sq_issues..: {fmt: sq_issues}
+  - out.write:
+      ${cli.file}: {fmt: sq_output} 
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

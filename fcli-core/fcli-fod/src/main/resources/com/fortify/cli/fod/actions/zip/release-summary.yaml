@@ -44,8 +44,8 @@ steps:
                 scanType: ${scan.scanType}
                 ossScanDate: ${scan.completedDateTime} 
 
-  - out.fmt:
-      ${cli.file}: summary-md
+  - out.write:
+      ${cli.file}: {fmt: summary-md}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |

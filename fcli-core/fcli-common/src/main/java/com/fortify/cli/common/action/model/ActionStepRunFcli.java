@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.spring.expression.SpelHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
 
@@ -33,6 +34,11 @@ import lombok.NoArgsConstructor;
 @Data @EqualsAndHashCode(callSuper = true)
 public final class ActionStepRunFcli extends AbstractActionElementIf implements IMapStringKeyAware {
     @JsonIgnore private String key;
+    
+    /** Allow for deserializing from a string that specified the fcli command to run, rather than object */
+    public ActionStepRunFcli(String cmdString) {
+        this.cmd = SpelHelper.parseTemplateExpression(cmdString);
+    }
     
     @JsonPropertyDescription("""
         Required SpEL template expression: The fcli command to run. This can be \

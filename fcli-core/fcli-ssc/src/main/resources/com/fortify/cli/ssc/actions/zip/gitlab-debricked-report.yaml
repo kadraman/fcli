@@ -61,10 +61,10 @@ steps:
             details:
               uri: /api/v1/issueDetails/${issue.id}
           do:
-            - var.fmt:
-                vulnerabilities..: vulnerabilities
-  - out.fmt:
-      ${cli.file}: gitlab-debricked-report
+            - var.set:
+                vulnerabilities..: {fmt: vulnerabilities}
+  - out.write:
+      ${cli.file}: {fmt: gitlab-debricked-report}
   - if: ${cli.file!='stdout'}
     out.write:
       stdout: |
