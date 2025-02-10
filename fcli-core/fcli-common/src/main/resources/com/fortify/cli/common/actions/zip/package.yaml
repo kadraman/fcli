@@ -10,36 +10,38 @@ config:
   output: immediate
   
 cli.options:
-  sc-client-version:
-    alias: v
+  scClientVersion:
+    names: --sc-client-version, -v
     description: |
       Specify the ScanCentral Client version to be used for packaging. Defaults to
       the value of the SC_CLIENT_VERSION environment variable, or 'latest' if not
       specified.
     required: true
     default: ${#env('SC_CLIENT_VERSION')?:'latest'}
-  source-dir:
-    alias: d
+  sourceDir:
+    names: --source-dir, -d
     description: |
       Specify the source directory to be packaged. Defaults to the value of the 
-      PACKAGE_SOURCE_DIR environment variable, or current working directory if
-      not specified.
-    default: ${#env('PACKAGE_SOURCE_DIR')?:'.'}
+      SOURCE_DIR environment variable, or current working directory if not specified.
+    default: ${#env('SOURCE_DIR')?:'.'}
     required: true
   debug:
+    names: --debug
     description: |
       Add the -debug flag to the ScanCentral Client command. Defaults to the value of
       the DO_PACKAGE_DEBUG environment variable, or false if not specified. 
     required: false
     type: boolean
     default: ${#env('DO_PACKAGE_DEBUG')?:false}
-  tool-definitions:
+  toolDefinitions:
+    names: --tool-definitions
     description: |
       Custom tool definitions to use for identifying available ScanCentral Client versions
       and download URLs. Defaults to the value of the TOOL_DEFINITIONS environment variable,
       or the built-in default if not specified.
     required: false 
-  extra-opts:
+  extraOpts:
+    names: --extra-opts
     description: |
       Extra options to be passed to the 'scancentral package' command. Defaults to the
       options specified in the EXTRA_PACKAGE_OPTS environment variable, or no extra 
@@ -47,7 +49,7 @@ cli.options:
     required: false
     default: ${#env('PACKAGE_EXTRA_OPTS')}
   output:
-    alias: o
+    names: --output, -o
     description: |
       Name of the zip file in which packaged source code should be stored. Defaults to
       package.zip in the current working directory.
@@ -58,7 +60,7 @@ steps:
   - var.set:
       absolutePackageOutputPath: ${#resolveAgainstCurrentWorkDir(cli.output)}
   - run.fcli:
-      update-tool-defs: fcli tool definitions update ${cli['tool-definitions']?:""}
-      install-sc-client: fcli tool sc-client install -v ${cli['sc-client-version']}
-      run-sc-client: fcli tool sc-client run -v ${cli['sc-client-version']} --workdir ${cli['source-dir']} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli['extra-opts']}
+      update-tool-defs: fcli tool definitions update ${cli.toolDefinitions?:""}
+      install-sc-client: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
+      run-sc-client: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli.extraOpts}
       

@@ -19,7 +19,7 @@ import com.fortify.cli.common.action.cli.mixin.ActionValidationMixin;
 import com.fortify.cli.common.action.runner.ActionRunner;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
-import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.ActionParameterHelper;
+import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.ActionOptionHelper;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.mixin.CommandHelperMixin;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
@@ -82,7 +82,7 @@ public abstract class AbstractActionRunCommand<T> extends AbstractRunnableComman
     
     private ParameterException onValidationErrors(OptionsParseResult optionsParseResult) {
         var errorsString = String.join("\n ", optionsParseResult.getValidationErrors());
-        var supportedOptionsString = ActionParameterHelper.getSupportedOptionsTable(optionsParseResult.getOptions());
+        var supportedOptionsString = ActionOptionHelper.getSupportedOptionsTable(optionsParseResult.getOptions());
         var msg = String.format("Option errors:\n %s\nSupported options:\n%s\n", errorsString, supportedOptionsString);
         return new ParameterException(commandHelper.getCommandSpec().commandLine(), msg);
     }

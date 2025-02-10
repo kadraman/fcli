@@ -84,7 +84,7 @@ public class ActionRunner {
                 .config(config)
                 .spelEvaluator(config.getSpelEvaluator())
                 .build()
-                .parseParameterValues(args);
+                .parseOptionValues(args);
         return parameterValues;
     }
     

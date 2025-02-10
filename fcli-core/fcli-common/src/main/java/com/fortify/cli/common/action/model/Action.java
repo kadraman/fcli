@@ -100,7 +100,7 @@ public class Action implements IActionElement {
         command line, or, if an alias is defined, through '--alias value'. For single-letter option names/aliases, \
         the CLI option will be preceded by just a single dash, for example '-f' if the option name/alias is 'f'.
         """)
-    @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOptions> cliOptions = Collections.emptyMap();
+    @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOption> cliOptions = Collections.emptyMap();
     
     @JsonPropertyDescription("""
         Required list: Steps to be executed when this action is being run. Each list item should consist of a \
