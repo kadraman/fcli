@@ -68,7 +68,9 @@ public class SpelFunctionsStandard {
     }
     
     public static final String env(String name) {
-        return EnvHelper.env(name);
+        var result = EnvHelper.env(name);
+        // Return null in case of blank string
+        return StringUtils.isBlank(result) ? null : result;
     }
     
     public static final String encrypt(String s) {
