@@ -55,11 +55,19 @@ cli.options:
       package.zip in the current working directory.
     required: true
     default: package.zip
+  usePackage:
+    names: --use-package
+    description: |
+      Use an existing package file instead of trying to package the given source code 
+      directory. If specified, this ignores all other options.
+    required: false
+    default: ${#env('USE_PACKAGE')}
       
 steps:
   - var.set-global:
-      package.output: ${#resolveAgainstCurrentWorkDir(cli.output)}
-  - run.fcli:
+      package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
+  - if: ${#isBlank(cli.usePackage)}
+    run.fcli:
       update-tool-defs: fcli tool definitions update ${cli.toolDefinitions?:""}
       install-sc-client: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
       run-sc-client: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
