@@ -57,10 +57,10 @@ cli.options:
     default: package.zip
       
 steps:
-  - var.set:
-      absolutePackageOutputPath: ${#resolveAgainstCurrentWorkDir(cli.output)}
+  - var.set-global:
+      package.output: ${#resolveAgainstCurrentWorkDir(cli.output)}
   - run.fcli:
       update-tool-defs: fcli tool definitions update ${cli.toolDefinitions?:""}
       install-sc-client: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
-      run-sc-client: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${absolutePackageOutputPath}" ${cli.extraOpts}
+      run-sc-client: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
       
