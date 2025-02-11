@@ -190,19 +190,21 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
         private final void addTargetDirPreparation(Map<String, Runnable> requiredPreparations) {
             var targetPath = installer.getTargetPath();
             if ( Files.exists(targetPath) ) {
-                var existingVersionsWithSameTargetPath = getVersionsStream()
-                            .filter(d->!isCandidateForUninstall(d))
-                            .filter(d->installer.hasMatchingTargetPath(d))
-                            .map(ToolDefinitionVersionDescriptor::getVersion)
+                if ( ToolInstallationDescriptor.optionalCopyFromToolInstallPath(targetPath, installer.getToolName(), installer.getVersionDescriptor())==null ) {
+                    var existingVersionsWithSameTargetPath = getVersionsStream()
+                                .filter(d->!isCandidateForUninstall(d))
+                                .filter(d->installer.hasMatchingTargetPath(d))
+                                .map(ToolDefinitionVersionDescriptor::getVersion)
+                                .collect(Collectors.toList());
+                    var otherVersionsWithSameTargetPath = existingVersionsWithSameTargetPath.stream()
+                            .filter(v->!v.equals(installer.getToolVersion()))
                             .collect(Collectors.toList());
-                var otherVersionsWithSameTargetPath = existingVersionsWithSameTargetPath.stream()
-                        .filter(v->!v.equals(installer.getToolVersion()))
-                        .collect(Collectors.toList());
-                if ( !otherVersionsWithSameTargetPath.isEmpty() ) {
-                    throw new IllegalStateException(String.format("Target path %s already in use for versions: %s\nUse --replace option to explicitly uninstall the existing versions", targetPath, String.join(", ", otherVersionsWithSameTargetPath)));
-                } else if ( existingVersionsWithSameTargetPath.isEmpty() ) {
-                    // Basically we're moving the tool installation to a different directory
-                    requiredPreparations.put("Clean target directory "+targetPath, ()->deleteRecursive(targetPath));
+                    if ( !otherVersionsWithSameTargetPath.isEmpty() ) {
+                        throw new IllegalStateException(String.format("Target path %s already in use for versions: %s\nUse --replace option to explicitly uninstall the existing versions", targetPath, String.join(", ", otherVersionsWithSameTargetPath)));
+                    } else if ( existingVersionsWithSameTargetPath.isEmpty() ) {
+                        // Basically we're moving the tool installation to a different directory
+                        requiredPreparations.put("Clean target directory "+targetPath, ()->deleteRecursive(targetPath));
+                    }
                 }
             }
         }
