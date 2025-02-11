@@ -20,7 +20,7 @@ import kong.unirest.UnirestInstance;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-public class SCSastControllerScanJobHelper {
+public class SCSastScanJobHelper {
     @RequiredArgsConstructor
     public static enum StatusEndpointVersion {
         v3(3, "/rest/v3/job/{token}/status"), 
@@ -37,8 +37,8 @@ public class SCSastControllerScanJobHelper {
         return node;
     }
     
-    public static final SCSastControllerScanJobDescriptor getScanJobDescriptor(UnirestInstance unirest, String scanJobToken, StatusEndpointVersion minEndpointVersion) {
-        SCSastControllerScanJobDescriptor descriptor = null;
+    public static final SCSastScanJobDescriptor getScanJobDescriptor(UnirestInstance unirest, String scanJobToken, StatusEndpointVersion minEndpointVersion) {
+        SCSastScanJobDescriptor descriptor = null;
         RuntimeException lastException = null;
         
         for ( StatusEndpointVersion endpointVersion : StatusEndpointVersion.values() ) {
@@ -63,10 +63,10 @@ public class SCSastControllerScanJobHelper {
         return descriptor;
     }
 
-    private static SCSastControllerScanJobDescriptor getScanJobDescriptor(ObjectNode node) {
+    private static SCSastScanJobDescriptor getScanJobDescriptor(ObjectNode node) {
         node = renameFields(node);
         if ( node.get("publishState").isNull() ) {
-            node.put("publishState", SCSastControllerScanJobState.NO_PUBLISH.name());
+            node.put("publishState", SCSastScanJobState.NO_PUBLISH.name());
             node.put("publishRequested", false);
         } else {
             node.put("publishRequested", true);
@@ -74,6 +74,6 @@ public class SCSastControllerScanJobHelper {
         if ( node.get("sscArtifactState").isNull() ) {
             node.put("sscArtifactState", node.get("publishState").asText());
         }
-        return JsonHelper.treeToValue(node, SCSastControllerScanJobDescriptor.class);
+        return JsonHelper.treeToValue(node, SCSastScanJobDescriptor.class);
     }
 }

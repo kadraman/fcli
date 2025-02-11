@@ -10,17 +10,8 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.sc_sast.scan.cli.mixin;
+package com.fortify.cli.sc_sast.scan.helper;
 
-import java.io.File;
-
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerJobType;
-
-public interface ISCSastScanStartOptions {
-    String getBuildId();
-    boolean isDotNetRequired();
-    String getDotNetVersion();
-    File getPayloadFile();
-    String getSensorVersion();
-    SCSastControllerJobType getJobType();
+public enum SCSastScanJobType {
+    SCAN_JOB, TRANSLATION_AND_SCAN_JOB 
 }

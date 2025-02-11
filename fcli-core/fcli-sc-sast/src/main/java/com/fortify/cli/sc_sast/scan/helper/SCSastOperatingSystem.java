@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright 2021, 2023 Open Text.
+/**
+ * Copyright 2023 Open Text.
  *
  * The only warranties for products and services of Open Text 
  * and its affiliates and licensors ("Open Text") are as may 
@@ -9,9 +9,9 @@
  * liable for technical or editorial errors or omissions contained 
  * herein. The information contained herein is subject to change 
  * without notice.
- *******************************************************************************/
+ */
 package com.fortify.cli.sc_sast.scan.helper;
 
-public enum SCSastControllerJobType {
-    SCAN_JOB, TRANSLATION_AND_SCAN_JOB 
+public enum SCSastOperatingSystem {
+    ANY, WINDOWS, LINUX, MACOS;
 }

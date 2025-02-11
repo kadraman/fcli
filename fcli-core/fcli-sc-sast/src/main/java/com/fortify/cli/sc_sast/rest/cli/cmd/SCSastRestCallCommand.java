@@ -25,7 +25,7 @@ import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.RestCall.CMD_NAME)
 @DisableTest(TestType.CMD_DEFAULT_TABLE_OPTIONS_PRESENT) // Output columns depend on response contents
-public final class SCSastControllerRestCallCommand extends AbstractRestCallCommand {
+public final class SCSastRestCallCommand extends AbstractRestCallCommand {
     @Getter @Mixin private OutputHelperMixins.RestCall outputHelper;
     @Getter @Mixin private SCSastUnirestInstanceSupplierMixin unirestInstanceSupplier;
     @Getter private final SCSastProductHelper productHelper = SCSastProductHelper.INSTANCE;

@@ -20,10 +20,10 @@ import com.fortify.cli.ssc.artifact.helper.SSCArtifactStatus;
 
 /**
  * This is a copy of {@link SSCArtifactStatus}, but adds states from 
- * {@link SCSastControllerScanJobState} so we can copy scanState/publishState
+ * {@link SCSastScanJobState} so we can copy scanState/publishState
  * to sscArtifactState where needed.
  */
-public enum SCSastControllerScanJobArtifactState {
+public enum SCSastScanJobArtifactState {
     // SSC artifact states
     SCHED_PROCESSING, 
     PROCESSING, 
@@ -63,36 +63,36 @@ public enum SCSastControllerScanJobArtifactState {
     NO_PUBLISH
     ;
     
-    public static final SCSastControllerScanJobArtifactState[] getFailureStates() {
-        return new SCSastControllerScanJobArtifactState[]{
+    public static final SCSastScanJobArtifactState[] getFailureStates() {
+        return new SCSastScanJobArtifactState[]{
             FAILED, FAULTED, TIMEOUT, CANCELING, CANCELED, REQUIRE_AUTH, ERROR_PROCESSING, AUTH_DENIED, ERROR_DELETING, ERROR_PURGING, ERROR_DISPATCH, ERROR_ANALYZING, UNKNOWN, AUDIT_FAILED
         };
     }
     
-    public static final SCSastControllerScanJobArtifactState[] getKnownStates() {
-        return SCSastControllerScanJobArtifactState.values();
+    public static final SCSastScanJobArtifactState[] getKnownStates() {
+        return SCSastScanJobArtifactState.values();
     }
     
-    public static final SCSastControllerScanJobArtifactState[] getDefaultCompleteStates() {
-        return new SCSastControllerScanJobArtifactState[]{ PROCESS_COMPLETE };
+    public static final SCSastScanJobArtifactState[] getDefaultCompleteStates() {
+        return new SCSastScanJobArtifactState[]{ PROCESS_COMPLETE };
     }
     
     public static final String[] getFailureStateNames() {
-        return Stream.of(getFailureStates()).map(SCSastControllerScanJobArtifactState::name).toArray(String[]::new);
+        return Stream.of(getFailureStates()).map(SCSastScanJobArtifactState::name).toArray(String[]::new);
     }
     
     public static final String[] getKnownStateNames() {
-        return Stream.of(getKnownStates()).map(SCSastControllerScanJobArtifactState::name).toArray(String[]::new);
+        return Stream.of(getKnownStates()).map(SCSastScanJobArtifactState::name).toArray(String[]::new);
     }
     
     public static final String[] getDefaultCompleteStateNames() {
-        return Stream.of(getDefaultCompleteStates()).map(SCSastControllerScanJobArtifactState::name).toArray(String[]::new);
+        return Stream.of(getDefaultCompleteStates()).map(SCSastScanJobArtifactState::name).toArray(String[]::new);
     }
     
     public static final class SCSastControllerScanJobArtifactStateIterable extends ArrayList<String> {
         private static final long serialVersionUID = 1L;
         public SCSastControllerScanJobArtifactStateIterable() { 
-            super(Stream.of(SCSastControllerScanJobArtifactState.values()).map(Enum::name).toList()); 
+            super(Stream.of(SCSastScanJobArtifactState.values()).map(Enum::name).toList()); 
         }
     }
 

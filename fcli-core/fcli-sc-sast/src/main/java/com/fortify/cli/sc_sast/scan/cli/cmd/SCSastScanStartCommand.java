@@ -25,14 +25,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastJsonNodeOutputCommand;
-import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanStartOptionsArgGroup;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerJobType;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobHelper;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobHelper.StatusEndpointVersion;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobHelper;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobHelper.StatusEndpointVersion;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobType;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanPayloadDescriptor;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanPayloadHelper;
 import com.fortify.cli.sc_sast.sensor_pool.cli.mixin.SCSastSensorPoolResolverMixin;
 import com.fortify.cli.ssc.access_control.helper.SSCTokenConverter;
 import com.fortify.cli.ssc.appversion.cli.mixin.SSCAppVersionResolverMixin.AbstractSSCAppVersionResolverMixin;
@@ -41,54 +43,77 @@ import kong.unirest.MultipartBody;
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Command(name = OutputHelperMixins.Start.CMD_NAME)
-public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
-    @ArgGroup(exclusive = true, multiplicity = "1") 
-    private SCSastScanStartOptionsArgGroup optionsProvider = new SCSastScanStartOptionsArgGroup();
+public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
+    // Constants to make sure same option names are defined in Option annotation, 
+    // and passed to SCSastScanPayloadHelperBuilder
+    private static final String SENSOR_VERSION_OPT_LONG = "--sensor-version";
+    private static final String SENSOR_VERSION_OPT_SHORT = "-v";
+
     @Getter @Mixin private OutputHelperMixins.Start outputHelper;
+    
     private String userName = System.getProperty("user.name", "unknown"); // TODO Do we want to give an option to override this?
-    @Option(names = "--notify") private String email; // TODO Add email address validation
     @Mixin private SCSastSensorPoolResolverMixin.OptionalOption sensorPoolResolver;
-    @Mixin private PublishToAppVersionResolverMixin sscAppVersionResolver;
-    @Option(names = "--ssc-ci-token") private String ciToken;
-	@Option(names = { "--sargs", "--scan-args" })
-	private String scanArguments = "";
+    @Mixin private PublishToAppVersionMixin publishToAppVersionMixin;
+    @Mixin private CommonOptionMixins.RequiredFile scanPayloadFileMixin;
+    @Option(names = {SENSOR_VERSION_OPT_LONG, SENSOR_VERSION_OPT_SHORT}) private String sensorVersion;
+    @Option(names = {"--notify"}) private String email; // TODO Add email address validation
+    @Option(names = {"--ssc-ci-token", "-t"}) private String ciToken;
+	@Option(names = {"--sargs", "--scan-args"}) private String scanArguments = "";
+	@Option(names = {"--no-replace"}) private Boolean noReplace;
+	@Option(names = {"--scan-timeout"}) private Integer scanTimeout;
+	@Option(names = {"--debug"}) private Boolean debug;
     
     @Override
     public final JsonNode getJsonNode(UnirestInstance unirest) {
-        String sensorVersion = normalizeSensorVersion(optionsProvider.getScanStartOptions().getSensorVersion());
+        var payloadDescriptor = getScanPayloadDescriptor();
         var scanArgsHelper = ScanArgsHelper.parse(scanArguments);
         MultipartBody body = unirest.post("/rest/v2/job")
             .multiPartContent()
-            .field("zipFile", createZipFile(scanArgsHelper.getInputFileToZipEntryMap()), "application/zip")
+            .field("zipFile", createZipFile(payloadDescriptor, scanArgsHelper.getInputFileToZipEntryMap()), "application/zip")
             .field("username", userName, "text/plain")
-            .field("scaVersion", sensorVersion, "text/plain")
-            .field("clientVersion", sensorVersion, "text/plain")
-            .field("jobType", optionsProvider.getScanStartOptions().getJobType().name(), "text/plain")
+            .field("scaVersion", payloadDescriptor.getProductVersion(), "text/plain")
+            .field("clientVersion", payloadDescriptor.getProductVersion(), "text/plain")
+            .field("jobType", payloadDescriptor.getJobType().name(), "text/plain")
             .field("scaRuntimeArgs", scanArgsHelper.getScanArgs(), "text/plain");
         
         body = updateBody(body, "email", email);
-        body = updateBody(body, "buildId", optionsProvider.getScanStartOptions().getBuildId());
+        body = updateBody(body, "buildId", payloadDescriptor.getBuildId());
         body = updateBody(body, "pvId", getAppVersionId());
         body = updateBody(body, "poolUuid", getSensorPoolUuid());
         body = updateBody(body, "uploadToken", getUploadToken());
-        body = updateBody(body, "dotNetRequired", String.valueOf(optionsProvider.getScanStartOptions().isDotNetRequired()));
-        body = updateBody(body, "dotNetFrameworkRequiredVersion", optionsProvider.getScanStartOptions().getDotNetVersion());
+        body = updateBody(body, "dotNetRequired", String.valueOf(payloadDescriptor.isDotNetRequired()));
+        body = updateBody(body, "dotNetFrameworkRequiredVersion", payloadDescriptor.getDotNetVersion());
+        body = updateBody(body, "requiredOs", payloadDescriptor.getRequiredOs().toString());
+        body = updateBody(body, "fprNameOnSsc", publishToAppVersionMixin.getFprFileName());
+        body = updateBody(body, "disallowReplacement", noReplace==null ? null : String.valueOf(noReplace));
+        body = updateBody(body, "scanTimeout", scanTimeout==null ? null : String.valueOf(scanTimeout));
+        body = updateBody(body, "enableDiagnosis", debug==null ? null : String.valueOf(debug));
 
         JsonNode response = body.asObject(JsonNode.class).getBody();
         if ( !response.has("token") ) {
             throw new IllegalStateException("Unexpected response when submitting scan job: "+response);
         }
         String scanJobToken = response.get("token").asText();
-        return SCSastControllerScanJobHelper.getScanJobDescriptor(unirest, scanJobToken, StatusEndpointVersion.v1).asJsonNode();
+        return SCSastScanJobHelper.getScanJobDescriptor(unirest, scanJobToken, StatusEndpointVersion.v1).asJsonNode();
     }
 
-	@Override
+	/**
+     * @return
+     */
+    private SCSastScanPayloadDescriptor getScanPayloadDescriptor() {
+        return SCSastScanPayloadHelper.builder()
+                .payloadFile(scanPayloadFileMixin.getFile())
+                .overrideProductVersion(sensorVersion)
+                .overrideProductVersionOptionNames(String.format("%s/%s", SENSOR_VERSION_OPT_LONG, SENSOR_VERSION_OPT_SHORT))
+                .build().loadDescriptor();
+    }
+
+    @Override
     public final String getActionCommandResult() {
         return "SCAN_REQUESTED";
     }
@@ -99,8 +124,8 @@ public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNo
     }
 
     private String getAppVersionId() {
-        return sscAppVersionResolver.hasValue()
-                ? sscAppVersionResolver.getAppVersionId(getSscUnirestInstance())
+        return publishToAppVersionMixin.hasAppVersion()
+                ? publishToAppVersionMixin.getAppVersionId(getSscUnirestInstance())
                 : null;
     }
 
@@ -112,7 +137,7 @@ public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNo
     
     private String getUploadToken() {
         String uploadToken = null;
-        if ( !sscAppVersionResolver.hasValue() ) {
+        if ( !publishToAppVersionMixin.hasAppVersion() ) {
             if ( !StringUtils.isBlank(this.ciToken) ) {
                 throw new IllegalArgumentException("Option --ssc-ci-token may only be specified if --publish-to has been specified");
             }
@@ -129,23 +154,19 @@ public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNo
         return uploadToken;
     }
     
-    private String normalizeSensorVersion(String sensorVersion) {
-        return sensorVersion.chars().filter(ch -> ch == '.').count()==1
-                ? sensorVersion+".0"
-                : sensorVersion;
-    }
+    
     
     private final MultipartBody updateBody(MultipartBody body, String field, String value) {
         return StringUtils.isBlank(value) ? body : body.field(field, value, "text/plain");
     }
     
-    private File createZipFile(Map<File, String> extraFiles) {
+    private File createZipFile(SCSastScanPayloadDescriptor payloadDescriptor, Map<File, String> extraFiles) {
         try {
             File zipFile = File.createTempFile("zip", ".zip");
             zipFile.deleteOnExit();
             try (FileOutputStream fout = new FileOutputStream(zipFile); ZipOutputStream zout = new ZipOutputStream(fout)) {
-                final String fileName = (optionsProvider.getScanStartOptions().getJobType() == SCSastControllerJobType.TRANSLATION_AND_SCAN_JOB) ? "translation.zip" : "session.mbs";
-                addFile( zout, fileName, optionsProvider.getScanStartOptions().getPayloadFile());
+                final String fileName = (payloadDescriptor.getJobType() == SCSastScanJobType.TRANSLATION_AND_SCAN_JOB) ? "translation.zip" : "session.mbs";
+                addFile( zout, fileName, payloadDescriptor.getPayloadFile());
                 
                 for (var extraFile : extraFiles.entrySet() ) {
                 	addFile(zout, extraFile.getValue(), extraFile.getKey());
@@ -169,10 +190,12 @@ public final class SCSastControllerScanStartCommand extends AbstractSCSastJsonNo
         }
     }
 
-    private static final class PublishToAppVersionResolverMixin extends AbstractSSCAppVersionResolverMixin {
+    private static final class PublishToAppVersionMixin extends AbstractSSCAppVersionResolverMixin {
         @Option(names = {"--publish-to"}, required = false)
         @Getter private String appVersionNameOrId;
-        public final boolean hasValue() { return StringUtils.isNotBlank(appVersionNameOrId); }
+        @Option(names = {"--publish-as"}, required = false)
+        @Getter private String fprFileName = "";
+        public final boolean hasAppVersion() { return StringUtils.isNotBlank(appVersionNameOrId); }
     }
     
     @RequiredArgsConstructor

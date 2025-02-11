@@ -19,9 +19,9 @@ import picocli.CommandLine.Command;
 @Command(
         name = "rest",
         subcommands = {
-                SCSastControllerRestCallCommand.class
+                SCSastRestCallCommand.class
         }
 
 )
-public class SCSastControllerRestCommands extends AbstractContainerCommand {
+public class SCSastRestCommands extends AbstractContainerCommand {
 }

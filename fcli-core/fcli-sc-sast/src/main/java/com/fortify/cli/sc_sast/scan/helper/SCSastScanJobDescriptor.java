@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper=true) 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SCSastControllerScanJobDescriptor extends JsonNodeHolder {
+public class SCSastScanJobDescriptor extends JsonNodeHolder {
     private String jobToken;
     private String scanState; // Original property name: state, renamed in SCSastControllerScanJobHelper
     private boolean hasFiles;

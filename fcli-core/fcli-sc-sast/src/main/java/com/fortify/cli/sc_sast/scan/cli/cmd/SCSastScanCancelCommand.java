@@ -17,7 +17,7 @@ import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastJsonNodeOutputCommand;
 import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanJobResolverMixin;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobDescriptor;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobDescriptor;
 
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
@@ -25,13 +25,13 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Cancel.CMD_NAME)
-public class SCSastControllerScanCancelCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
+public class SCSastScanCancelCommand extends AbstractSCSastJsonNodeOutputCommand implements IActionCommandResultSupplier {
     @Getter @Mixin private OutputHelperMixins.Cancel outputHelper;
     @Mixin private SCSastScanJobResolverMixin.PositionalParameter scanJobResolver;
 
     @Override
     public JsonNode getJsonNode(UnirestInstance unirest) {
-        SCSastControllerScanJobDescriptor descriptor = scanJobResolver.getScanJobDescriptor(unirest);
+        SCSastScanJobDescriptor descriptor = scanJobResolver.getScanJobDescriptor(unirest);
         String scanJobToken = descriptor.getJobToken();
         unirest.delete("/rest/v2/job/{token}")
                 .routeParam("token", scanJobToken).asObject(JsonNode.class).getBody();

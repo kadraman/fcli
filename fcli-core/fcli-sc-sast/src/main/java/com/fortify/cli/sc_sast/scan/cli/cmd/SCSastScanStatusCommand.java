@@ -23,7 +23,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Status.CMD_NAME)
-public class SCSastControllerScanStatusCommand extends AbstractSCSastJsonNodeOutputCommand {
+public class SCSastScanStatusCommand extends AbstractSCSastJsonNodeOutputCommand {
     @Getter @Mixin private OutputHelperMixins.Status outputHelper;
     @Mixin SCSastScanJobResolverMixin.PositionalParameter scanJobResolver;
     

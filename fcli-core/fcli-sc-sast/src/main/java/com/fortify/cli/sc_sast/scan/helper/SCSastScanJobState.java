@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * Enum entries were copied from com.fortify.cloud.shared.JobState in cloud-shared-[version].jar.
  *
  */
-public enum SCSastControllerScanJobState {
+public enum SCSastScanJobState {
     UNKNOWN, 
     PENDING, 
     QUEUED, 
@@ -36,36 +36,36 @@ public enum SCSastControllerScanJobState {
     NO_PUBLISH
     ;
     
-    public static final SCSastControllerScanJobState[] getFailureStates() {
-        return new SCSastControllerScanJobState[]{
+    public static final SCSastScanJobState[] getFailureStates() {
+        return new SCSastScanJobState[]{
             FAILED, FAULTED, TIMEOUT, CANCELING, CANCELED, UNKNOWN // TODO Should we consider UNKNOWN as failure state?
         };
     }
     
-    public static final SCSastControllerScanJobState[] getKnownStates() {
-        return SCSastControllerScanJobState.values();
+    public static final SCSastScanJobState[] getKnownStates() {
+        return SCSastScanJobState.values();
     }
     
-    public static final SCSastControllerScanJobState[] getDefaultCompleteStates() {
-        return new SCSastControllerScanJobState[]{ COMPLETED };
+    public static final SCSastScanJobState[] getDefaultCompleteStates() {
+        return new SCSastScanJobState[]{ COMPLETED };
     }
     
     public static final String[] getFailureStateNames() {
-        return Stream.of(getFailureStates()).map(SCSastControllerScanJobState::name).toArray(String[]::new);
+        return Stream.of(getFailureStates()).map(SCSastScanJobState::name).toArray(String[]::new);
     }
     
     public static final String[] getKnownStateNames() {
-        return Stream.of(getKnownStates()).map(SCSastControllerScanJobState::name).toArray(String[]::new);
+        return Stream.of(getKnownStates()).map(SCSastScanJobState::name).toArray(String[]::new);
     }
     
     public static final String[] getDefaultCompleteStateNames() {
-        return Stream.of(getDefaultCompleteStates()).map(SCSastControllerScanJobState::name).toArray(String[]::new);
+        return Stream.of(getDefaultCompleteStates()).map(SCSastScanJobState::name).toArray(String[]::new);
     }
     
     public static final class SCSastControllerScanJobStateIterable extends ArrayList<String> {
         private static final long serialVersionUID = 1L;
         public SCSastControllerScanJobStateIterable() { 
-            super(Stream.of(SCSastControllerScanJobState.values()).map(Enum::name).toList()); 
+            super(Stream.of(SCSastScanJobState.values()).map(Enum::name).toList()); 
         }
     }
 

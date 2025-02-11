@@ -19,12 +19,12 @@ import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.rest.cli.cmd.AbstractWaitForCommand;
 import com.fortify.cli.common.rest.wait.WaitHelper.WaitHelperBuilder;
 import com.fortify.cli.sc_sast.scan.cli.mixin.SCSastScanJobResolverMixin;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobArtifactState;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobArtifactState.SCSastControllerScanJobArtifactStateIterable;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobDescriptor;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobHelper.StatusEndpointVersion;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobState;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobState.SCSastControllerScanJobStateIterable;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobArtifactState;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobArtifactState.SCSastControllerScanJobArtifactStateIterable;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobDescriptor;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobHelper.StatusEndpointVersion;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobState;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobState.SCSastControllerScanJobStateIterable;
 import com.fortify.cli.ssc._common.rest.sc_sast.cli.mixin.SCSastUnirestInstanceSupplierMixin;
 
 import kong.unirest.UnirestInstance;
@@ -35,7 +35,7 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Command(name = OutputHelperMixins.WaitFor.CMD_NAME)
-public class SCSastControllerScanWaitForCommand extends AbstractWaitForCommand {
+public class SCSastScanWaitForCommand extends AbstractWaitForCommand {
     @Getter @Mixin private SCSastUnirestInstanceSupplierMixin unirestInstanceSupplier;
     @Mixin private SCSastScanJobResolverMixin.PositionalParameterMulti scanJobsResolver;
     @ArgGroup(exclusive = true, multiplicity = "0..1") private WaitOptions waitOptions;
@@ -65,39 +65,39 @@ public class SCSastControllerScanWaitForCommand extends AbstractWaitForCommand {
             publishStates = waitOptions.publishStates;
             sscStates = waitOptions.sscStates;
         }else {
-            SCSastControllerScanJobDescriptor[] scanJobDescriptors = scanJobsResolver.getScanJobDescriptors(unirest);
+            SCSastScanJobDescriptor[] scanJobDescriptors = scanJobsResolver.getScanJobDescriptors(unirest);
             var allPublishRequested = Stream.of(scanJobDescriptors)
-                    .allMatch(SCSastControllerScanJobDescriptor::isPublishRequested);
+                    .allMatch(SCSastScanJobDescriptor::isPublishRequested);
             var v3Endpoints = Stream.of(scanJobDescriptors)
                     .anyMatch(d->d.getEndpointVersion()>=3);
             if ( allPublishRequested && v3Endpoints ) {
-                sscStates = Set.of(SCSastControllerScanJobArtifactState.getDefaultCompleteStateNames());
+                sscStates = Set.of(SCSastScanJobArtifactState.getDefaultCompleteStateNames());
             } else if ( allPublishRequested ) {
-                publishStates = Set.of(SCSastControllerScanJobState.getDefaultCompleteStateNames());
+                publishStates = Set.of(SCSastScanJobState.getDefaultCompleteStateNames());
             } else {
-                scanStates = Set.of(SCSastControllerScanJobState.getDefaultCompleteStateNames());
+                scanStates = Set.of(SCSastScanJobState.getDefaultCompleteStateNames());
             }
         }
         if ( sscStates!=null ) {
             return builder
                 .recordsSupplier(u->scanJobsResolver.getScanJobDescriptorJsonNodes(u, StatusEndpointVersion.v3))
                 .currentStateProperty("sscArtifactState")
-                .knownStates(SCSastControllerScanJobArtifactState.getKnownStateNames())
-                .failureStates(SCSastControllerScanJobArtifactState.getFailureStateNames())
+                .knownStates(SCSastScanJobArtifactState.getKnownStateNames())
+                .failureStates(SCSastScanJobArtifactState.getFailureStateNames())
                 .matchStates(sscStates);
         } else if ( publishStates!=null ) {
             return builder
                 .recordsSupplier(scanJobsResolver::getScanJobDescriptorJsonNodes)
                 .currentStateProperty("publishState")
-                .knownStates(SCSastControllerScanJobState.getKnownStateNames())
-                .failureStates(SCSastControllerScanJobState.getFailureStateNames())
+                .knownStates(SCSastScanJobState.getKnownStateNames())
+                .failureStates(SCSastScanJobState.getFailureStateNames())
                 .matchStates(publishStates);
         } else if ( scanStates!=null ) {
             return builder
                     .recordsSupplier(scanJobsResolver::getScanJobDescriptorJsonNodes)
                     .currentStateProperty("scanState")
-                    .knownStates(SCSastControllerScanJobState.getKnownStateNames())
-                    .failureStates(SCSastControllerScanJobState.getFailureStateNames())
+                    .knownStates(SCSastScanJobState.getKnownStateNames())
+                    .failureStates(SCSastScanJobState.getFailureStateNames())
                     .matchStates(scanStates);
         } else {
             throw new RuntimeException("Unexpected situation, please file a bug");
