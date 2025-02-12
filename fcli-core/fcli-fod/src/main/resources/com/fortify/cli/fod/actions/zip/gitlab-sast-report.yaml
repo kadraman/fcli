@@ -83,7 +83,7 @@ formatters:
   vulnerabilities:
       category: sast
       confidence: ${(issue.severityString matches "(Critical|Medium)") ? "High":"Low" }
-      description: ${#abbreviate(#htmlToText(issue.details?.summary), 15000)}
+      description: ${#abbreviate(#htmlToText(issue.details?.summary?:""), 15000)}
       id: ${issue.vulnId}
       cve: 'N/A'
       identifiers: |-
