@@ -94,11 +94,9 @@ public class Action implements IActionElement {
     @JsonProperty(value = "config", required = false) private ActionConfig config= new ActionConfig();
     
     @JsonPropertyDescription("""
-        Optional map: CLI options accepted by this action. Map keys define option names, values define option \
-        definitions. Option values can be referenced by action steps through the 'cli' variable, for example \
-        ${cli.myOption} or ${cli['my-option']}. Users can specify '--optionName value' on the 'fcli action * run' \
-        command line, or, if an alias is defined, through '--alias value'. For single-letter option names/aliases, \
-        the CLI option will be preceded by just a single dash, for example '-f' if the option name/alias is 'f'.
+        Optional map: CLI options accepted by this action. Map keys define the identifier for an option, which \
+        can be used in later instructions through the ${cli.optionIdentifier} SpEL template expression. Map values \
+        define option definitions like option names that can be specified on the command line, option description, ...
         """)
     @JsonProperty(value = "cli.options", required = false) private Map<String, ActionCliOption> cliOptions = Collections.emptyMap();
     
