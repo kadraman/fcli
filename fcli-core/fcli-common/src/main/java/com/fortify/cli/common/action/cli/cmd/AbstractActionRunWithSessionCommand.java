@@ -62,16 +62,10 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
-            var showStdout = config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show;
-            var baseCmd = getSessionFromEnvLoginCommand();
-            runSessionCmd(config.getRootCommandLine(), showStdout, baseCmd);
+            runSessionCmd(config.getRootCommandLine(), isShowStdout(config), getSessionFromEnvLoginCommand(), SessionCmdType.LOGIN);
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
         }
-    }
-    
-    private boolean hasInitializedSessionFromEnv() {
-        return "true".equals(System.getProperty("fcli.action.initializedSessionFromEnv"));
     }
 
     private final void terminateSession(ActionRunnerConfig config) {
@@ -80,9 +74,7 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         // session only on the first 'fcli * action run' invocation.
         if ( currentActionRunInitializedSessionFromEnv ) {
             try {
-                var showStdout = config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show;
-                var baseCmd = getSessionFromEnvLogoutCommand();
-                runSessionCmd(config.getRootCommandLine(), showStdout, baseCmd);
+                runSessionCmd(config.getRootCommandLine(), isShowStdout(config), getSessionFromEnvLogoutCommand(), SessionCmdType.LOGOUT);
             } finally {
                 currentActionRunInitializedSessionFromEnv = false;
                 System.setProperty("fcli.action.initializedSessionFromEnv", "false");
@@ -90,13 +82,23 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         }
     }
 
-    private void runSessionCmd(CommandLine rootCommandLine, boolean showStdout, String baseCmd) {
+    private void runSessionCmd(CommandLine rootCommandLine, boolean showStdout, String baseCmd, SessionCmdType type) {
+        var extraOptsEnvName = String.format("%s_%s_EXTRA_OPTS", getType().toUpperCase().replace('-', '_'), type.name());
+        var extraOpts = EnvHelper.envOrDefault(extraOptsEnvName, "");
         FcliCommandExecutor.builder()
             .rootCommandLine(rootCommandLine)
-            .cmd(String.format("%s --session from-env", baseCmd))
+            .cmd(String.format("%s --session from-env %s", baseCmd, extraOpts))
             .stdoutOutputType(showStdout ? OutputType.show : OutputType.suppress)
             .build()
             .execute();
+    }
+    
+    private boolean isShowStdout(ActionRunnerConfig config) {
+        return config.getAction().getConfig().getSessionFromEnvOutput()==ActionConfigSessionFromEnvOutput.show;
+    }
+    
+    private boolean hasInitializedSessionFromEnv() {
+        return "true".equals(System.getProperty("fcli.action.initializedSessionFromEnv"));
     }
 
     private void setOrClearSystemProperty(String name, String value) {
@@ -116,4 +118,8 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
     protected abstract String getSessionName();
     protected abstract String getSessionFromEnvLoginCommand();
     protected abstract String getSessionFromEnvLogoutCommand(); 
+    
+    private static enum SessionCmdType {
+        LOGIN, LOGOUT
+    }
 }
