@@ -31,7 +31,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
-import picocli.CommandLine;
 
 /**
  * This class holds action runner configuration
@@ -41,8 +40,6 @@ import picocli.CommandLine;
 public class ActionRunnerConfig {
     /** Progress writer factory */
     @NonNull private final IProgressWriterFactory progressWriterFactory;
-    /** Root CommandLine object for executing fcli commands */
-    @NonNull private final CommandLine rootCommandLine;
     /** Data extract action */
     @NonNull private final Action action;
     /** Callback to handle validation errors */

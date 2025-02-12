@@ -59,7 +59,7 @@ import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.StepProcessingException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
-import com.fortify.cli.common.cli.util.FcliCommandExecutor;
+import com.fortify.cli.common.cli.util.FcliCommandExecutorFactory;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.rest.unirest.GenericUnirestFactory;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
@@ -361,14 +361,13 @@ public final class ActionStepsProcessor {
         var requestedStderrOutputType = getFcliOutputTypeOrDefault(fcli.getStderrOutputType(), OutputType.show );
         var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
         var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);;
-        var cmdExecutor = FcliCommandExecutor.builder()
-                .rootCommandLine(ctx.getConfig().getRootCommandLine())
+        var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
                 .stdoutOutputType(actualStdoutOutputType)
                 .stderrOutputType(actualStderrOutputType)
                 .onException(e->handleFcliException(fcli, e))
                 .onNonZeroExitCode(r->handleFcliNonZeroExitCode(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r))
-                .recordConsumer(recordConsumer).build();
+                .recordConsumer(recordConsumer).build().create();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
         }

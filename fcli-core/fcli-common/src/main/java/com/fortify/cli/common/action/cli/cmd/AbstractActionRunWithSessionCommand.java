@@ -17,11 +17,9 @@ import java.util.Map;
 
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigSessionFromEnvOutput;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
-import com.fortify.cli.common.cli.util.FcliCommandExecutor;
+import com.fortify.cli.common.cli.util.FcliCommandExecutorFactory;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
-
-import picocli.CommandLine;
 
 public abstract class AbstractActionRunWithSessionCommand extends AbstractActionRunCommand<Map<String,String>> {
     private boolean currentActionRunInitializedSessionFromEnv = false;
@@ -62,7 +60,7 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
-            runSessionCmd(config.getRootCommandLine(), isShowStdout(config), getSessionFromEnvLoginCommand(), SessionCmdType.LOGIN);
+            runSessionCmd(isShowStdout(config), getSessionFromEnvLoginCommand(), SessionCmdType.LOGIN);
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
         }
@@ -74,7 +72,7 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         // session only on the first 'fcli * action run' invocation.
         if ( currentActionRunInitializedSessionFromEnv ) {
             try {
-                runSessionCmd(config.getRootCommandLine(), isShowStdout(config), getSessionFromEnvLogoutCommand(), SessionCmdType.LOGOUT);
+                runSessionCmd(isShowStdout(config), getSessionFromEnvLogoutCommand(), SessionCmdType.LOGOUT);
             } finally {
                 currentActionRunInitializedSessionFromEnv = false;
                 System.setProperty("fcli.action.initializedSessionFromEnv", "false");
@@ -82,14 +80,14 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         }
     }
 
-    private void runSessionCmd(CommandLine rootCommandLine, boolean showStdout, String baseCmd, SessionCmdType type) {
+    private void runSessionCmd(boolean showStdout, String baseCmd, SessionCmdType type) {
         var extraOptsEnvName = String.format("%s_%s_EXTRA_OPTS", getType().toUpperCase().replace('-', '_'), type.name());
         var extraOpts = EnvHelper.envOrDefault(extraOptsEnvName, "");
-        FcliCommandExecutor.builder()
-            .rootCommandLine(rootCommandLine)
+        FcliCommandExecutorFactory.builder()
             .cmd(String.format("%s --session from-env %s", baseCmd, extraOpts))
             .stdoutOutputType(showStdout ? OutputType.show : OutputType.suppress)
             .build()
+            .create()
             .execute();
     }
     

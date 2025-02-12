@@ -28,7 +28,6 @@ import com.fortify.cli.common.util.DisableTest;
 import com.fortify.cli.common.util.DisableTest.TestType;
 
 import lombok.SneakyThrows;
-import picocli.CommandLine;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
@@ -54,17 +53,12 @@ public abstract class AbstractActionRunCommand<T> extends AbstractRunnableComman
             var configBuilder = ActionRunnerConfig.builder()
                 .onValidationErrors(this::onValidationErrors)
                 .action(action)
-                .progressWriterFactory(progressWriterFactory)
-                .rootCommandLine(getRootCommandLine());
+                .progressWriterFactory(progressWriterFactory);
             configure(configBuilder);
             config = configBuilder.build();
             progressWriter.writeProgress("Executing action %s", config.getAction().getMetadata().getName());
         }
         return run(config, new ActionRunner(config));
-    }
-
-    private final CommandLine getRootCommandLine() {
-        return commandHelper.getRootCommandLine();
     }
     
     private final Integer run(ActionRunnerConfig config, ActionRunner actionRunner) {
