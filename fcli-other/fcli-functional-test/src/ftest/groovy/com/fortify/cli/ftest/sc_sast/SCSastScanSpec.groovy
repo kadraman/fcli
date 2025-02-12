@@ -65,7 +65,7 @@ class SCSastScanSpec extends FcliBaseSpec {
 		then:
 			verifyAll(result.stdout) {
 				size()==2
-				it[0].replace(' ', '').equals("JobtokenHasfilesScanstatePublishstateSscprocessingstateEndpointversionAction")
+				it[0].replace(' ', '').equals("JobtokenHasfilesScanstatePublishstateSSCprocessingstateEndpointversionAction")
 			}
 	}
 	
