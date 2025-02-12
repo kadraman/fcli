@@ -120,8 +120,10 @@ public class SCSastScanPayloadHelper {
         // Older package versions don't include client-version, so node may be null
         var productVersion = clientVersionNode==null ? null : clientVersionNode.asText(); 
         var normalizedOverrideProductVersion = getNormalizedOverrideProductVersion();
-        if ( StringUtils.isNotBlank(normalizedOverrideProductVersion) && StringUtils.isNotBlank(productVersion) ) {
-            LOG.warn(String.format("WARN: Detected product version %s, override with %s may cause unexpected results", productVersion, overrideProductVersion));
+        if ( StringUtils.isNotBlank(normalizedOverrideProductVersion) ) {
+            if ( StringUtils.isNotBlank(productVersion) ) {
+                LOG.warn(String.format("WARN: Detected product version %s, override with %s may cause unexpected results", productVersion, overrideProductVersion));
+            }
             productVersion = normalizedOverrideProductVersion;
         }
         if ( StringUtils.isBlank(productVersion) ) {
@@ -141,7 +143,7 @@ public class SCSastScanPayloadHelper {
     }
     
     private final String getNormalizedOverrideProductVersion() {
-        return overrideProductVersion.chars().filter(ch -> ch == '.').count()==1
+        return overrideProductVersion==null ? null : overrideProductVersion.chars().filter(ch -> ch == '.').count()==1
                 ? overrideProductVersion+".0"
                 : overrideProductVersion;
     }
