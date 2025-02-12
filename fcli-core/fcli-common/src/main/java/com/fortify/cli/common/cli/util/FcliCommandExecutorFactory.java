@@ -90,8 +90,6 @@ public final class FcliCommandExecutorFactory {
         }
     
         private final int _execute() throws Exception {
-            System.out.println("Args: "+Arrays.asList(resolvedArgs));
-            System.out.println("LeafCommand: "+replicatedLeafCommandSpec.qualifiedName());
             return new CommandLine(replicatedLeafCommandSpec.root()).execute(resolvedArgs);
         }
 
