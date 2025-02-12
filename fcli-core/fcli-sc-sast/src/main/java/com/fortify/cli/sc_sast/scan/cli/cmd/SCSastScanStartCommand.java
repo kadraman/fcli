@@ -226,7 +226,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
         }
         
         private static final String getInputFileName(String part) {
-            var pattern = Pattern.compile("^'?file:'?([^\']*)'?$");
+            var pattern = Pattern.compile("^'?@'?([^\']*)'?$");
             var matcher = pattern.matcher(part);
             return matcher.matches() ? matcher.group(1) : null;
         }
