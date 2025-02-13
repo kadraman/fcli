@@ -17,12 +17,19 @@ config:
   output: immediate
   
 steps:
-  - if: ${#isNotBlank(#env('FOD_URL'))}
-    run.fcli:
-      fod_ci:
-        cmd: fcli fod action run ci --session=from-env
-  - if: ${#isNotBlank(#env('SSC_URL'))}
-    run.fcli:
-      fod_ci:
-        cmd: fcli ssc action run ci --session=from-env
+  - var.set:
+      run.fod_ci: ${#isNotBlank(#env('FOD_URL'))}
+      run.ssc_ci: ${#isNotBlank(#env('SSC_URL'))}
+  - if: ${!run.fod_ci && !run.ssc_ci}
+    throw: Either FOD_URL or SSC_URL environment variable needs to be set
+  - if: ${run.fod_ci && run.ssc_ci}
+    throw: Only one of FOD_URL or SSC_URL environment variables may be set
+  - run.fcli:
+      fod_ci: 
+        cmd: ${#actionCmd('FOD_CI', 'fod', 'ci')} --session=from-env
+        if: ${run.fod_ci}
+      ssc_ci:
+        cmd: ${#actionCmd('SSC_CI', 'ssc', 'ci')} --session=from-env 
+        if: ${run.ssc_ci}
+      
       

@@ -41,8 +41,8 @@ import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
-import com.fortify.cli.common.action.model.ActionStepForEach;
-import com.fortify.cli.common.action.model.ActionStepForEach.IActionStepForEachProcessor;
+import com.fortify.cli.common.action.model.ActionStepForEachRecord;
+import com.fortify.cli.common.action.model.ActionStepForEachRecord.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.model.ActionStepRestCall;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestForEachResponseRecord;
 import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRequestType;
@@ -275,15 +275,15 @@ public final class ActionStepsProcessor {
     }  
 
     private void processLogProgressStep(TemplateExpression progress) {
-        ctx.getProgressWriter().writeProgress(vars.eval(progress, String.class));
+        ctx.getProgressWriter().writeProgress(asString(vars.eval(progress, Object.class)));
     }
     
     private void processLogWarnStep(TemplateExpression progress) {
-        ctx.getProgressWriter().writeWarning(vars.eval(progress, String.class));
+        ctx.getProgressWriter().writeWarning(asString(vars.eval(progress, Object.class)));
     }
     
     private void processLogDebugStep(TemplateExpression progress) {
-        LOG.debug(vars.eval(progress, String.class));
+        LOG.debug(asString(vars.eval(progress, Object.class)));
     }
     
     private void processThrowStep(TemplateExpression message) {
@@ -295,7 +295,7 @@ public final class ActionStepsProcessor {
         ctx.setExitRequested(true);
     }
     
-    private void processForEachRecordStep(ActionStepForEach forEachStep) {
+    private void processForEachRecordStep(ActionStepForEachRecord forEachStep) {
         // TODO Clean up this method
         var from = vars.eval(forEachStep.getFrom(), Object.class);
         if ( from==null ) { return; }
@@ -360,55 +360,70 @@ public final class ActionStepsProcessor {
         var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
         var requestedStderrOutputType = getFcliOutputTypeOrDefault(fcli.getStderrOutputType(), OutputType.show );
         var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
-        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);;
+        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);
+        var delayedStdout = actualStdoutOutputType==OutputType.collect && requestedStdoutOutputType==OutputType.show;
+        var delayedStderr = actualStderrOutputType==OutputType.collect && requestedStdoutOutputType==OutputType.show;
         var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
                 .stdoutOutputType(actualStdoutOutputType)
                 .stderrOutputType(actualStderrOutputType)
-                .onException(e->handleFcliException(fcli, e))
-                .onNonZeroExitCode(r->handleFcliNonZeroExitCode(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r))
+                .onResult(r->onFcliResult(fcli, recordConsumer, delayedStdout, delayedStderr, r))
+                .onSuccess(r->onFcliSuccess(fcli))
+                .onException(e->onFcliException(fcli, e))
+                .onFail(r->onFcliFail(fcli, recordConsumer, delayedStdout, delayedStderr, r))
                 .recordConsumer(recordConsumer).build().create();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
         }
-        var output = cmdExecutor.execute();
-        setFcliVars(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, output);
-        
-        // Write output if 'show' was requested, but output needed to be delayed or parsed
-        if ( requestedStderrOutputType!=actualStderrOutputType && requestedStdoutOutputType==OutputType.show) { 
-            writeImmediateOrDelayed(ctx.getStderr(), output.getErr());
+        cmdExecutor.execute();
+    }
+    
+    // Set variables, write delayed output
+    private void onFcliResult(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
+        setFcliVars(fcli, recordConsumer, delayedStdout, delayedStderr, result);
+        if ( delayedStderr ) { 
+            writeImmediateOrDelayed(ctx.getStderr(), result.getErr());
         }
-        if ( requestedStdoutOutputType!=actualStdoutOutputType && requestedStdoutOutputType==OutputType.show ) {
-            writeImmediateOrDelayed(ctx.getStdout(), output.getOut());
+        if ( delayedStdout ) {
+            writeImmediateOrDelayed(ctx.getStdout(), result.getOut());
         }
     }
 
-    private void setFcliVars(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, OutputType requestedStdoutOutputType, OutputType requestedStderrOutputType, Result output) {
-        var name = fcli.getKey();
-        vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
-        vars.set(name+"_stdout", requestedStdoutOutputType==OutputType.collect ? output.getOut() : "");
-        vars.set(name+"_stderr", requestedStderrOutputType==OutputType.collect ? output.getErr() : "");
-        vars.set(name+"_exitCode", new IntNode(output.getExitCode()));
+    private void onFcliSuccess(ActionStepRunFcli fcli) {
+        if ( fcli.getOnSuccess()!=null ) {
+            processSteps(fcli.getOnSuccess());
+        }
     }
 
-    private void handleFcliNonZeroExitCode(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, OutputType requestedStdoutOutputType, OutputType requestedStderrOutputType, Result r) {
-        setFcliVars(fcli, recordConsumer, requestedStdoutOutputType, requestedStderrOutputType, r);
-        List<ActionStep> onNonZeroExitCode = fcli.getOnNonZeroExitCode();
-        if ( onNonZeroExitCode==null ) {
-            throw new StepProcessingException("Fcli command returned non-zero exit code "+r.getExitCode());
+    private void onFcliFail(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
+        setFcliVars(fcli, recordConsumer, delayedStdout, delayedStderr, result);
+        List<ActionStep> onFail = fcli.getOnFail();
+        if ( onFail==null ) {
+            throw new StepProcessingException("Fcli command returned non-zero exit code "+result.getExitCode());
         } else {
-            processSteps(onNonZeroExitCode);
+            processSteps(onFail);
         }
     }
 
-    private void handleFcliException(ActionStepRunFcli fcli, Throwable t) {
+    private void onFcliException(ActionStepRunFcli fcli, Throwable t) {
         vars.set(fcli.getKey()+"_exception", new POJONode(t));
         List<ActionStep> onException = fcli.getOnException();
         if ( onException==null ) {
-            throw new StepProcessingException("Fcli command terminated with an exception", t);
+            throw t instanceof RuntimeException 
+                ? (RuntimeException)t
+                : new StepProcessingException("Fcli command terminated with an exception", t);
         } else {
             processSteps(onException);
         }
+    }
+    
+    private void setFcliVars(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
+        var name = fcli.getKey();
+        vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
+        // If stdout/stderr were collected for delayed output, we set the variables to empty string
+        vars.set(name+"_stdout", delayedStdout ? "" : result.getOut());
+        vars.set(name+"_stderr", delayedStderr ? "" : result.getErr());
+        vars.set(name+"_exitCode", new IntNode(result.getExitCode()));
     }
 
     private OutputType getFcliOutputTypeOrDefault(OutputType outputType, OutputType _default) {

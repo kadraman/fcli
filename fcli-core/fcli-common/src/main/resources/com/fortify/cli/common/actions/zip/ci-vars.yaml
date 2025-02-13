@@ -4,12 +4,11 @@ author: Fortify
 usage:
   header: Collect CI-specific data
   description: |
-    This action collects CI-specific data, for example from CI-specific environment
-    variables, and sets a CI-agnostic global variable named 'ci'. This is primarily
-    used by the SSC/FoD-specific 'ci' actions, but may also be useful for other 
-    (custom) actions. Note though that available properties on the global 'ci' 
-    variable may change across fcli releases, potentially breaking any custom 
-    actions that depend on these properties.
+    This action collects data used by the SSC & FoD 'ci' actions, based on CI-specific 
+    data like CI-specific environment variables. Data is collected in a CI-agnostic
+    global variable named 'ci'. Note that available properties on the global 'ci' 
+    variable may change across fcli releases, potentially breaking any custom actions
+    that depend on these properties.
 
 config:
   output: immediate
@@ -23,6 +22,7 @@ steps:
       ci.qualifiedRepoName:  # Fully qualified repository name
       ci.sourceBranch:       # The current branch being processed/scanned 
       ci.commitSHA:          # Commit SHA for current commit
+  
   # GitHub
   - if: ${#isNotBlank(#env('GITHUB_REPOSITORY'))}
     var.set-global:
@@ -31,6 +31,8 @@ steps:
       ci.qualifiedRepoName: ${#env('GITHUB_REPOSITORY')}
       ci.sourceBranch:      ${#env('GITHUB_HEAD_REF')?:#env('GITHUB_REF_NAME')}
       ci.commitSHA:         ${#env('GITHUB_SHA')}
+      
+  # GitLab
   - if: ${#env('GITLAB_CI')=='true'}
     var.set-global:
       ci.name:              GitLab
@@ -38,6 +40,8 @@ steps:
       ci.qualifiedRepoName: ${#env('CI_REPOSITORY_URL').replaceAll('[^:]+://[^/]+/(.*)\.git', '$1')}
       ci.sourceBranch:      ${#env('CI_COMMIT_BRANCH')?:#env('CI_MERGE_REQUEST_SOURCE_BRANCH_NAME')}
       ci.commitSHA:         ${#env('CI_COMMIT_SHA')}
+      
+  # Azure DevOps
   - if: ${#isNotBlank(#env('Build.Repository.Name'))}
     var.set-global:
       ci.name:              Azure DevOps
@@ -45,7 +49,26 @@ steps:
       ci.qualifiedRepoName: ${#env('Build.Repository.Name')}
       ci.sourceBranch:      # TODO ${#env('Build.SourceBranch') matches 'refs/pull/.*' ? }
       ci.commitSHA:         ${#env('Build.SourceVersion')}
+
+  # Additional generic variables based on the output of the CI-specific sections above
+  - var.set-global:
+      # Set appversion/release, either specified by user through environment variable,
+      # from a similarly named global variable set by one of the sections above, or 
+      # <qualifiedRepoName>:<sourceBranch>
+      ci.av:  ${#env('SSC_APPVERSION')?:global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}
+      ci.rel: ${#env('FOD_RELEASE')?:global.ci.rel?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
+      
+  - log.debug: ${global.ci}
   - out.write:
-      stdout: ${global.ci}
+      stdout: |
+        ${global.ci.name!=null ? 'Detected '+global.ci.name : 'No CI system detected'}
+  - if: ${#env('CI_VARS_DEBUG')=='true'}
+    records.for-each:
+      from: ${#properties(global.ci)}
+      record.var-name: p
+      do:
+        - out.write: 
+            stdout: "${'  '+p.key+': '+p.value+'\n'}"
+  
         
         

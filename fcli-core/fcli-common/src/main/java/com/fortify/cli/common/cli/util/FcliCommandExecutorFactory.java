@@ -47,8 +47,10 @@ public final class FcliCommandExecutorFactory {
     private final Consumer<ObjectNode> recordConsumer;
     @Builder.Default private final OutputType stdoutOutputType = OutputType.show;
     @Builder.Default private final OutputType stderrOutputType = OutputType.show;
+    private final Consumer<Result> onResult; // Always executed if fcli command didn't throw exception
+    private final Consumer<Result> onSuccess; // Executed after onResult, if 0 exit code
+    private final Consumer<Result> onFail; // Executed after onResult, if non-zero exit code
     private final Consumer<Throwable> onException;
-    private final Consumer<Result> onNonZeroExitCode;
     
     public final FcliCommandExecutor create() {
         if ( rootCommandLine==null ) {
@@ -75,8 +77,11 @@ public final class FcliCommandExecutorFactory {
             }
             try {
                 var result = OutputHelper.call(()->_execute(), stdoutOutputType, stderrOutputType, StandardCharsets.UTF_8);
-                if ( result.getExitCode()!=0 ) {
-                    consume(result, onNonZeroExitCode, this::throwExceptionOnNonZeroExitCode);
+                consume(result, onResult, null);
+                if ( result.getExitCode()==0 ) {
+                    consume(result, onSuccess, null);
+                } else {
+                    consume(result, onFail, this::throwExceptionOnNonZeroExitCode);
                 }
                 return result;
             } catch ( Throwable t ) {
@@ -101,10 +106,10 @@ public final class FcliCommandExecutorFactory {
         }
         
         private <T> void consume(T value, Consumer<T> consumer, Consumer<T> defaultConsumer) {
-            if ( consumer==null ) {
-                defaultConsumer.accept(value);
-            } else {
+            if ( consumer!=null ) {
                 consumer.accept(value);
+            } else if ( defaultConsumer!=null ) {
+                defaultConsumer.accept(value);
             }
         }
         
@@ -147,6 +152,7 @@ public final class FcliCommandExecutorFactory {
                 // Create shallow copy of container command spec
                 var newSpec = CommandSpec.wrapWithoutInspection(orgSpec.userObject());
                 newSpec.name(orgSpec.name());
+                newSpec.aliases(orgSpec.aliases());
                 newSpec.resourceBundle(orgSpec.resourceBundle());
                 return newSpec;
             }

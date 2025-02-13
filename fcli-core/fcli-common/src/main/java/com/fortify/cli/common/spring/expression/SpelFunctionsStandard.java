@@ -68,6 +68,7 @@ public class SpelFunctionsStandard {
     }
     
     public static final String env(String name) {
+        if ( StringUtils.isBlank(name)) { throw new IllegalStateException("Environment variable name passed to #env may not be null"); }
         var result = EnvHelper.env(name);
         // Return null in case of blank string
         return StringUtils.isBlank(result) ? null : result;

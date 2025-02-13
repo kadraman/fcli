@@ -20,8 +20,16 @@ config:
   
 steps:
   - run.fcli:
-      ci-vars: ${#actionCmd('ssc', 'ci-vars')}
-      pkg:     ${#actionCmd('ssc', 'package')}
+      ci-vars: 
+        cmd: ${#actionCmd('CI_VARS', 'ssc', 'ci-vars')}
+        on.success:
+          - if: ${global.ci.av==null}
+            throw: SSC application version must be specified through SSC_APPVERSION environment variable
+      setup:
+        cmd: ${#actionCmd('SETUP', 'ssc', 'setup-appversion')} --av "${global.ci.av}"
+        if:  ${#skipIf(#env('DO_SETUP')=='false', 'Application version setup as DO_SETUP set to false')}
+      pkg: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')}
+          
   - out.write:
       stdout: |
         Package: ${global.package.output}

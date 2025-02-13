@@ -205,7 +205,7 @@ public final class ActionStep extends AbstractActionElementIf {
     @JsonPropertyDescription("""
         Execute the steps defined in the 'do' block for every record provided by the 'from' expression.    
         """)
-    @JsonProperty(value = "records.for-each", required = false) private ActionStepForEach forEachRecord;
+    @JsonProperty(value = "records.for-each", required = false) private ActionStepForEachRecord forEachRecord;
     
     @JsonPropertyDescription("""
         Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
