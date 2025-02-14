@@ -12,40 +12,31 @@
  */
 package com.fortify.cli.common.exception;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 /**
  *
  * @author Ruud Senden
  */
-public class FcliTechnicalException extends FcliException {
+public class FcliTechnicalException extends AbstractFcliException {
     private static final long serialVersionUID = 1L;
 
-    public FcliTechnicalException() {
-        includeFullStackTrace(true);
-    }
+    public FcliTechnicalException() {}
 
-    /**
-     * @param message
-     */
     public FcliTechnicalException(String message) {
         super(message);
-        includeFullStackTrace(true);
     }
 
-    /**
-     * @param cause
-     */
     public FcliTechnicalException(Throwable cause) {
         super(cause);
-        includeFullStackTrace(true);
     }
 
-    /**
-     * @param message
-     * @param cause
-     */
     public FcliTechnicalException(String message, Throwable cause) {
         super(message, cause);
-        includeFullStackTrace(true);
     }
-
+    
+    @Override
+    public String getStackTraceString() {
+        return ExceptionUtils.getStackTrace(this);
+    }
 }

@@ -15,7 +15,7 @@ package com.fortify.cli.sc_sast.sensor_pool.cli.helper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 
 import kong.unirest.GetRequest;
@@ -25,7 +25,7 @@ public class SCSastSensorPoolHelper {
     public static final SCSastSensorPoolDescriptor getRequiredSensorPool(UnirestInstance unirest, String sensorPoolNameOrUuid) {
         SCSastSensorPoolDescriptor descriptor = getOptionalSensorPool(unirest, sensorPoolNameOrUuid);
         if ( descriptor==null ) {
-            throw new FcliException("No sensor pool found for name or uuid: "+sensorPoolNameOrUuid);
+            throw new FcliSimpleException("No sensor pool found for name or uuid: "+sensorPoolNameOrUuid);
         }
         return descriptor;
     }
@@ -35,7 +35,7 @@ public class SCSastSensorPoolHelper {
         JsonNode sensorPool = JsonHelper.evaluateSpelExpression(sensorPools,String.format("#this.?[#this.name=='%s' || #this.uuid=='%s' ]", sensorPoolNameOrUuid, sensorPoolNameOrUuid),ArrayNode.class);
 
         if ( sensorPool.size()>1 ) {
-            throw new FcliException("Multiple sensor pools found");
+            throw new FcliSimpleException("Multiple sensor pools found");
         }
 
         return sensorPool.size()==0 ? null : JsonHelper.treeToValue(sensorPool.get(0), SCSastSensorPoolDescriptor.class);

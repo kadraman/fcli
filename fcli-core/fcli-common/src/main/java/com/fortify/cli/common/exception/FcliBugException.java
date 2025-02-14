@@ -29,12 +29,7 @@ public class FcliBugException extends FcliTechnicalException {
         super(cause);
     }
 
-    /**
-     * @param message
-     * @param cause
-     */
     public FcliBugException(String message, Throwable cause) {
         super(message, cause);
     }
-
 }

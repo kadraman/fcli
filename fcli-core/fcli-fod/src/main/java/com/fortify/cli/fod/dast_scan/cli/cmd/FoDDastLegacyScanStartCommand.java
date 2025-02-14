@@ -23,7 +23,7 @@ import java.util.Properties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.progress.cli.mixin.ProgressWriterFactoryMixin;
 import com.fortify.cli.common.util.FcliBuildPropertiesHelper;
@@ -95,7 +95,7 @@ public class FoDDastLegacyScanStartCommand extends AbstractFoDScanStartCommand {
             // get current setup
             FoDScanConfigDastLegacyDescriptor currentSetup = FoDScanConfigDastLegacyHelper.getSetupDescriptor(unirest, relId);
             if (currentSetup.getAssessmentTypeId() == null || currentSetup.getAssessmentTypeId() <= 0) {
-                throw new FcliException("The dynamic scan configuration for release with id '" + relId +
+                throw new FcliSimpleException("The dynamic scan configuration for release with id '" + relId +
                         "' has not been setup correctly - 'Assessment Type' is missing or empty.");
             }
 
@@ -110,7 +110,7 @@ public class FoDDastLegacyScanStartCommand extends AbstractFoDScanStartCommand {
                     ).filter(n -> n.getName().equals(dynamicAssessmentType))
                     .findFirst();
             if (atd.isEmpty()) {
-                throw new FcliException("Cannot find appropriate assessment type for specified options.");
+                throw new FcliSimpleException("Cannot find appropriate assessment type for specified options.");
             }
             assessmentTypeId = atd.get().getAssessmentTypeId();
             entitlementIdToUse = atd.get().getEntitlementId();
@@ -119,7 +119,7 @@ public class FoDDastLegacyScanStartCommand extends AbstractFoDScanStartCommand {
             if (entitlementId != null && entitlementId > 0) {
                 // check if "entitlement id" explicitly matches what has been found
                 if (!Objects.equals(entitlementIdToUse, entitlementId)) {
-                    throw new FcliException("Cannot find appropriate assessment type with entitlement: " + entitlementId);
+                    throw new FcliSimpleException("Cannot find appropriate assessment type with entitlement: " + entitlementId);
                 }
             } else {
                 if (currentSetup.getEntitlementId() != null && currentSetup.getEntitlementId() > 0) {

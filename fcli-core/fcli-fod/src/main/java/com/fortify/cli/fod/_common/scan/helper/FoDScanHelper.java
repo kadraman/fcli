@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.transform.fields.RenameFieldsTransformer;
 import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
@@ -98,7 +98,7 @@ public class FoDScanHelper {
                         .getBody();
                 return getDescriptor(summaryResult);
             default:
-                throw new FcliException("Scan must be specified in the format <release id>" + delimiter + "<scan id> or <scan id>");
+                throw new FcliSimpleException("Scan must be specified in the format <release id>" + delimiter + "<scan id> or <scan id>");
         }
     }
 
@@ -124,7 +124,7 @@ public class FoDScanHelper {
             try {
                 lookupDescriptor = FoDLookupHelper.getDescriptor(unirest, FoDLookupType.TimeZones, timezone, false);
             } catch (JsonProcessingException ex) {
-                throw new FcliException(ex.getMessage());
+                throw new FcliSimpleException(ex.getMessage());
             }
             return lookupDescriptor.getValue();
         } else {
@@ -138,7 +138,7 @@ public class FoDScanHelper {
         cal.add(Calendar.YEAR, -retentionPeriod);
         if (scanDescriptor.getCompletedDateTime() == null ||
                 scanDescriptor.getCompletedDateTime().before(cal.getTime())) {
-            throw new FcliException(
+            throw new FcliSimpleException(
                     String.format("The last scan date was over %d years ago and results are no longer available to be downloaded.", retentionPeriod));
         }
     }
@@ -164,7 +164,7 @@ public class FoDScanHelper {
                 ).filter(n -> n.getName().equals(assessmentType))
                 .findFirst();
         if (atd.isEmpty()) {
-            throw new FcliException("Cannot find appropriate assessment type for specified options.");
+            throw new FcliSimpleException("Cannot find appropriate assessment type for specified options.");
         }
         assessmentTypeId = atd.get().getAssessmentTypeId();
         entitlementIdToUse = atd.get().getEntitlementId();
@@ -173,7 +173,7 @@ public class FoDScanHelper {
         if (entitlementId > 0) {
             // check if "entitlement id" explicitly matches what has been found
             if (!Objects.equals(entitlementIdToUse, entitlementId)) {
-                throw new FcliException("Cannot appropriate assessment type for use with entitlement: " + entitlementId);
+                throw new FcliSimpleException("Cannot appropriate assessment type for use with entitlement: " + entitlementId);
             }
             LOG.info("The 'entitlement-id' specified by user '" + entitlementId + "' is valid.");
         } else {

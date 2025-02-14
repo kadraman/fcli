@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 
 import lombok.RequiredArgsConstructor;
@@ -69,7 +69,7 @@ public final class SSCUserSpecPredicate implements Predicate<JsonNode> {
     public void checkUnmatched() {
         String[] unmatched = getUnmatched();
         if ( unmatched!=null && unmatched.length>0 ) {
-            throw new FcliException("The following auth entities cannot be found: "+String.join(", ", unmatched));
+            throw new FcliSimpleException("The following auth entities cannot be found: "+String.join(", ", unmatched));
         }
     }
     
@@ -86,7 +86,7 @@ public final class SSCUserSpecPredicate implements Predicate<JsonNode> {
     
     private boolean hasPreviousMatch(String authEntity) {
         if ( !previousMatchedAuthEntities.add(authEntity) && !allowMultipleMatches ) {
-            throw new FcliException(String.format("Multiple records match '%s'; please use a unique identifier or enable multiple matches", authEntity));
+            throw new FcliSimpleException(String.format("Multiple records match '%s'; please use a unique identifier or enable multiple matches", authEntity));
         }
         return true;
     }

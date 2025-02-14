@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.cli.util.CommandGroup;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.exception.FcliTechnicalException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
@@ -169,7 +169,7 @@ public class FoDSastScanSetupCommand extends AbstractFoDJsonNodeOutputCommand im
         if (entitlementId != null && entitlementId > 0) {
             // check if "entitlement id" explicitly matches what has been found
             if (!Objects.equals(entitlementIdToUse, entitlementId)) {
-                throw new FcliException("Cannot appropriate assessment type for use with entitlement: " + entitlementId);
+                throw new FcliSimpleException("Cannot appropriate assessment type for use with entitlement: " + entitlementId);
             }
         } else {
             if (currentSetup.getEntitlementId() != null && currentSetup.getEntitlementId() > 0) {

@@ -35,7 +35,7 @@ import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfi
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionSpelFunctions;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
@@ -111,7 +111,7 @@ public class SSCActionRunCommand extends AbstractActionRunWithSessionCommand {
         } else if ( StringUtils.isNotBlank(sscToken) ) {
             sscCredentialArgs = String.format("-t \"%s\"", sscToken);
         } else {
-            throw new FcliException("Either SSC_USER & SSC_PASSWORD, or SSC_TOKEN environment variables must be defined");
+            throw new FcliSimpleException("Either SSC_USER & SSC_PASSWORD, or SSC_TOKEN environment variables must be defined");
         }
         return String.format(
                 "ssc session login --url \"%s\" %s -c \"%s\" %s",
@@ -141,7 +141,7 @@ public class SSCActionRunCommand extends AbstractActionRunWithSessionCommand {
             ctx.getProgressWriter().writeProgress(progressMessage);
             var filterSetDescriptor = new SSCIssueFilterSetHelper(unirestInstanceSupplier.getSscUnirestInstance(), appVersion.get("id").asText()).getDescriptorByTitleOrId(titleOrId, false);
             if ( filterSetDescriptor==null ) {
-                throw new FcliException("Unknown filter set: "+titleOrId);
+                throw new FcliSimpleException("Unknown filter set: "+titleOrId);
             }
             return filterSetDescriptor.asJsonNode();
         }

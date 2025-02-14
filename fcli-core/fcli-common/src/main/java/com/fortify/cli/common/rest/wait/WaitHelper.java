@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliBugException;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.exception.FcliTechnicalException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
@@ -102,7 +102,7 @@ public class WaitHelper {
             }
             if ( continueWait && onTimeout==WaitTimeoutAction.fail ) {
                 recordsWithWaitStatus.replaceAll((k,v)->v!=WaitStatus.WAITING ? v : WaitStatus.TIMEOUT);
-                throw new FcliException("Time-out exceeded");
+                throw new FcliSimpleException("Time-out exceeded");
             }
         } finally {
             result.putAll(recordsWithWaitStatus);
@@ -120,13 +120,13 @@ public class WaitHelper {
     private final boolean continueWait(Map<ObjectNode, WaitStatus> waitStatuses, AnyOrAll anyOrAll) {
         boolean containsFailureState = waitStatuses.containsValue(WaitStatus.FAILURE_STATE_DETECTED);
         if ( onFailureState==WaitUnknownOrFailureStateAction.fail && containsFailureState ) {
-            throw new FcliException("Failure state detected for one or more records");
+            throw new FcliSimpleException("Failure state detected for one or more records");
         } else if ( onFailureState==WaitUnknownOrFailureStateAction.terminate && containsFailureState ) {
             return false;
         }
         boolean containsUnknownState = waitStatuses.containsValue(WaitStatus.UNKNOWN_STATE_DETECTED);
         if ( onUnknownState==WaitUnknownOrFailureStateAction.fail && containsUnknownState ) {
-            throw new FcliException("Unknown state detected for one or more records");
+            throw new FcliSimpleException("Unknown state detected for one or more records");
         } else if ( onUnknownState==WaitUnknownOrFailureStateAction.terminate && containsUnknownState ) {
             return false;
         }
@@ -192,7 +192,7 @@ public class WaitHelper {
         public StateEvaluator(Set<String> statesSet, LoopType evaluatorType) {
             this.statesSet = statesSet;
             if ( statesSet==null || statesSet.isEmpty() ) {
-                throw new FcliException("No states to be matched have been specified");
+                throw new FcliSimpleException("No states to be matched have been specified");
             }
             this.evaluatorType = evaluatorType;
             this.knownStatesSet = knownStates==null ? null : new HashSet<>(Set.of(knownStates));
@@ -227,7 +227,7 @@ public class WaitHelper {
         private void checkRequestedStates() {
             if ( onUnknownStateRequested!=WaitUnknownStateRequestedAction.ignore || isEmpty(knownStatesSet) ) {
             } else if ( !knownStatesSet.containsAll(statesSet) ) {
-                throw new FcliException("Unknown states specified in one of the --until* or --while* options: "+removeAll(statesSet, knownStatesSet));
+                throw new FcliSimpleException("Unknown states specified in one of the --until* or --while* options: "+removeAll(statesSet, knownStatesSet));
             }
         }
 

@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliBugException;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.OutputFormat;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.common.output.writer.CommandSpecMessageResolver;
@@ -482,7 +482,7 @@ public class StandardOutputWriter implements IOutputWriter {
                         ? new PrintWriter(System.out)
                         : new BufferedWriter(new FileWriter(outputFile, false));
             } catch ( IOException e) {
-                throw new FcliException("Output file "+outputFile+" cannot be accessed");
+                throw new FcliSimpleException("Output file "+outputFile+" cannot be accessed");
             }
         }
     }

@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.rest.unirest.config.IUrlConfig;
 import com.fortify.cli.common.util.Break;
@@ -231,7 +231,7 @@ public final class MspReportAppScanCollector implements AutoCloseable {
                     consumptionDate = earliestScanByType.get(type).getScanDate();
                 }
                 break;
-            default: throw new FcliException("Unable to determine entitlement consumed reason");
+            default: throw new FcliSimpleException("Unable to determine entitlement consumed reason");
             }
         }
         return new MspReportProcessedScanDescriptor(urlConfig, appDescriptor, descriptor, type, consumptionReason, consumptionDate);

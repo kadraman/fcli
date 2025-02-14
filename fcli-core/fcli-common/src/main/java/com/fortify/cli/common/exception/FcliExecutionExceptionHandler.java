@@ -42,11 +42,11 @@ public class FcliExecutionExceptionHandler implements IExecutionExceptionHandler
     }
     
     private static String formatException(Exception e) {
-        return (e instanceof FcliException) ? formatFcliException((FcliException)e) : formatNonFcliException(e);
+        return (e instanceof AbstractFcliException) ? formatFcliException((AbstractFcliException)e) : formatNonFcliException(e);
     }
 
-    private static final String formatFcliException(FcliException e) {
-        return e.getSummaryWithCause();
+    private static final String formatFcliException(AbstractFcliException e) {
+        return e.getStackTraceString();
     }
 
     private static final String formatNonFcliException(Exception e) {

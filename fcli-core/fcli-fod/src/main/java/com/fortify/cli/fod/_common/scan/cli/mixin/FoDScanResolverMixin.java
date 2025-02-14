@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.cli.util.EnvSuffix;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.fod._common.cli.mixin.FoDDelimiterMixin;
 import com.fortify.cli.fod._common.cli.mixin.IFoDDelimiterMixinAware;
@@ -49,7 +49,7 @@ public class FoDScanResolverMixin {
         public FoDScanDescriptor getScanDescriptor(UnirestInstance unirest, FoDScanType scanType) {
             var result = getScanDescriptor(unirest);
             if ( scanType!=null && !scanType.name().equals(result.getScanType()) ) {
-                throw new FcliException(String.format("Scan id %s (%s) doesn't match expected scan type %s", result.getScanId(), result.getScanType(), scanType.name()));
+                throw new FcliSimpleException(String.format("Scan id %s (%s) doesn't match expected scan type %s", result.getScanId(), result.getScanType(), scanType.name()));
             }
             return result;
         }

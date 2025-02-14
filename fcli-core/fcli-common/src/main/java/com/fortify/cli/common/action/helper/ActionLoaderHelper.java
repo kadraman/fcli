@@ -54,7 +54,7 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureValidator;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignedTextDescriptor;
 import com.fortify.cli.common.crypto.helper.impl.SignedTextReader;
 import com.fortify.cli.common.exception.FcliBugException;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpressionKeyDeserializer;
 import com.fortify.cli.common.util.Break;
 import com.fortify.cli.common.util.FcliBuildPropertiesHelper;
@@ -126,7 +126,7 @@ public class ActionLoaderHelper {
             //      matches this regex.
             var result = loadFromZips(source);
             if ( result==null ) { result = loadFromFileOrUrl(source); }
-            if ( result==null ) { throw new FcliException("Action not found: "+source); }
+            if ( result==null ) { throw new FcliSimpleException("Action not found: "+source); }
             return result;
         }
         
@@ -433,7 +433,7 @@ public class ActionLoaderHelper {
                 return Files.newInputStream(Path.of(source));
             } catch ( IOException ioe ) {
                 if ( failOnError ) {
-                    throw new FcliException("Unable to read from "+source, ioe);
+                    throw new FcliSimpleException("Unable to read from "+source, ioe);
                 } else {
                     return null;
                 }
@@ -509,7 +509,7 @@ public class ActionLoaderHelper {
         }
         
         private static final void _warn(String msg) { LOG.warn("WARN: "+msg); }
-        private static final void _throw(String msg) { throw new FcliException(msg); }
+        private static final void _throw(String msg) { throw new FcliSimpleException(msg); }
         private static final void _prompt(String msg) {
             if ( System.console()==null ) {
                 _throw(msg);

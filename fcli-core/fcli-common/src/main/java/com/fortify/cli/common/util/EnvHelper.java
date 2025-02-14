@@ -14,7 +14,7 @@ package com.fortify.cli.common.util;
 
 import java.util.function.Supplier;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 public final class EnvHelper {
     private static final String PFX = "FCLI";
@@ -26,7 +26,7 @@ public final class EnvHelper {
     
     public static final void checkSecondaryWithoutPrimary(String secondaryEnvName, String primaryEnvName) {
         if ( env(primaryEnvName)==null && env(secondaryEnvName)!=null ) {
-            throw new FcliException("Environment variable "+secondaryEnvName+" requires "+primaryEnvName+" to be set as well");
+            throw new FcliSimpleException("Environment variable "+secondaryEnvName+" requires "+primaryEnvName+" to be set as well");
         }
     }
     
@@ -37,7 +37,7 @@ public final class EnvHelper {
     
     public static final void checkExclusive(String envName1, String envName2) {
         if ( env(envName1)!=null && env(envName2)!=null ) {
-            throw new FcliException("Only one of "+envName1+" and "+envName2+" environment variables may be configured");
+            throw new FcliSimpleException("Only one of "+envName1+" and "+envName2+" environment variables may be configured");
         }
     }
     
@@ -69,7 +69,7 @@ public final class EnvHelper {
     }
     
     public static final String requiredEnv(String name, String message) {
-        return envOrDefault(name, ()->{throw new FcliException(message);});
+        return envOrDefault(name, ()->{throw new FcliSimpleException(message);});
     }
     
     public static final String requiredEnv(String name) {

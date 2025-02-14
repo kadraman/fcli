@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod.app.helper.FoDAppDescriptor;
@@ -64,7 +64,7 @@ public class FoDMicroserviceHelper {
         var appName = microserviceNameDescriptor.getAppName();
         var app = FoDAppHelper.getAppDescriptor(unirest, appName, failIfNotFound);
         if ( app!=null && !app.isHasMicroservices() ) {
-            throw new FcliException("Cannot get microservice data from non-microservice application "+microserviceNameDescriptor.getAppName());
+            throw new FcliSimpleException("Cannot get microservice data from non-microservice application "+microserviceNameDescriptor.getAppName());
         }
         return app;
     }
@@ -75,7 +75,7 @@ public class FoDMicroserviceHelper {
     
     private static final FoDMicroserviceDescriptor nullOrNotFoundException(FoDQualifiedMicroserviceNameDescriptor microserviceNameDescriptor, boolean failIfNotFound) {
         if ( failIfNotFound ) {
-            throw new FcliException(String.format("Cannot find microservice %s on application %s", microserviceNameDescriptor.getMicroserviceName(), microserviceNameDescriptor.getAppName()));
+            throw new FcliSimpleException(String.format("Cannot find microservice %s on application %s", microserviceNameDescriptor.getMicroserviceName(), microserviceNameDescriptor.getAppName()));
         }
         return null;
     }
@@ -119,7 +119,7 @@ public class FoDMicroserviceHelper {
         if ( responseWithIdOnly instanceof ObjectNode ) {
             return getDescriptor(appDescriptor, (ObjectNode)responseWithIdOnly, microserviceName);
         } else {
-            throw new FcliException("Expected ObjectNode, got "+responseWithIdOnly.getClass().getSimpleName());
+            throw new FcliSimpleException("Expected ObjectNode, got "+responseWithIdOnly.getClass().getSimpleName());
         }
     }
 
@@ -131,7 +131,7 @@ public class FoDMicroserviceHelper {
         if ( node instanceof ObjectNode ) {
             return getDescriptor(appDescriptor, (ObjectNode)node);
         } else {
-            throw new FcliException("Expected ObjectNode, got "+node.getClass().getSimpleName());
+            throw new FcliSimpleException("Expected ObjectNode, got "+node.getClass().getSimpleName());
         }
     }
     

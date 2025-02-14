@@ -38,7 +38,7 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 import lombok.SneakyThrows;
 
@@ -79,12 +79,12 @@ public final class FileUtils {
         try {
             Files.createDirectories(parent);
         } catch (IOException e) {
-            throw new FcliException(String.format("Error creating directory %s", parent), e);
+            throw new FcliSimpleException(String.format("Error creating directory %s", parent), e);
         }
         try ( InputStream in = getResourceInputStream(resourcePath) ) {
             Files.copy( in, destinationFilePath, options);
         } catch ( IOException e ) {
-            throw new FcliException(String.format("Error copying resource %s to %s", resourcePath, destinationFilePath), e);
+            throw new FcliSimpleException(String.format("Error copying resource %s to %s", resourcePath, destinationFilePath), e);
         }
     }
     
@@ -108,7 +108,7 @@ public final class FileUtils {
         try {
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new FcliException(String.format("Error moving %s to %s", source, target), e);
+            throw new FcliSimpleException(String.format("Error moving %s to %s", source, target), e);
         }
     }
     
@@ -145,7 +145,7 @@ public final class FileUtils {
             var resolvedPath = targetPath.resolve(newSourcePath);
             if (!resolvedPath.startsWith(targetPath.normalize())) {
                 // see: https://snyk.io/research/zip-slip-vulnerability
-                throw new FcliException("Entry with an illegal path: " + sourcePath);
+                throw new FcliSimpleException("Entry with an illegal path: " + sourcePath);
             }
             return resolvedPath;
         };

@@ -26,7 +26,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureMetadata;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 import lombok.SneakyThrows;
 
@@ -68,7 +68,7 @@ public final class TextSigner {
 
     private byte[] readBytes(String payload) throws IOException {
         if ( payload.contains(String.valueOf(InternalSignatureUtil.FILE_SEPARATOR)) ) {
-            throw new FcliException("Input file may not contain Unicode File Separator character \u001C");
+            throw new FcliSimpleException("Input file may not contain Unicode File Separator character \u001C");
         }
         return payload.getBytes(StandardCharsets.UTF_8);
     }

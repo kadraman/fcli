@@ -12,12 +12,12 @@
  */
 package com.fortify.cli.common.action.model;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 /**
  * Exception class used for action validation errors.
  */
-public final class FcliActionValidationException extends FcliException {
+public final class FcliActionValidationException extends FcliSimpleException {
     private static final long serialVersionUID = 1L;
 
     public FcliActionValidationException(String message, Throwable cause) {

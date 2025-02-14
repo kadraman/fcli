@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.exception.FcliTechnicalException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.cli.cmd.AbstractOutputCommand;
@@ -55,7 +55,7 @@ public class ConfigClearCommand extends AbstractOutputCommand implements IJsonNo
                     .forEach(File::delete);
             }
         } catch ( IOException e ) {
-            throw new FcliException("Error clearing fcli configuration directory", e);
+            throw new FcliSimpleException("Error clearing fcli configuration directory", e);
         }
         return result;
     }

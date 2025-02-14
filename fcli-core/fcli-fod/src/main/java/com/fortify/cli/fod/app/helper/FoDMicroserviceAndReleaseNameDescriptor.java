@@ -15,7 +15,7 @@ package com.fortify.cli.fod.app.helper;
 
 import java.util.regex.Pattern;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 import lombok.Data;
 
@@ -28,7 +28,7 @@ public final class FoDMicroserviceAndReleaseNameDescriptor {
         switch ( elts.length ) {
         case 2: return new FoDMicroserviceAndReleaseNameDescriptor(elts[0], elts[1]);
         case 1: return new FoDMicroserviceAndReleaseNameDescriptor(null, elts[0]);
-        default: throw new FcliException("Release name must be specified in the format ["+delimiter+"<microservice name>]"+delimiter+"<release name>");
+        default: throw new FcliSimpleException("Release name must be specified in the format ["+delimiter+"<microservice name>]"+delimiter+"<release name>");
         }
     }
 }

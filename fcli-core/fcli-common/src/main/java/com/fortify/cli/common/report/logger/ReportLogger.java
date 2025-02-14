@@ -19,7 +19,7 @@ import java.io.StringWriter;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriter;
 import com.fortify.cli.common.report.writer.IReportWriter;
@@ -95,7 +95,7 @@ public final class ReportLogger implements IReportLogger {
         }
     }
     
-    private static final class FcliReportWriterIOException extends FcliException {
+    private static final class FcliReportWriterIOException extends FcliSimpleException {
         private static final long serialVersionUID = 1L;
 
         public FcliReportWriterIOException(IOException cause) {

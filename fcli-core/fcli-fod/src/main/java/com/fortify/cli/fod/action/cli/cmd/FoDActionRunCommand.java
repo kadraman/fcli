@@ -20,7 +20,7 @@ import com.fortify.cli.common.action.cli.cmd.AbstractActionRunWithSessionCommand
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.spring.expression.SpelHelper;
@@ -64,7 +64,7 @@ public class FoDActionRunCommand extends AbstractActionRunWithSessionCommand {
         } else if ( StringUtils.isNotBlank(fodClientId) && StringUtils.isNotBlank(fodClientSecret) ) {
             fodCredentialArgs = String.format("--client-id \"%s\" --client-secret \\\"%s\\\"", fodClientId, fodClientSecret);
         } else {
-            throw new FcliException("Either FOD_TENANT, FOD_USER, and FOD_PASSWORD, or FOD_CLIENT_ID and FOD_CLIENT_SECRET environment variables must be defined");
+            throw new FcliSimpleException("Either FOD_TENANT, FOD_USER, and FOD_PASSWORD, or FOD_CLIENT_ID and FOD_CLIENT_SECRET environment variables must be defined");
         }
         return String.format(
                 "fod session login --url \"%s\" %s %s",

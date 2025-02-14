@@ -10,22 +10,24 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner;
+package com.fortify.cli.common.exception;
 
-import com.fortify.cli.common.exception.FcliSimpleException;
-
-public final class FcliActionStepException extends FcliSimpleException {
+public abstract class AbstractFcliException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
-    public FcliActionStepException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    public AbstractFcliException() {}
 
-    public FcliActionStepException(String message) {
+    public AbstractFcliException(String message) {
         super(message);
     }
 
-    public FcliActionStepException(Throwable cause) {
+    public AbstractFcliException(Throwable cause) {
         super(cause);
     }
+
+    public AbstractFcliException(String message, Throwable cause) {
+        super(message, cause);
+    }
+    
+    public abstract String getStackTraceString();
 }

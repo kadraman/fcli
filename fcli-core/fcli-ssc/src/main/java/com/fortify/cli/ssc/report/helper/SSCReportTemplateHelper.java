@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.ssc._common.rest.ssc.SSCUrls;
 
@@ -55,7 +55,7 @@ public final class SSCReportTemplateHelper {
         catch ( NumberFormatException ignore ) {}
         descriptor = descriptor!=null ? descriptor : descriptorsByName.get(reportTemplateNameOrId);
         if ( failIfNotFound && descriptor==null ) {
-            throw new FcliException("No report template found with name or id "+reportTemplateNameOrId);
+            throw new FcliSimpleException("No report template found with name or id "+reportTemplateNameOrId);
         }
         return descriptor;
     }

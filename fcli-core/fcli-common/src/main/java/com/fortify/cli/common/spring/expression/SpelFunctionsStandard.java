@@ -20,7 +20,7 @@ import java.time.format.DateTimeParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.crypto.helper.EncryptionHelper;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.DateTimePeriodHelper;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.StringUtils;
@@ -52,7 +52,7 @@ public class SpelFunctionsStandard {
     
     public static final OffsetDateTime now(String... s) {
         if ( s!=null && s.length>1 ) {
-            throw new FcliException("#now(period) only takes a single argument");
+            throw new FcliSimpleException("#now(period) only takes a single argument");
         } else if ( s==null || s.length==0 || StringUtils.isBlank(s[0]) ) {
             return OffsetDateTime.now();
         } else if ( s[0].startsWith("+") && s[0].length()>1 ) {
@@ -60,7 +60,7 @@ public class SpelFunctionsStandard {
         } else if ( s[0].startsWith("-") && s[0].length()>1 ) {
             return PeriodHelper.getCurrentOffsetDateTimeMinusPeriod(s[0].substring(1));
         } else {
-            throw new FcliException("Period passed to #now function is not valid: "+s[0]);
+            throw new FcliSimpleException("Period passed to #now function is not valid: "+s[0]);
         }
     }
     
@@ -69,7 +69,7 @@ public class SpelFunctionsStandard {
     }
     
     public static final String env(String name) {
-        if ( StringUtils.isBlank(name)) { throw new FcliException("Environment variable name passed to #env may not be null"); }
+        if ( StringUtils.isBlank(name)) { throw new FcliSimpleException("Environment variable name passed to #env may not be null"); }
         var result = EnvHelper.env(name);
         // Return null in case of blank string
         return StringUtils.isBlank(result) ? null : result;

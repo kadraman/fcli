@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Base64;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 
 public final class SSCTokenConverter {
@@ -54,7 +54,7 @@ public final class SSCTokenConverter {
     
     private static final String validateTokenFormat(String token) {
         if ( !isApplicationToken(token) && !isApplicationToken(decode(token)) ) {
-            throw new FcliException("The provided token could not be decoded to a valid application token format");
+            throw new FcliSimpleException("The provided token could not be decoded to a valid application token format");
         }
         return token;
     }

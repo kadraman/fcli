@@ -1,10 +1,10 @@
 package com.fortify.cli.common.session.helper;
 
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 import lombok.Getter;
 
-public class FcliSessionLogoutException extends FcliException {
+public class FcliSessionLogoutException extends FcliSimpleException {
     private static final long serialVersionUID = 1L;
     @Getter private boolean destroySession;
     public FcliSessionLogoutException(String message, boolean destroySession) {

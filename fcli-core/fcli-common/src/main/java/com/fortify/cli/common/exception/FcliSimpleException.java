@@ -14,36 +14,30 @@ package com.fortify.cli.common.exception;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-
-public class FcliException extends RuntimeException {
+public class FcliSimpleException extends AbstractFcliException {
     private static final long serialVersionUID = 1L;
-    @Getter @Setter @Accessors(fluent = true) private boolean includeFullStackTrace;
 
-    public FcliException() {}
+    public FcliSimpleException() {}
 
-    public FcliException(String message) {
+    public FcliSimpleException(String message) {
         super(message);
     }
 
-    public FcliException(Throwable cause) {
+    public FcliSimpleException(Throwable cause) {
         super(cause);
     }
 
-    public FcliException(String message, Throwable cause) {
+    public FcliSimpleException(String message, Throwable cause) {
         super(message, cause);
     }
     
-    public String getSummaryWithCause() {
+    public String getStackTraceString() {
         var cause = getCause();
         var causeString = cause==null ? "" : String.format("\nCaused by: %s", ExceptionUtils.getStackTrace(cause));
         return String.format("%s%s", getSummary(), causeString);
     }
     
     private String getSummary() {
-        if ( includeFullStackTrace() ) { return ExceptionUtils.getStackTrace(this); }
         var firstElt = getFirstStackTraceElement();
         var stackTraceString = firstElt==null ? "" : String.format("\n\tat "+firstElt);
         return String.format("%s: %s%s", getClass().getSimpleName(), getMessage(), stackTraceString);

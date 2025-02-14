@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.cli.cmd.AbstractOutputCommand;
 import com.fortify.cli.common.output.cli.cmd.IJsonNodeSupplier;
@@ -54,7 +54,7 @@ public class StateClearCommand extends AbstractOutputCommand implements IJsonNod
                     .forEach(File::delete);
             }
         } catch ( IOException e ) {
-            throw new FcliException("Error clearing fcli state directory", e);
+            throw new FcliSimpleException("Error clearing fcli state directory", e);
         }
         return result;
     }
@@ -75,7 +75,7 @@ public class StateClearCommand extends AbstractOutputCommand implements IJsonNod
                     .put("name", f.getCanonicalPath())
                     .put("type", f.isFile() ? "FILE" : "DIR"));
         } catch ( IOException e ) {
-            throw new FcliException("Error processing file "+f, e);
+            throw new FcliSimpleException("Error processing file "+f, e);
         }
     }
 }

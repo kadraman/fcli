@@ -22,7 +22,7 @@ import java.util.function.Function;
 import org.apache.commons.io.IOUtils;
 
 import com.fortify.cli.common.exception.FcliBugException;
-import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.PicocliSpecHelper;
 import com.fortify.cli.common.util.StringUtils;
@@ -90,7 +90,7 @@ public class CommonOptionMixins {
             return prompt;
         }
         
-        public static final class FcliAbortedByUserException extends FcliException {
+        public static final class FcliAbortedByUserException extends FcliSimpleException {
             private static final long serialVersionUID = 1L;
             public FcliAbortedByUserException(String msg) { super(msg); }
         }
