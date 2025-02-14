@@ -76,6 +76,11 @@ public enum ProgressWriterType {
     
     private static final class NoProgressWriter extends AbstractProgressWriter {
         @Override
+        public String type() {
+            return "none";
+        }
+        
+        @Override
         public boolean isMultiLineSupported() {
             return false;
         }
@@ -88,6 +93,11 @@ public enum ProgressWriterType {
     }
     
     private static final class SimpleProgressWriter extends AbstractProgressWriter {
+        @Override
+        public String type() {
+            return "simple";
+        }
+        
         @Override
         public boolean isMultiLineSupported() {
             return true;
@@ -108,6 +118,11 @@ public enum ProgressWriterType {
     }
     
     private static final class SimpleStdErrProgressWriter extends AbstractProgressWriter {
+        @Override
+        public String type() {
+            return "stderr";
+        }
+        
         @Override
         public boolean isMultiLineSupported() {
             return true;
@@ -130,6 +145,11 @@ public enum ProgressWriterType {
     private static final class SingleLineProgressWriter extends AbstractProgressWriter {
         private static final String LINE_START = "\r";
         private int lastNumberOfChars;
+        
+        @Override
+        public String type() {
+            return "single-line";
+        }
         
         @Override
         public boolean isMultiLineSupported() {
@@ -157,6 +177,11 @@ public enum ProgressWriterType {
         private static final String LINE_CLEAR = "\033[2K";
         private static final String LINE_START = "\r";
         private int lastNumberOfLines = 0;
+        
+        @Override
+        public String type() {
+            return "ansi";
+        }
         
         @Override
         public boolean isMultiLineSupported() {

@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.EnvHelper;
@@ -300,6 +299,12 @@ public class ActionSpelFunctions {
                 // If envPrefix is <cmd>_ACTION, we remove want to avoid <cmd>_ACTION_ACTION,
                 // however we'd still use <cmd>_ACTION_EXTRA_OPTS
                 _envOrDefault(envPrefix.replaceAll("_ACTION$", ""), "ACTION", actionName),
+                extraOpts(envPrefix));
+    }
+    
+    public static final String fcliCmd(String envPrefix, String cmd) {
+        return String.format("%s %s",
+                cmd,
                 extraOpts(envPrefix));
     }
 

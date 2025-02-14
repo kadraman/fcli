@@ -26,8 +26,7 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
     
     @Override
     protected Map<String, String> preRun(ActionRunnerConfig config) {
-        initializeSession(config);
-        return initializeSessionProperties();
+        return initializeSession(config) ? initializeSessionProperties() : null;
     }
     
     @Override
@@ -40,7 +39,7 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         Map<String, String> orgProperties = new HashMap<>();
         var sessionName = getSessionName();
         for ( var module : getSharedSessionModules() ) {
-            var sessionEnvName = String.format("%s_%s_SESSION", System.getProperty("fcli.env.default.prefix", "FCLI_DEFAULT"), module.toUpperCase());
+            var sessionEnvName = String.format("%s_%s_SESSION", System.getProperty("fcli.env.default.prefix", "FCLI_DEFAULT"), module.toUpperCase().replace('-','_'));
             var sessionPropertyName = EnvHelper.envSystemPropertyName(sessionEnvName);
             orgProperties.put(sessionPropertyName, EnvHelper.env(sessionEnvName));
             setOrClearSystemProperty(sessionPropertyName, sessionName);
@@ -56,14 +55,16 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
         }
     }
 
-    private final void initializeSession(ActionRunnerConfig config) {
+    private final boolean initializeSession(ActionRunnerConfig config) {
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
             runSessionCmd(isShowStdout(config), getSessionFromEnvLoginCommand(), SessionCmdType.LOGIN);
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
+            return true;
         }
+        return false;
     }
 
     private final void terminateSession(ActionRunnerConfig config) {

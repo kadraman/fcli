@@ -20,12 +20,13 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliBugException;
-import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.exception.FcliExecutionExceptionHandler;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.cmd.IOutputHelperSupplier;
 import com.fortify.cli.common.output.writer.output.standard.StandardOutputWriter;
 import com.fortify.cli.common.util.JavaHelper;
@@ -54,6 +55,7 @@ public final class FcliCommandExecutorFactory {
     private final Consumer<Result> onSuccess; // Executed after onResult, if 0 exit code
     private final Consumer<Result> onFail; // Executed after onResult, if non-zero exit code
     private final Consumer<Throwable> onException;
+    public final String overrideProgressType;
     
     public final FcliCommandExecutor create() {
         if ( rootCommandLine==null ) {
@@ -97,7 +99,13 @@ public final class FcliCommandExecutorFactory {
         }
     
         private final int _execute() throws Exception {
-            return createCommandLine().execute(resolvedArgs);
+            return createCommandLine().execute(addProgressOption(resolvedArgs));
+        }
+
+        private String[] addProgressOption(String[] resolvedArgs) {
+            return overrideProgressType==null || !replicatedLeafCommandSpec.optionsMap().containsKey("--progress")
+                    ? resolvedArgs
+                    : ArrayUtils.add(resolvedArgs, "--progress="+overrideProgressType);
         }
 
         private CommandLine createCommandLine() {
