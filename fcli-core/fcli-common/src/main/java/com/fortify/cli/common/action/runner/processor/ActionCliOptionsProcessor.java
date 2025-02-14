@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.model.Action;
 import com.fortify.cli.common.action.model.ActionCliOption;
-import com.fortify.cli.common.action.model.ActionValidationException;
+import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.IOptionDescriptor;
@@ -114,7 +114,7 @@ public final class ActionCliOptionsProcessor {
         var type = StringUtils.isBlank(option.getType()) ? "string" : option.getType();
         var optionValueConverter = optionValueConverters.get(type);
         if ( optionValueConverter==null ) {
-            throw new ActionValidationException(String.format("Unknown option type %s for option %s", type, option.getKey())); 
+            throw new FcliActionValidationException(String.format("Unknown option type %s for option %s", type, option.getKey())); 
         } else {
             var result = optionValueConverter.apply(value);
             return result==null ? NullNode.instance : result; 

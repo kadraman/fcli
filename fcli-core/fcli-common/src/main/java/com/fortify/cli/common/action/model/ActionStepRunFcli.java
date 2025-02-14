@@ -40,15 +40,6 @@ public final class ActionStepRunFcli extends AbstractActionElementIf implements 
         this.cmd = SpelHelper.parseTemplateExpression(cmdString);
     }
     
-    /* TODO Do we want this to automatically skip fcli invocations if variable do_run_fcli[key]==false?
-    @Override
-    public TemplateExpression get_if() {
-        var superIf = super.get_if();
-        return superIf!=null ? superIf : SpelHelper.parseTemplateExpression(String.format(
-                "${do_run_fcli==null ? true : do_run_fcli['%s']==null ? true : do_run_fcli['%s']}", key, key));
-    }
-    */
-    
     @JsonPropertyDescription("""
         Required SpEL template expression: The fcli command to run. This can be \
         specified with or without the 'fcli' command itself. Some examples:

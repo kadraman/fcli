@@ -23,6 +23,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.exception.FcliBugException;
+import com.fortify.cli.common.exception.FcliException;
+import com.fortify.cli.common.exception.FcliExecutionExceptionHandler;
 import com.fortify.cli.common.output.cli.cmd.IOutputHelperSupplier;
 import com.fortify.cli.common.output.writer.output.standard.StandardOutputWriter;
 import com.fortify.cli.common.util.JavaHelper;
@@ -54,10 +57,10 @@ public final class FcliCommandExecutorFactory {
     
     public final FcliCommandExecutor create() {
         if ( rootCommandLine==null ) {
-            throw new RuntimeException("Root command line hasn't been configured upon fcli initialization");
+            throw new FcliBugException("Root command line hasn't been configured upon fcli initialization");
         }
         if ( StringUtils.isBlank(cmd) ) {
-            throw new IllegalStateException("Fcli command to be run may not be blank");
+            throw new FcliException("Fcli command to be run may not be blank");
         }
         return new FcliCommandExecutor();
     }
@@ -94,7 +97,13 @@ public final class FcliCommandExecutorFactory {
         }
     
         private final int _execute() throws Exception {
-            return new CommandLine(replicatedLeafCommandSpec.root()).execute(resolvedArgs);
+            return createCommandLine().execute(resolvedArgs);
+        }
+
+        private CommandLine createCommandLine() {
+            var cl = new CommandLine(replicatedLeafCommandSpec.root());
+            cl.setExecutionExceptionHandler(FcliExecutionExceptionHandler.INSTANCE);
+            return cl;
         }
 
         public final boolean canCollectRecords() {
@@ -114,11 +123,11 @@ public final class FcliCommandExecutorFactory {
         }
         
         private void rethrowAsRuntimeException(Throwable t) {
-            throw new IllegalStateException("Fcli command threw an exception", t);
+            throw new FcliException("Fcli command threw an exception", t);
         }
         
         private final void throwExceptionOnNonZeroExitCode(Result r) {
-            throw new IllegalStateException("Fcli command terminated with non-zero exit code "+r.getExitCode());
+            throw new FcliException("Fcli command terminated with non-zero exit code "+r.getExitCode());
         }
         
         // We want to replicate the CommandSpec with new command instances, at least for the 

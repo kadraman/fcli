@@ -170,7 +170,7 @@ public class Action implements IActionElement {
     }
     
     /**
-     * Utility method for throwing an {@link ActionValidationException}
+     * Utility method for throwing an {@link FcliActionValidationException}
      * if the given boolean value is true.
      * @param isFailure
      * @param entity
@@ -178,7 +178,7 @@ public class Action implements IActionElement {
      */
     static final void throwIf(boolean isFailure, Object entity, Supplier<String> msgSupplier) {
         if ( isFailure ) {
-            throw new ActionValidationException(msgSupplier.get(), entity);
+            throw new FcliActionValidationException(msgSupplier.get(), entity);
         }
     }
     
@@ -305,7 +305,7 @@ public class Action implements IActionElement {
                 try {
                     return new POJONode(SpelHelper.parseTemplateExpression(expr));
                 } catch (ParseException e) {
-                    throw new ActionValidationException(String.format("Error parsing template expression '%s'", expr), this, e);
+                    throw new FcliActionValidationException(String.format("Error parsing template expression '%s'", expr), this, e);
                 }
             } else {
                 return super.copyValue(state, path, parent, node);

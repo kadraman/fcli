@@ -15,6 +15,7 @@ package com.fortify.cli.sc_sast.scan.cli.cmd;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.rest.cli.cmd.AbstractWaitForCommand;
 import com.fortify.cli.common.rest.wait.WaitHelper.WaitHelperBuilder;
@@ -100,7 +101,7 @@ public class SCSastScanWaitForCommand extends AbstractWaitForCommand {
                     .failureStates(SCSastScanJobState.getFailureStateNames())
                     .matchStates(scanStates);
         } else {
-            throw new RuntimeException("Unexpected situation, please file a bug");
+            throw new FcliBugException("Unexpected situation, please file a bug");
         }
     }
 }

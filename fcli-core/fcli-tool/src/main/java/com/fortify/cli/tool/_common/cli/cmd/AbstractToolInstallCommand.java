@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
 import com.fortify.cli.common.cli.util.CommandGroup;
+import com.fortify.cli.common.exception.FcliException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.cli.cmd.AbstractOutputCommand;
 import com.fortify.cli.common.output.cli.cmd.IJsonNodeSupplier;
@@ -200,7 +201,7 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
                             .filter(v->!v.equals(installer.getToolVersion()))
                             .collect(Collectors.toList());
                     if ( !otherVersionsWithSameTargetPath.isEmpty() ) {
-                        throw new IllegalStateException(String.format("Target path %s already in use for versions: %s\nUse --replace option to explicitly uninstall the existing versions", targetPath, String.join(", ", otherVersionsWithSameTargetPath)));
+                        throw new FcliException(String.format("Target path %s already in use for versions: %s\nUse --replace option to explicitly uninstall the existing versions", targetPath, String.join(", ", otherVersionsWithSameTargetPath)));
                     } else if ( existingVersionsWithSameTargetPath.isEmpty() ) {
                         // Basically we're moving the tool installation to a different directory
                         requiredPreparations.put("Clean target directory "+targetPath, ()->deleteRecursive(targetPath));

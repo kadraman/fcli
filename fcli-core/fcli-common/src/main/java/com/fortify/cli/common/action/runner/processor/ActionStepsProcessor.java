@@ -50,13 +50,13 @@ import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRestCall
 import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
-import com.fortify.cli.common.action.model.ActionValidationException;
+import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.model.TemplateExpressionWithFormatter;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerHelper;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
-import com.fortify.cli.common.action.runner.StepProcessingException;
+import com.fortify.cli.common.action.runner.FcliActionStepException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.ActionRequestDescriptor;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
 import com.fortify.cli.common.cli.util.FcliCommandExecutorFactory;
@@ -130,11 +130,11 @@ public final class ActionStepsProcessor {
             try {
                 consumer.accept(value);
             } catch ( Exception e ) {
-                if ( e instanceof StepProcessingException ) {
+                if ( e instanceof FcliActionStepException ) {
                     throw e;
                 } else {
                     valueString = getStepAsString(valueString, value);
-                    throw new StepProcessingException("Error processing:\n"+valueString, e);
+                    throw new FcliActionStepException("Error processing:\n"+valueString, e);
                 }
             }
             if ( LOG.isDebugEnabled() ) {
@@ -154,11 +154,11 @@ public final class ActionStepsProcessor {
             try {
                 consumer.accept(name, value);
             } catch ( Exception e ) {
-                if ( e instanceof StepProcessingException ) {
+                if ( e instanceof FcliActionStepException ) {
                     throw e;
                 } else {
                     valueString = getStepAsString(valueString, value);
-                    throw new StepProcessingException("Error processing:\n"+valueString, e);
+                    throw new FcliActionStepException("Error processing:\n"+valueString, e);
                 }
             }
             if ( LOG.isDebugEnabled() ) {
@@ -174,7 +174,7 @@ public final class ActionStepsProcessor {
         try {
             cachedString = String.format("%s:\n%s", 
                 StringUtils.indent(value.getClass().getCanonicalName(), "  "),
-                StringUtils.indent(ctx.getYamlObjectMapper().valueToTree(value).toPrettyString(), "    "));
+                StringUtils.indent(ctx.getYamlObjectMapper().valueToTree(value).toString(), "    "));
         } catch ( Exception e ) {
             cachedString = StringUtils.indent(value.toString(), "  ");
         }
@@ -182,11 +182,16 @@ public final class ActionStepsProcessor {
     }
     
     private final boolean _if(Object o) {
-        if (ctx.isExitRequested() || o==null) { return false; }
+        if (ctx.isExitRequested() || o==null) {
+            LOG.debug("SKIPPED due to exit requested:\n"+getStepAsString(null, o));
+            return false; 
+        }
         if (o instanceof IActionStepIfSupplier ) {
             var _if = ((IActionStepIfSupplier) o).get_if();
             if ( _if!=null ) {
-                return vars.eval(_if, Boolean.class);
+                var result = vars.eval(_if, Boolean.class);
+                if ( !result ) { LOG.debug("SKIPPED due to 'if' evaluating to false:\n"+getStepAsString(null, o)); }
+                return result;
             }
         }
         return true;
@@ -242,7 +247,7 @@ public final class ActionStepsProcessor {
             default: write(new File(destination), value);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error writing action output to "+destination);
+            throw new FcliActionStepException("Error writing action output to "+destination);
         }
     }
     
@@ -287,7 +292,7 @@ public final class ActionStepsProcessor {
     }
     
     private void processThrowStep(TemplateExpression message) {
-        throw new StepProcessingException(vars.eval(message, String.class));
+        throw new FcliActionStepException(vars.eval(message, String.class));
     }
     
     private void processExitStep(TemplateExpression exitCodeExpression) {
@@ -310,7 +315,7 @@ public final class ActionStepsProcessor {
             JsonHelper.stream((ArrayNode)from)
                 .allMatch(value->processForEachStepNode(forEachStep, value));
         } else {
-            throw new StepProcessingException("steps:records.for-each:from must evaluate to either an array or IActionStepForEachProcessor instance");
+            throw new FcliActionStepException("steps:records.for-each:from must evaluate to either an array or IActionStepForEachProcessor instance");
         }
     }
     
@@ -373,7 +378,7 @@ public final class ActionStepsProcessor {
                 .onFail(r->onFcliFail(fcli, recordConsumer, delayedStdout, delayedStderr, r))
                 .recordConsumer(recordConsumer).build().create();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
-            throw new IllegalStateException("Can't use records.for-each on fcli command: "+cmd);
+            throw new FcliActionValidationException("Can't use records.for-each on fcli command: "+cmd);
         }
         cmdExecutor.execute();
     }
@@ -399,10 +404,16 @@ public final class ActionStepsProcessor {
         setFcliVars(fcli, recordConsumer, delayedStdout, delayedStderr, result);
         List<ActionStep> onFail = fcli.getOnFail();
         if ( onFail==null ) {
-            throw new StepProcessingException("Fcli command returned non-zero exit code "+result.getExitCode());
+            throw new FcliActionStepException(String.format("'%s' returned non-zero exit code %s", 
+                    getFcliCmdWithoutOpts(fcli), result.getExitCode()));
         } else {
             processSteps(onFail);
         }
+    }
+
+    private String getFcliCmdWithoutOpts(ActionStepRunFcli fcli) {
+        var result = vars.eval(fcli.getCmd(), String.class).replaceAll("\s+-.*", "");
+        return result.startsWith("fcli") ? result : String.format("fcli %s", result);
     }
 
     private void onFcliException(ActionStepRunFcli fcli, Throwable t) {
@@ -411,7 +422,7 @@ public final class ActionStepsProcessor {
         if ( onException==null ) {
             throw t instanceof RuntimeException 
                 ? (RuntimeException)t
-                : new StepProcessingException("Fcli command terminated with an exception", t);
+                : new FcliActionStepException("Fcli command terminated with an exception", t);
         } else {
             processSteps(onException);
         }
@@ -501,7 +512,7 @@ public final class ActionStepsProcessor {
                     processRequestStepForEachEmbed(forEach, (ArrayNode)input);
                     processRequestStepForEach(forEach, (ArrayNode)input, this::processRequestStepForEachEntryDo);
                 } else {
-                    throw new ActionValidationException("forEach not supported on node type "+input.getNodeType());
+                    throw new FcliActionValidationException("forEach not supported on node type "+input.getNodeType());
                 }
             }
         }
@@ -550,7 +561,7 @@ public final class ActionStepsProcessor {
         return (forEach, currentNode, newVars) -> {
             if ( !currentNode.isObject() ) {
                 // TODO Improve exception message?
-                throw new IllegalStateException("Cannot embed data on non-object nodes: "+forEach.getVarName());
+                throw new FcliActionStepException("Cannot embed data on non-object nodes: "+forEach.getVarName());
             }
             requestExecutor.addRequests(forEach.getEmbed(), 
                     (rd,r)->((ObjectNode)currentNode).set(rd.getKey(), ctx.getRequestHelper(rd.getTarget()).transformInput(r)), 
@@ -595,10 +606,10 @@ public final class ActionStepsProcessor {
                 // headers and other data to systems other than the predefined target
                 // system.
                 if ( uri.isAbsolute() ) {
-                    throw new IllegalStateException("Absolute request uri is not allowed: "+uriString);
+                    throw new FcliActionValidationException("Absolute request uri is not allowed: "+uriString);
                 }
             } catch ( URISyntaxException e ) {
-                throw new IllegalStateException("Invalid request uri: "+uriString);
+                throw new FcliActionValidationException("Invalid request uri: "+uriString);
             }
         }
 

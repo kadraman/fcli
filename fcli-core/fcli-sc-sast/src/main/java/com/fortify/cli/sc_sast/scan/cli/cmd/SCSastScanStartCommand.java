@@ -26,6 +26,8 @@ import java.util.zip.ZipOutputStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
+import com.fortify.cli.common.exception.FcliBugException;
+import com.fortify.cli.common.exception.FcliException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.common.util.StringUtils;
@@ -96,7 +98,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
 
         JsonNode response = body.asObject(JsonNode.class).getBody();
         if ( !response.has("token") ) {
-            throw new IllegalStateException("Unexpected response when submitting scan job: "+response);
+            throw new FcliException("Unexpected response when submitting scan job: "+response);
         }
         String scanJobToken = response.get("token").asText();
         return SCSastScanJobHelper.getScanJobDescriptor(unirest, scanJobToken, StatusEndpointVersion.v1).asJsonNode();
@@ -139,7 +141,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
         String uploadToken = null;
         if ( !publishToAppVersionMixin.hasAppVersion() ) {
             if ( !StringUtils.isBlank(this.ciToken) ) {
-                throw new IllegalArgumentException("Option --ssc-ci-token may only be specified if --publish-to has been specified");
+                throw new FcliException("Option --ssc-ci-token may only be specified if --publish-to has been specified");
             }
         } else {
         	if ( !StringUtils.isBlank(this.ciToken) ) {
@@ -149,7 +151,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
                 char[] tokenFromSession = getUnirestInstanceSupplier().getSessionDescriptor().getActiveSSCToken();
                 uploadToken = tokenFromSession==null ? null : SSCTokenConverter.toApplicationToken(String.valueOf(tokenFromSession));
             }
-            if ( StringUtils.isBlank(uploadToken) ) { throw new IllegalArgumentException("--ssc-ci-token is required if --publish-to is specified and --ssc-ci-token was not passed to the 'sc-sast session login' command"); }
+            if ( StringUtils.isBlank(uploadToken) ) { throw new FcliBugException("No SSC token provided, and no token available from session"); }
         }
         return uploadToken;
     }
@@ -174,7 +176,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
             }
             return zipFile;
         } catch (IOException e) {
-            throw new RuntimeException("Error creating job file", e);
+            throw new FcliException("Error creating job file", e);
         }
     }
 
@@ -214,7 +216,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
                 } else {
                     var inputFile = new File(inputFileName);
                     if ( !inputFile.canRead() ) {
-                        throw new IllegalArgumentException("Can't read file "+inputFileName+" as specified in --sargs");
+                        throw new FcliException("Can't read file "+inputFileName+" as specified in --sargs");
                     }
                     // Re-use existing zip entry name if same file was processed before
                     var zipEntryFileName = inputFileToZipEntryMap.getOrDefault(inputFile, getZipEntryFileName(inputFileName));

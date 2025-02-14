@@ -28,6 +28,7 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fortify.cli.common.exception.FcliException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.sc_sast.scan.helper.SCSastScanPayloadDescriptor.SCSastScanPayloadDescriptorBuilder;
 
@@ -45,7 +46,7 @@ public class SCSastScanPayloadHelper {
     
     public final SCSastScanPayloadDescriptor loadDescriptor() {
         if ( !payloadFile.exists() ) {
-            throw new IllegalArgumentException("Scan payload file "+payloadFile.getName()+" doesn't exist");
+            throw new FcliException("Scan payload file "+payloadFile.getName()+" doesn't exist");
         }
         var builder = SCSastScanPayloadDescriptor.builder().payloadFile(payloadFile);
         loadDescriptor(builder);
@@ -61,16 +62,16 @@ public class SCSastScanPayloadHelper {
             } else if ( Files.exists(packageMetadataPath) ) {
                 loadFromPackage(fs, packageMetadataPath, builder);
             } else {
-                throw new IllegalArgumentException(payloadFile+" doesn't seem to be a valid MBS or ScanCentral package file");
+                throw new FcliException(payloadFile+" doesn't seem to be a valid MBS or ScanCentral package file");
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to proces scan payload file "+payloadFile, e);
+            throw new FcliException("Unable to proces scan payload file "+payloadFile, e);
         }
     }
     
     private void loadFromMbs(FileSystem fs, Path mbsManifestPath, SCSastScanPayloadDescriptorBuilder builder) throws IOException {
         if ( StringUtils.isNotBlank(overrideProductVersion) ) {
-            throw new IllegalArgumentException("Option "+overrideProductVersionOptionNames+" is not supported for MBS files");
+            throw new FcliException("Option "+overrideProductVersionOptionNames+" is not supported for MBS files");
         }
         Properties p = loadMbsManifestProperties(mbsManifestPath);
         builder
@@ -127,7 +128,7 @@ public class SCSastScanPayloadHelper {
             productVersion = normalizedOverrideProductVersion;
         }
         if ( StringUtils.isBlank(productVersion) ) {
-            throw new IllegalStateException("Can't detect product version from package, please specify "+overrideProductVersionOptionNames);
+            throw new FcliException("Can't detect product version from package, please specify "+overrideProductVersionOptionNames);
         }
         return productVersion;
     }

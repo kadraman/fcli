@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.exception.FcliException;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.EnvHelper;
@@ -83,7 +84,7 @@ public class ActionSpelFunctions {
      */
     public static final boolean check(boolean throwError, String msg) {
         if ( throwError ) {
-            throw new IllegalStateException(msg);
+            throw new FcliActionStepException(msg);
         } else {
             return true;
         }

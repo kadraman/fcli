@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
@@ -185,7 +186,7 @@ public final class ActionRunnerVars {
     private final ArrayNode getOrCreateArray(Function<String, JsonNode> getter, String name) {
         var array = getOrCreate(getter, objectMapper::createArrayNode, name);
         if ( !array.isArray() ) {
-            throw new StepProcessingException("Variable "+name+" is not an array; cannot append value");
+            throw new FcliActionStepException("Variable "+name+" is not an array; cannot append value");
         }
         return (ArrayNode)array;
     }
@@ -193,7 +194,7 @@ public final class ActionRunnerVars {
     private final ObjectNode getOrCreateObject(Function<String, JsonNode> getter, String name) {
         var obj = getOrCreate(getter, objectMapper::createObjectNode, name);
         if ( !obj.isObject() ) {
-            throw new StepProcessingException("Variable "+name+" is not a set of properties; can't set a property on this variable");
+            throw new FcliActionStepException("Variable "+name+" is not a set of properties; can't set a property on this variable");
         }
         return (ObjectNode)obj;
     }
@@ -231,7 +232,7 @@ public final class ActionRunnerVars {
     private static final void rejectProtectedVarNames(String name) {
         for ( var protectedName : PROTECTED_VAR_NAMES ) {
             if ( protectedName.equals(name) ) {
-                throw new IllegalStateException("Action steps are not allowed to modify the "+protectedName+" variable");
+                throw new FcliActionValidationException("Action steps are not allowed to modify the "+protectedName+" variable");
             }
         }
     }

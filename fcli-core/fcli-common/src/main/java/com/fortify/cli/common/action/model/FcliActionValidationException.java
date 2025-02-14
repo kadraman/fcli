@@ -12,25 +12,27 @@
  */
 package com.fortify.cli.common.action.model;
 
+import com.fortify.cli.common.exception.FcliException;
+
 /**
  * Exception class used for action validation errors.
  */
-public final class ActionValidationException extends IllegalStateException {
+public final class FcliActionValidationException extends FcliException {
     private static final long serialVersionUID = 1L;
 
-    public ActionValidationException(String message, Throwable cause) {
+    public FcliActionValidationException(String message, Throwable cause) {
         super(message, cause);
     }
     
-    public ActionValidationException(String message, Object actionElement, Throwable cause) {
+    public FcliActionValidationException(String message, Object actionElement, Throwable cause) {
         this(getMessageWithEntity(message, actionElement), cause);
     }
 
-    public ActionValidationException(String message) {
+    public FcliActionValidationException(String message) {
         super(message);
     }
     
-    public ActionValidationException(String message, Object actionElement) {
+    public FcliActionValidationException(String message, Object actionElement) {
         this(getMessageWithEntity(message, actionElement));
     }
 

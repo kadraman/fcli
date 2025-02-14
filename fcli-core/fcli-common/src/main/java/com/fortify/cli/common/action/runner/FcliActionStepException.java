@@ -12,18 +12,20 @@
  */
 package com.fortify.cli.common.action.runner;
 
-public final class StepProcessingException extends RuntimeException {
+import com.fortify.cli.common.exception.FcliException;
+
+public final class FcliActionStepException extends FcliException {
     private static final long serialVersionUID = 1L;
 
-    public StepProcessingException(String message, Throwable cause) {
+    public FcliActionStepException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public StepProcessingException(String message) {
+    public FcliActionStepException(String message) {
         super(message);
     }
 
-    public StepProcessingException(Throwable cause) {
+    public FcliActionStepException(Throwable cause) {
         super(cause);
     }
 }

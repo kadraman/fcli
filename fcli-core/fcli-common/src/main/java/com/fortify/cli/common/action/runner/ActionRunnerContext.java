@@ -28,6 +28,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.ActionStepCheck;
 import com.fortify.cli.common.action.model.ActionStepCheck.CheckStatus;
+import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
@@ -90,12 +91,12 @@ public class ActionRunnerContext implements AutoCloseable {
             if ( requestHelpers.size()==1 ) {
                 return requestHelpers.values().iterator().next();
             } else {
-                throw new IllegalStateException(String.format("Required 'from:' property (allowed values: %s) missing", requestHelpers.keySet()));
+                throw new FcliActionValidationException(String.format("Required 'from:' property (allowed values: %s) missing", requestHelpers.keySet()));
             }
         } 
         var result = requestHelpers.get(name);
         if ( result==null ) {
-            throw new IllegalStateException(String.format("Invalid 'from: %s', allowed values: %s", name, requestHelpers.keySet()));
+            throw new FcliActionValidationException(String.format("Invalid 'from: %s', allowed values: %s", name, requestHelpers.keySet()));
         }
         return result;
     }

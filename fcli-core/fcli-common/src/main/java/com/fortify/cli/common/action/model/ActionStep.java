@@ -234,10 +234,10 @@ public final class ActionStep extends AbstractActionElementIf {
     private void checkInstructionCount() {
         var nonNullInstructionNames = getNonNullInstructionNames();
         if ( nonNullInstructionNames.size()==0 ) {
-            throw new ActionValidationException("Action step doesn't define any instruction");
+            throw new FcliActionValidationException("Action step doesn't define any instruction");
         }
         if ( nonNullInstructionNames.size()>1 ) {
-            throw new ActionValidationException("Action step contains multiple instructions: "+nonNullInstructionNames);
+            throw new FcliActionValidationException("Action step contains multiple instructions: "+nonNullInstructionNames);
         }
     }
 

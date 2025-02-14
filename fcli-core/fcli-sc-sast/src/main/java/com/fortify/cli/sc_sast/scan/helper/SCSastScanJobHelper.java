@@ -13,6 +13,7 @@
 package com.fortify.cli.sc_sast.scan.helper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.exception.FcliException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.transform.fields.RenameFieldsTransformer;
 
@@ -58,7 +59,7 @@ public class SCSastScanJobHelper {
         }
         
         if ( descriptor==null ) {
-            throw new RuntimeException("Error getting job status from ScanCentral SAST Controller", lastException);
+            throw new FcliException("Error getting job status from ScanCentral SAST Controller", lastException);
         }
         return descriptor;
     }

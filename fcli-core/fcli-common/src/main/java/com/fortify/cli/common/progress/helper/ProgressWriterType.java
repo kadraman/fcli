@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.fortify.cli.common.exception.FcliBugException;
+
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine.Help.Ansi;
 
@@ -137,7 +139,7 @@ public enum ProgressWriterType {
         @Override
         public void writeProgress(String message, Object... args) {
             String formattedMessage = format(message, args);
-            if ( formattedMessage.contains("\n") ) { throw new RuntimeException("Multiline status updates are not supported; please file a bug"); }
+            if ( formattedMessage.contains("\n") ) { throw new FcliBugException("Multiline status updates are not supported; please file a bug"); }
             clearProgress();
             System.out.print(formattedMessage);
             this.lastNumberOfChars = formattedMessage.length();
