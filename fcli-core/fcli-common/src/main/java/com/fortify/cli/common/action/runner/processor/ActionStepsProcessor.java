@@ -182,7 +182,8 @@ public final class ActionStepsProcessor {
     }
     
     private final boolean _if(Object o) {
-        if (ctx.isExitRequested() || o==null) {
+        if ( o==null ) { return false; }
+        if (ctx.isExitRequested() ) {
             LOG.debug("SKIPPED due to exit requested:\n"+getStepAsString(null, o));
             return false; 
         }

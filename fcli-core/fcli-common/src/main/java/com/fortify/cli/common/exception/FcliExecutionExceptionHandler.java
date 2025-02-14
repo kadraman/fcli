@@ -13,6 +13,8 @@
 package com.fortify.cli.common.exception;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -22,10 +24,14 @@ import picocli.CommandLine.ParseResult;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FcliExecutionExceptionHandler implements IExecutionExceptionHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(FcliExecutionExceptionHandler.class);
     public static final FcliExecutionExceptionHandler INSTANCE = new FcliExecutionExceptionHandler();
     
     @Override
     public int handleExecutionException(Exception ex, CommandLine commandLine, ParseResult parseResult) throws Exception {
+        if ( LOG.isDebugEnabled() ) {
+            LOG.debug("fcli terminating with exception", ex);
+        }
         var formattedException = formatException(ex);
         if ( formattedException!=null ) {
             var err = commandLine.getErr();
