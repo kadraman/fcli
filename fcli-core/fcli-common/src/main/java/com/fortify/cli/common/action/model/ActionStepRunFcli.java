@@ -86,13 +86,16 @@ public final class ActionStepRunFcli extends AbstractActionElementIf implements 
         """)
     @JsonProperty(value = "on.success", required = false) private List<ActionStep> onSuccess; 
     
+    /* I don't think this can happen, as command exceptions will be caught by picocli and
+     * result in a non-zero exit code, which is already handled by onFail below.
     @JsonPropertyDescription("""
         Optional list: Steps to be executed if the fcli command throws an exception. If not \
         specified, an exception will be thrown and action execution will terminate. Steps can \
         reference a variable named after the identifier for this fcli invocation, for example \
         'x_exception', to access the Java Exception object that represents the failure that occurred.
         """)
-    @JsonProperty(value = "on.exception", required = false) private List<ActionStep> onException;   
+    @JsonProperty(value = "on.exception", required = false) private List<ActionStep> onException;
+    */   
     
     @JsonPropertyDescription("""
         Optional list: Steps to be executed if the fcli command returns a non-zero exit code. \

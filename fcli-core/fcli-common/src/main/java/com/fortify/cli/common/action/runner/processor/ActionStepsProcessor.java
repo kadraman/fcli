@@ -419,14 +419,15 @@ public final class ActionStepsProcessor {
 
     private void onFcliException(ActionStepRunFcli fcli, Throwable t) {
         vars.set(fcli.getKey()+"_exception", new POJONode(t));
-        List<ActionStep> onException = fcli.getOnException();
-        if ( onException==null ) {
+        // See comments on commented out onException in ActionStepRunFcli
+        //List<ActionStep> onException = fcli.getOnException();
+        //if ( onException==null ) {
             throw t instanceof RuntimeException 
                 ? (RuntimeException)t
                 : new FcliActionStepException("Fcli command terminated with an exception", t);
-        } else {
-            processSteps(onException);
-        }
+        //} else {
+        //    processSteps(onException);
+        //}
     }
     
     private void setFcliVars(ActionStepRunFcli fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
