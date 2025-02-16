@@ -14,13 +14,13 @@ package com.fortify.cli.common.cli.util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -55,7 +55,8 @@ public final class FcliCommandExecutorFactory {
     private final Consumer<Result> onSuccess; // Executed after onResult, if 0 exit code
     private final Consumer<Result> onFail; // Executed after onResult, if non-zero exit code
     private final Consumer<Throwable> onException;
-    public final String overrideProgressType;
+    public final String progressOptionValueIfNotPresent;
+    public final String sessionOptionValueIfNotPresent;
     
     public final FcliCommandExecutor create() {
         if ( rootCommandLine==null ) {
@@ -99,13 +100,29 @@ public final class FcliCommandExecutorFactory {
         }
     
         private final int _execute() throws Exception {
-            return createCommandLine().execute(addProgressOption(resolvedArgs));
+            return createCommandLine().execute(addOverrideOptions(resolvedArgs));
         }
 
-        private String[] addProgressOption(String[] resolvedArgs) {
-            return overrideProgressType==null || !replicatedLeafCommandSpec.optionsMap().containsKey("--progress")
-                    ? resolvedArgs
-                    : ArrayUtils.add(resolvedArgs, "--progress="+overrideProgressType);
+        private String[] addOverrideOptions(String[] resolvedArgs) {
+            var result = new ArrayList<>(Arrays.asList(resolvedArgs));
+            addOverrideOptionIfNotPresent(result, "--progress", progressOptionValueIfNotPresent);
+            addOverrideOptionIfNotPresent(result, "--session", sessionOptionValueIfNotPresent);
+            return result.toArray(String[]::new);
+        }
+        
+        private final void addOverrideOptionIfNotPresent(List<String> resolvedArgs, String optionName, String value) {
+            if ( StringUtils.isNotBlank(value) && hasOption(optionName) && !hasOptionValue(resolvedArgs, optionName) ) {
+                resolvedArgs.add(String.format("%s=%s", optionName, value));
+            }
+        }
+        
+        private final boolean hasOptionValue(List<String> resolvedArgs, String optionName) {
+            // TODO Do we manually check in resolvedArgs, or can we check using replicatedLeafCommandSpec.optionsMap()?
+            return resolvedArgs.stream().anyMatch(s->s.equals(optionName) || s.startsWith(optionName+"="));
+        }
+        
+        private final boolean hasOption(String optionName) {
+            return replicatedLeafCommandSpec.optionsMap().containsKey(optionName);
         }
 
         private CommandLine createCommandLine() {

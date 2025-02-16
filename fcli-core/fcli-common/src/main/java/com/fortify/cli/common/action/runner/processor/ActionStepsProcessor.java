@@ -371,6 +371,8 @@ public final class ActionStepsProcessor {
         var delayedStderr = actualStderrOutputType==OutputType.collect && requestedStdoutOutputType==OutputType.show;
         var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
+                .progressOptionValueIfNotPresent(ctx.getConfig().getProgressWriterFactory().getType().name())
+                .sessionOptionValueIfNotPresent(ctx.getConfig().getRequestedSessionName())
                 .stdoutOutputType(actualStdoutOutputType)
                 .stderrOutputType(actualStderrOutputType)
                 .onResult(r->onFcliResult(fcli, recordConsumer, delayedStdout, delayedStderr, r))

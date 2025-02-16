@@ -62,17 +62,16 @@ public abstract class AbstractActionRunCommand<T> extends AbstractRunnableComman
     }
     
     private final Integer run(ActionRunnerConfig config, ActionRunner actionRunner) {
-        T preRunOutput = null;
         try {
-            preRunOutput = preRun(config);
+            preRun(config);
             return actionRunner.run(actionArgs);
         } finally {
-            postRun(config, preRunOutput);
+            postRun(config);
         }
     }
 
-    protected T preRun(ActionRunnerConfig config) { return null; }
-    protected void postRun(ActionRunnerConfig config, T preRunOutput) {}
+    protected void preRun(ActionRunnerConfig config) {}
+    protected void postRun(ActionRunnerConfig config) {}
     
     private ParameterException onValidationErrors(OptionsParseResult optionsParseResult) {
         var errorsString = String.join("\n ", optionsParseResult.getValidationErrors());

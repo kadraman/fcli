@@ -12,7 +12,6 @@
  *******************************************************************************/
 package com.fortify.cli.common.action.cli.cmd;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigSessionFromEnvOutput;
@@ -25,46 +24,23 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
     private boolean currentActionRunInitializedSessionFromEnv = false;
     
     @Override
-    protected Map<String, String> preRun(ActionRunnerConfig config) {
-        return initializeSession(config) ? initializeSessionProperties() : null;
+    protected void preRun(ActionRunnerConfig config) {
+        initializeSession(config);
     }
     
     @Override
-    protected void postRun(ActionRunnerConfig config, Map<String, String> preRunOutput) {
-        resetSessionProperties(preRunOutput);
+    protected void postRun(ActionRunnerConfig config) {
         terminateSession(config);
     }
 
-    private Map<String, String> initializeSessionProperties() {
-        Map<String, String> orgProperties = new HashMap<>();
-        var sessionName = getSessionName();
-        for ( var module : getSharedSessionModules() ) {
-            var sessionEnvName = String.format("%s_%s_SESSION", System.getProperty("fcli.env.default.prefix", "FCLI_DEFAULT"), module.toUpperCase().replace('-','_'));
-            var sessionPropertyName = EnvHelper.envSystemPropertyName(sessionEnvName);
-            orgProperties.put(sessionPropertyName, EnvHelper.env(sessionEnvName));
-            setOrClearSystemProperty(sessionPropertyName, sessionName);
-        }
-        return orgProperties;
-    }
-    
-    private void resetSessionProperties(Map<String, String> preRunOutput) {
-        if ( preRunOutput!=null ) {
-            for ( var entry : preRunOutput.entrySet() ) {
-                setOrClearSystemProperty(entry.getKey(), entry.getValue());
-            }
-        }
-    }
-
-    private final boolean initializeSession(ActionRunnerConfig config) {
+    private final void initializeSession(ActionRunnerConfig config) {
         // Initialize session if session name equals 'from-env' and session wasn't initialized yet
         // during current fcli invocation.
         if ( "from-env".equals(getSessionName()) && !hasInitializedSessionFromEnv() ) {
             runSessionCmd(isShowStdout(config), getSessionFromEnvLoginCommand(), SessionCmdType.LOGIN);
             currentActionRunInitializedSessionFromEnv = true;
             System.setProperty("fcli.action.initializedSessionFromEnv", "true");
-            return true;
         }
-        return false;
     }
 
     private final void terminateSession(ActionRunnerConfig config) {
@@ -98,14 +74,6 @@ public abstract class AbstractActionRunWithSessionCommand extends AbstractAction
     
     private boolean hasInitializedSessionFromEnv() {
         return "true".equals(System.getProperty("fcli.action.initializedSessionFromEnv"));
-    }
-
-    private void setOrClearSystemProperty(String name, String value) {
-        if ( value==null ) {
-            System.clearProperty(name);
-        } else {
-            System.setProperty(name, value);
-        }
     }
     
     /** By default, this method returns the single module name as defined through {@link #getType()}. If sessions
