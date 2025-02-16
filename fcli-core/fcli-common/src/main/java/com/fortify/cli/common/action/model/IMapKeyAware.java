@@ -14,10 +14,8 @@ package com.fortify.cli.common.action.model;
 
 /**
  * Interface that can be implemented by action elements contained in Map's,
- * allowing them to be informed about their map key. This variant supports
- * only String keys.
- * @author Ruud Senden
+ * allowing them to be informed about their map key.
  */
-public interface IMapStringKeyAware {
-    void setKey(String key);
+public interface IMapKeyAware<T> {
+    void setKey(T key);
 }

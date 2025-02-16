@@ -27,17 +27,20 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
- * This class describes a forEach element, allowing iteration over the output of
- * a given input.
+ * This class describes a 'run.fcli' element.
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRunFcli extends AbstractActionElementIf implements IMapStringKeyAware {
+public final class ActionStepRunFcli extends AbstractActionElementIf implements IMapKeyAware<String> {
     @JsonIgnore private String key;
     
     /** Allow for deserializing from a string that specified the fcli command to run, rather than object */
     public ActionStepRunFcli(String cmdString) {
-        this.cmd = SpelHelper.parseTemplateExpression(cmdString);
+        this(SpelHelper.parseTemplateExpression(cmdString));
+    }
+    
+    public ActionStepRunFcli(TemplateExpression cmd) {
+        this.cmd = cmd;
     }
     
     @JsonPropertyDescription("""

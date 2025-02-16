@@ -50,6 +50,9 @@ import com.fortify.cli.common.action.model.ActionStepRestCall.ActionStepRestCall
 import com.fortify.cli.common.action.model.ActionStepRestTarget;
 import com.fortify.cli.common.action.model.ActionStepRunFcli;
 import com.fortify.cli.common.action.model.ActionStepRunFcli.ActionStepFcliForEachDescriptor;
+import com.fortify.cli.common.action.model.ActionStepWith;
+import com.fortify.cli.common.action.model.ActionStepWithCleanup;
+import com.fortify.cli.common.action.model.ActionStepWithSession;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.model.TemplateExpressionWithFormatter;
@@ -102,6 +105,7 @@ public final class ActionStepsProcessor {
             processStepSupplier(step::get_throw, this::processThrowStep);
             processStepSupplier(step::get_exit, this::processExitStep);
             processStepSupplier(step::getForEachRecord, this::processForEachRecordStep);
+            processStepSupplier(step::getWith, this::processWithStep);
             processStepEntries(step::getSteps, this::processStep);
         }
     }
@@ -301,6 +305,84 @@ public final class ActionStepsProcessor {
         ctx.setExitRequested(true);
     }
     
+    private void processWithStep(ActionStepWith withStep) {
+        // TODO Add support for installing shutdown handler to even run cleanup steps
+        //      on System.exit(), Ctrl-C, ...
+        var shutdownHandlers = new ArrayList<Runnable>();
+        addWithStepShutdownHandlers(shutdownHandlers, withStep);
+        var shutdownThread = new Thread(()->shutdownHandlers.forEach(Runnable::run));
+        Runtime.getRuntime().addShutdownHook(shutdownThread);
+        try {
+            processWithStepInitialization(shutdownHandlers, withStep);
+            processSteps(withStep.get_do());
+        } finally {
+            processWithStepCleanup(withStep);
+            Runtime.getRuntime().removeShutdownHook(shutdownThread);
+        }
+    }
+    
+    private void addWithStepShutdownHandlers(ArrayList<Runnable> shutdownHandlers, ActionStepWith withStep) {
+        addWithCleanupStepShutdownHandlers(shutdownHandlers, withStep.getCleanup());
+        addWithSessionStepShutdownHandlers(shutdownHandlers, withStep.getSessions());
+    }
+
+    private void addWithCleanupStepShutdownHandlers(ArrayList<Runnable> shutdownHandlers, ActionStepWithCleanup cleanup) {
+        if ( cleanup!=null ) {
+            // TODO Make this optional through property on ActionStepWithCleanup
+            shutdownHandlers.add(()->processWithCleanupStepCleanup(cleanup));
+        }
+    }
+
+    private void addWithSessionStepShutdownHandlers(ArrayList<Runnable> shutdownHandlers, List<ActionStepWithSession> sessions) {
+        if ( sessions!=null ) {
+            sessions.forEach(s->shutdownHandlers.add(()->processWithSessionStepCleanup(s)));
+        }
+    }
+
+    private void processWithStepInitialization(ArrayList<Runnable> shutdownHandlers, ActionStepWith withStep) {
+        processWithCleanupStepInitialization(shutdownHandlers, withStep.getCleanup());
+        processWithSessionStepInitialization(shutdownHandlers, withStep.getSessions());
+    }
+
+    private void processWithCleanupStepInitialization(ArrayList<Runnable> shutdownHandlers, ActionStepWithCleanup cleanup) {
+        if ( cleanup!=null ) {
+            processSteps(cleanup.getInitSteps());
+        }
+    }
+
+    private void processWithSessionStepInitialization(ArrayList<Runnable> shutdownHandlers, List<ActionStepWithSession> sessions) {
+        if ( sessions!=null ) {
+            sessions.forEach(s->processFcliSessionCmd(s.getLoginCommand()));
+        }
+    }
+
+    private void processWithStepCleanup(ActionStepWith withStep) {
+        processWithCleanupStepCleanup(withStep.getCleanup());
+        processWithSessionStepCleanup(withStep.getSessions());
+    }
+
+    private void processWithCleanupStepCleanup(ActionStepWithCleanup cleanup) {
+        if ( cleanup!=null ) {
+            processSteps(cleanup.getCleanupSteps());
+        }
+    }
+
+    private void processWithSessionStepCleanup(List<ActionStepWithSession> sessions) {
+        if ( sessions != null ) {
+            sessions.forEach(this::processWithSessionStepCleanup);
+        }
+    }
+    
+    private void processWithSessionStepCleanup(ActionStepWithSession session) {
+        processFcliSessionCmd(session.getLogoutCommand());
+    }
+
+    private void processFcliSessionCmd(TemplateExpression cmd) {
+        FcliCommandExecutorFactory.builder()
+            .cmd(vars.eval(cmd, String.class))
+        .build().create().execute();
+    }
+    
     private void processForEachRecordStep(ActionStepForEachRecord forEachStep) {
         // TODO Clean up this method
         var from = vars.eval(forEachStep.getFrom(), Object.class);
@@ -360,7 +442,7 @@ public final class ActionStepsProcessor {
     }
     
     private void processRunFcliStep(String name, ActionStepRunFcli fcli) {
-        var cmd = vars.eval(fcli.getCmd(), String.class).replaceFirst("^fcli\s+", "");
+        var cmd = vars.eval(fcli.getCmd(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd);
         var recordConsumer = createFcliRecordConsumer(fcli);
         var requestedStdoutOutputType = getFcliOutputTypeOrDefault(fcli.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );

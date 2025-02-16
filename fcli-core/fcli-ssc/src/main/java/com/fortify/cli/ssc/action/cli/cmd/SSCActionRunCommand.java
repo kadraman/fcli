@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.cli.cmd.AbstractActionRunWithSessionCommand;
+import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
 import com.fortify.cli.common.action.model.ActionStepForEachRecord.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -40,7 +40,6 @@ import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.spring.expression.SpelHelper;
-import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.ssc._common.rest.cli.mixin.SSCAndScanCentralUnirestInstanceSupplierMixin;
 import com.fortify.cli.ssc._common.rest.sc_dast.helper.SCDastProductHelper;
@@ -62,22 +61,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "run")
-public class SSCActionRunCommand extends AbstractActionRunWithSessionCommand {
+public class SSCActionRunCommand extends AbstractActionRunCommand {
     @Mixin private SSCAndScanCentralUnirestInstanceSupplierMixin unirestInstanceSupplier;
     
     @Override
     protected final String getType() {
         return "SSC";
-    }
-    
-    @Override
-    protected String[] getSharedSessionModules() {
-        return new String[] {"ssc", "sc-sast", "sc-dast"}; 
-    }
-    
-    @Override
-    protected String getSessionName() {
-        return unirestInstanceSupplier.getSessionName();
     }
     
     @Override
@@ -96,34 +85,6 @@ public class SSCActionRunCommand extends AbstractActionRunWithSessionCommand {
     
     protected void configureSpelContext(ActionRunnerContext actionRunnerContext, SimpleEvaluationContext spelContext) {
         spelContext.setVariable("ssc", new SSCSpelFunctions(actionRunnerContext));   
-    }
-    
-    @Override
-    protected String getSessionFromEnvLoginCommand() {
-        var sscUrl = EnvHelper.requiredEnv("SSC_URL");
-        var sscUser = EnvHelper.envOrDefault("SSC_USER", "");
-        var sscPwd = EnvHelper.envOrDefault("SSC_PASSWORD", "");
-        var sscToken = EnvHelper.envOrDefault("SSC_TOKEN", "");
-        var scSastToken = EnvHelper.envOrDefault("SC_SAST_TOKEN", "");
-        var extraOpts = EnvHelper.envOrDefault("SSC_LOGIN_EXTRA_OPTS", "");
-        String sscCredentialArgs;
-        if ( StringUtils.isNotBlank(sscUser) && StringUtils.isNotBlank(sscPwd) ) {
-            sscCredentialArgs = String.format("-u \"%s\" -p \"%s\"", sscUser, sscPwd);
-        } else if ( StringUtils.isNotBlank(sscToken) ) {
-            sscCredentialArgs = String.format("-t \"%s\"", sscToken);
-        } else {
-            throw new FcliSimpleException("Either SSC_USER & SSC_PASSWORD, or SSC_TOKEN environment variables must be defined");
-        }
-        return String.format(
-                "ssc session login --url \"%s\" %s -c \"%s\" %s",
-                sscUrl, sscCredentialArgs, scSastToken, extraOpts);
-    }
-    
-    @Override
-    protected String getSessionFromEnvLogoutCommand() {
-        var sscUser = EnvHelper.envOrDefault("SSC_USER", "");
-        var sscPwd = EnvHelper.envOrDefault("SSC_PASSWORD", "");
-        return String.format("ssc session logout -u \"%s\" -p \"%s\"", sscUser, sscPwd);
     }
     
     @RequiredArgsConstructor @Reflectable

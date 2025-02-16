@@ -18,7 +18,7 @@ import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfi
 import picocli.CommandLine.Command;
 
 @Command(name = "run")
-public class GenericActionRunCommand extends AbstractActionRunCommand<Void> {
+public class GenericActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected final String getType() {
         return "generic_action";

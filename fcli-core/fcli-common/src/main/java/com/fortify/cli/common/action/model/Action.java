@@ -210,12 +210,10 @@ public class Action implements IActionElement {
      * tree proved to be too error-prone, often forgetting to handle newly added 
      * action element types.
      */
+    @SuppressWarnings("unchecked")
     private void initializeAllActionElements() {
         visit(this, this, elt->allActionElements.add(elt),
-        (k,v)->{
-            JavaHelper.as(v, IMapObjectKeyAware.class).ifPresent(e->e.setKey(k));
-            JavaHelper.as(v, IMapStringKeyAware.class).ifPresent(e->e.setKey((String)k));
-        });
+                (k,v)->JavaHelper.as(v, IMapKeyAware.class).ifPresent(e->e.setKey(k)));
     }
     
     /**

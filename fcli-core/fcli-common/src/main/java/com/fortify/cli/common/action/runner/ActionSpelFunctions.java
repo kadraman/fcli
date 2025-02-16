@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -306,6 +307,25 @@ public class ActionSpelFunctions {
         return String.format("%s %s",
                 cmd,
                 extraOpts(envPrefix));
+    }
+    
+    /**
+     * This method takes a string in the format "--opt1=ENV1 -o=ENV2 ...", outputting a string
+     * with environment variable names replaced by the corresponding values. Options for which
+     * the environment variable value is null or empty will be removed.
+     */
+    public static final String optsFromEnv(String opts) {
+        if ( StringUtils.isBlank(opts) ) { return ""; }
+        var output = new ArrayList<String>();
+        var elts = opts.split(" ");
+        for ( var elt : elts ) {
+            var names = elt.split("=");
+            var envValue = EnvHelper.env(names[1]);
+            if ( StringUtils.isNotBlank(envValue) ) {
+                output.add(String.format("\"%s=%s\"", names[0], envValue));
+            }
+        }
+        return String.join(" ", output);
     }
 
     /**

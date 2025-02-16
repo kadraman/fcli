@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -32,6 +33,10 @@ import lombok.NoArgsConstructor;
 public class SpelFunctionsStandard {
     private static final DateTimePeriodHelper PeriodHelper = DateTimePeriodHelper.all();
 
+    public static final String uuid() {
+        return UUID.randomUUID().toString();
+    }
+    
     public static final String fmt(String fmt, Object... input) {
         return String.format(fmt, input);
     }

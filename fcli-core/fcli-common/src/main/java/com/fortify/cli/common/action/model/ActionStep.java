@@ -208,6 +208,11 @@ public final class ActionStep extends AbstractActionElementIf {
     @JsonProperty(value = "records.for-each", required = false) private ActionStepForEachRecord forEachRecord;
     
     @JsonPropertyDescription("""
+        This step allows for running initialization and cleanup steps around the steps listed in the 'do' block.
+        """)
+    @JsonProperty(value = "with", required = false) private ActionStepWith with;
+    
+    @JsonPropertyDescription("""
         Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
         """)
     @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;

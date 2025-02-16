@@ -14,6 +14,8 @@ package com.fortify.cli.common.exception;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import picocli.CommandLine.ParameterException;
+
 public class FcliSimpleException extends AbstractFcliException {
     private static final long serialVersionUID = 1L;
 
@@ -32,19 +34,24 @@ public class FcliSimpleException extends AbstractFcliException {
     }
     
     public String getStackTraceString() {
-        var cause = getCause();
-        var causeString = cause==null ? "" : String.format("\nCaused by: %s", ExceptionUtils.getStackTrace(cause));
-        return String.format("%s%s", getSummary(), causeString);
-    }
-    
-    private String getSummary() {
-        var firstElt = getFirstStackTraceElement();
-        var stackTraceString = firstElt==null ? "" : String.format("\n\tat "+firstElt);
-        return String.format("%s: %s%s", getClass().getSimpleName(), getMessage(), stackTraceString);
+        return String.format("%s%s", getSummary(this), getCauseAsString());
     }
 
-    private StackTraceElement getFirstStackTraceElement() {
-        var elts = getStackTrace();
+    private String getCauseAsString() {
+        var cause = getCause();
+        if ( cause==null ) { return ""; }
+        var causeAsString = (cause instanceof ParameterException) ? getSummary(cause) : ExceptionUtils.getStackTrace(cause);
+        return String.format("\nCaused by: %s", causeAsString);
+    }
+    
+    private static String getSummary(Throwable e) {
+        var firstElt = getFirstStackTraceElement(e);
+        var stackTraceString = firstElt==null ? "" : String.format("\n\tat "+firstElt);
+        return String.format("%s: %s%s", e.getClass().getSimpleName(), e.getMessage(), stackTraceString);
+    }
+
+    private static StackTraceElement getFirstStackTraceElement(Throwable e) {
+        var elts = e.getStackTrace();
         return elts==null || elts.length==0 ? null : elts[0];
     }
 }

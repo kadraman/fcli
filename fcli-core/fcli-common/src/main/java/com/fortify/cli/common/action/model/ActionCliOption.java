@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data
-public final class ActionCliOption implements IActionElement, IMapStringKeyAware {
+public final class ActionCliOption implements IActionElement, IMapKeyAware<String> {
     private String key;
     
     @JsonPropertyDescription("""

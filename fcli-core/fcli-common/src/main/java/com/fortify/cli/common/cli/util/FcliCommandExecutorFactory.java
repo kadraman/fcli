@@ -22,6 +22,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliBugException;
@@ -69,6 +71,7 @@ public final class FcliCommandExecutorFactory {
     }
     
     public final class FcliCommandExecutor {
+        private static final Logger LOG = LoggerFactory.getLogger(FcliCommandExecutor.class);
         private final String[] resolvedArgs;
         private final CommandSpec replicatedLeafCommandSpec;
         
@@ -100,17 +103,21 @@ public final class FcliCommandExecutorFactory {
         }
     
         private final int _execute() throws Exception {
-            return createCommandLine().execute(addOverrideOptions(resolvedArgs));
+            var args = addOptionsIfNotPresent(resolvedArgs);
+            if ( LOG.isDebugEnabled() ) {
+                LOG.debug("Executing '{}'", String.join(" ", args));
+            }
+            return createCommandLine().execute(args);
         }
 
-        private String[] addOverrideOptions(String[] resolvedArgs) {
+        private String[] addOptionsIfNotPresent(String[] resolvedArgs) {
             var result = new ArrayList<>(Arrays.asList(resolvedArgs));
-            addOverrideOptionIfNotPresent(result, "--progress", progressOptionValueIfNotPresent);
-            addOverrideOptionIfNotPresent(result, "--session", sessionOptionValueIfNotPresent);
+            addOptionIfNotPresent(result, "--progress", progressOptionValueIfNotPresent);
+            addOptionIfNotPresent(result, "--session", sessionOptionValueIfNotPresent);
             return result.toArray(String[]::new);
         }
         
-        private final void addOverrideOptionIfNotPresent(List<String> resolvedArgs, String optionName, String value) {
+        private final void addOptionIfNotPresent(List<String> resolvedArgs, String optionName, String value) {
             if ( StringUtils.isNotBlank(value) && hasOption(optionName) && !hasOptionValue(resolvedArgs, optionName) ) {
                 resolvedArgs.add(String.format("%s=%s", optionName, value));
             }
@@ -193,8 +200,9 @@ public final class FcliCommandExecutorFactory {
         }
         
         private static final String[] parseArgs(String args) {
+            var argsWithoutFcli = args.replaceFirst("^fcli\s+", "");
             List<String> argsList = new ArrayList<String>();
-            Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(args);
+            Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(argsWithoutFcli);
             while (m.find()) { argsList.add(m.group(1).replace("\"", "")); }
             return argsList.toArray(String[]::new);
         }

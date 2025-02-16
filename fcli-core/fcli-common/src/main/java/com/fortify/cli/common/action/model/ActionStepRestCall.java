@@ -32,7 +32,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRestCall extends AbstractActionElementIf implements IMapStringKeyAware {
+public final class ActionStepRestCall extends AbstractActionElementIf implements IMapKeyAware<String> {
     @JsonIgnore private String key;
     
     @JsonPropertyDescription("""

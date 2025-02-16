@@ -16,16 +16,13 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.cli.cmd.AbstractActionRunWithSessionCommand;
+import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper.BasicActionRequestHelper;
-import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.product.IProductHelper;
 import com.fortify.cli.common.rest.unirest.IUnirestInstanceSupplier;
 import com.fortify.cli.common.spring.expression.SpelHelper;
-import com.fortify.cli.common.util.EnvHelper;
-import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.fod._common.rest.helper.FoDProductHelper;
 import com.fortify.cli.fod._common.session.cli.mixin.FoDUnirestInstanceSupplierMixin;
 import com.fortify.cli.fod.release.helper.FoDReleaseHelper;
@@ -36,44 +33,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "run")
-public class FoDActionRunCommand extends AbstractActionRunWithSessionCommand {
+public class FoDActionRunCommand extends AbstractActionRunCommand {
     @Getter @Mixin private FoDUnirestInstanceSupplierMixin unirestInstanceSupplier;
     
     @Override
     protected final String getType() {
         return "FoD";
-    }
-    
-    @Override
-    protected String getSessionName() {
-        return unirestInstanceSupplier.getSessionName();
-    }
-    
-    @Override
-    protected String getSessionFromEnvLoginCommand() {
-        var fodUrl = EnvHelper.requiredEnv("FOD_URL");
-        var fodTenant = EnvHelper.envOrDefault("FOD_TENANT", "");
-        var fodUser = EnvHelper.envOrDefault("FOD_USER", "");
-        var fodPwd = EnvHelper.envOrDefault("FOD_PASSWORD", "");
-        var fodClientId = EnvHelper.envOrDefault("FOD_CLIENT_ID", "");
-        var fodClientSecret = EnvHelper.envOrDefault("FOD_CLIENT_SECRET", "");
-        var extraOpts = EnvHelper.envOrDefault("FOD_LOGIN_EXTRA_OPTS", "");
-        String fodCredentialArgs;
-        if ( StringUtils.isNotBlank(fodTenant) && StringUtils.isNotBlank(fodUser) && StringUtils.isNotBlank(fodPwd) ) {
-            fodCredentialArgs = String.format("-t \"%s\" -u \"%s\" -p \"%s\"", fodTenant, fodUser, fodPwd);
-        } else if ( StringUtils.isNotBlank(fodClientId) && StringUtils.isNotBlank(fodClientSecret) ) {
-            fodCredentialArgs = String.format("--client-id \"%s\" --client-secret \\\"%s\\\"", fodClientId, fodClientSecret);
-        } else {
-            throw new FcliSimpleException("Either FOD_TENANT, FOD_USER, and FOD_PASSWORD, or FOD_CLIENT_ID and FOD_CLIENT_SECRET environment variables must be defined");
-        }
-        return String.format(
-                "fod session login --url \"%s\" %s %s",
-                fodUrl, fodCredentialArgs, extraOpts);
-    }
-    
-    @Override
-    protected String getSessionFromEnvLogoutCommand() {
-        return String.format("fod session logout");
     }
     
     @Override

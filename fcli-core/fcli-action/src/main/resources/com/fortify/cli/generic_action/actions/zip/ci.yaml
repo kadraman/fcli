@@ -24,12 +24,30 @@ steps:
     throw: Either FOD_URL or SSC_URL environment variable needs to be set
   - if: ${run.fod_ci && run.ssc_ci}
     throw: Only one of FOD_URL or SSC_URL environment variables may be set
-  - run.fcli:
-      fod_ci: 
-        cmd: ${#actionCmd('FOD_CI', 'fod', 'ci')} --session=from-env
-        if: ${run.fod_ci}
-      ssc_ci:
-        cmd: ${#actionCmd('SSC_CI', 'ssc', 'ci')} --session=from-env 
-        if: ${run.ssc_ci}
+  - if: ${run.fod_ci}
+    var.set:
+      module: fod
+      loginOpts: --url=FOD_URL -t=FOD_TENANT -u=FOD_USER -p=FOD_PASSWORD --client-id=FOD_CLIENT_ID --client-secret=FOD_CLIENT_SECRET
+      logoutOpts: ""
+  - if: ${run.ssc_ci}
+    var.set:
+      module: ssc
+      loginOpts: --url=SSC_URL -u=SSC_USER -p=SSC_PASSWORD -t=SSC_TOKEN -c=SC_SAST_TOKEN
+      logoutOpts: -u=SSC_USER -p=SSC_PASSWORD
+  - var.set:
+      sessionName: ci-${#uuid()}
+      loginCmd: fcli ${module} session login
+      logoutCmd: fcli ${module} session logout
+      moduleUpperCase: ${module.toUpperCase()}
+      loginEnvPrefix: ${moduleUpperCase}_LOGIN
+      logoutEnvPrefix: ${moduleUpperCase}_LOGOUT
+      ciEnvPrefix: ${moduleUpperCase}_CI
+  - with:
+      sessions:
+        - login: ${#fcliCmd(loginEnvPrefix, loginCmd)} --session ${sessionName} ${#optsFromEnv(loginOpts)}
+          logout: ${#fcliCmd(logoutEnvPrefix, logoutCmd)} --session ${sessionName} ${#optsFromEnv(logoutOpts)}
+      do:
+        - run.fcli: 
+            ci: ${#actionCmd(ciEnvPrefix, module, 'ci')} --session=${sessionName}
       
       
