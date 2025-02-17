@@ -106,7 +106,7 @@ public class Action implements IActionElement {
         execution. Note that the YAML schema allows for multiple instructions to be present within a single list \
         item, but this will result in an error.
         """)
-    @JsonProperty(value = "steps", required = true) private List<ActionStep> steps;
+    @JsonProperty(value = "steps", required = true) private ArrayList<ActionStep> steps;
     
     @JsonPropertyDescription("""
         Optional map: Formatters that can be referenced in action steps to format data. Map keys define formatter \

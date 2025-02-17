@@ -12,7 +12,7 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -35,13 +35,13 @@ public final class ActionStepWithCleanup extends AbstractActionElementIf {
         If initialization fails, the steps in the do-block will not be run, but steps in the \
         cleanup-block will still be run.
         """)
-    @JsonProperty(value = "init", required = true) private List<ActionStep> initSteps;
+    @JsonProperty(value = "init", required = true) private ArrayList<ActionStep> initSteps;
     
     @JsonPropertyDescription("""
         List of cleanup steps. These steps will run even if the initialization steps or the \
         steps in the do-block terminated with a failure.
         """)
-    @JsonProperty(value = "cleanup", required = true) private List<ActionStep> cleanupSteps;
+    @JsonProperty(value = "cleanup", required = true) private ArrayList<ActionStep> cleanupSteps;
     
     @Override
     public void postLoad(Action action) {

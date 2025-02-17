@@ -12,7 +12,7 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -39,7 +39,7 @@ public abstract class AbstractActionElementForEachRecord extends AbstractActionE
     @JsonPropertyDescription("""
         Required list: Steps to be executed for each individual record.
         """)
-    @JsonProperty(value = "do", required = true)  private List<ActionStep> _do;
+    @JsonProperty(value = "do", required = true)  private ArrayList<ActionStep> _do;
     
     @JsonPropertyDescription("""
         Optional SpEL template expression: Stop execution of the steps configured in the \

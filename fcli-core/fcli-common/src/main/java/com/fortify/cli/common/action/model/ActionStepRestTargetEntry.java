@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data
-public final class ActionStepRestTarget implements IActionElement {
+public final class ActionStepRestTargetEntry implements IActionElement {
     @JsonPropertyDescription("""
         Required SpEL template expression: Base URL to use for REST requests to this request target.
         """)

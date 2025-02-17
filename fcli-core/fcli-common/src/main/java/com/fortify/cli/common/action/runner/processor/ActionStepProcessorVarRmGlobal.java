@@ -15,21 +15,22 @@ package com.fortify.cli.common.action.runner.processor;
 import java.util.ArrayList;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor @Data @EqualsAndHashCode(callSuper = true) @Reflectable
-public class ActionStepsProcessor extends AbstractActionStepProcessorListEntries<ActionStep> {
+public class ActionStepProcessorVarRmGlobal extends AbstractActionStepProcessorVarRm {
     private final ActionRunnerContext ctx;
     private final ActionRunnerVars vars;
-    private final ArrayList<ActionStep> list;
+    private final ArrayList<TemplateExpression> list;
 
-    protected final void process(ActionStep step) {
-        step.getActionStepField().createActionStepProcessor(ctx, vars).process();
+    @Override
+    protected void rmVar(String name) {
+        vars.rmGlobal(name);
     }
 }

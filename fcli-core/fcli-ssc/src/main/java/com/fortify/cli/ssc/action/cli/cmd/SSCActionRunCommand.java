@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.cli.cmd.AbstractActionRunCommand;
-import com.fortify.cli.common.action.model.ActionStepForEachRecord.IActionStepForEachProcessor;
+import com.fortify.cli.common.action.model.ActionStepRecordsForEach.IActionStepForEachProcessor;
 import com.fortify.cli.common.action.runner.ActionRunnerConfig.ActionRunnerConfigBuilder;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionSpelFunctions;

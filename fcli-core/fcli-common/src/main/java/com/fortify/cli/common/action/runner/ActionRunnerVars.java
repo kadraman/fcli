@@ -144,7 +144,7 @@ public final class ActionRunnerVars {
     /**
      * Unset a variable on both this instance and any parent instances;
      */
-    public final void unset(String name) {
+    public final void rm(String name) {
         rejectProtectedVarNames(name);
         logDebug(()->String.format("Unset %s", name));
         _unset(name);
@@ -153,7 +153,7 @@ public final class ActionRunnerVars {
     /**
      * Unset a global variable
      */
-    public final void unsetGlobal(String name) {
+    public final void rmGlobal(String name) {
         rejectProtectedVarNames(name);
         logDebug(()->String.format("Unset global %s", name));
         globalValues.remove(name);

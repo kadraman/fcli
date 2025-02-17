@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.helper.ActionSchemaHelper;
 import com.fortify.cli.common.action.model.Action;
-import com.fortify.cli.common.action.model.ActionStepRunFcli;
+import com.fortify.cli.common.action.model.ActionStepRunFcliEntry;
 import com.fortify.cli.common.action.model.TemplateExpressionWithFormatter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
@@ -144,7 +144,7 @@ public class GenerateActionSchema {
                         .add(context.getKeyword(SchemaKeyword.TAG_TYPE_NULL));
                 custom.set(context.getKeyword(SchemaKeyword.TAG_PROPERTIES), properties);
                 return new CustomDefinition(custom, false);
-            } else if (type.getErasedType() == ActionStepRunFcli.class) {
+            } else if (type.getErasedType() == ActionStepRunFcliEntry.class) {
                 var resolver = new TypeResolver();
                 var properties = getProperties(type, context, resolver);
                 var custom = context.getGeneratorConfig().createObjectNode();

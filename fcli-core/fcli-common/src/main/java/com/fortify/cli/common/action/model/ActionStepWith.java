@@ -12,7 +12,7 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -50,14 +50,14 @@ public final class ActionStepWith extends AbstractActionElementIf {
         option on the 'fcli * action run' command; they will ignore sessions created through the \
         'with:session' instruction.
         """)
-    @JsonProperty(value = "sessions", required = true) private List<ActionStepWithSession> sessions;
+    @JsonProperty(value = "sessions", required = true) private ArrayList<ActionStepWithSession> sessions;
     
     // TODO Add property that allows for installing a shutdown hook
     
     @JsonPropertyDescription("""
         List of steps to be run within the context of the given configuration.
         """)
-    @JsonProperty(value = "do", required = true) private List<ActionStep> _do;
+    @JsonProperty(value = "do", required = true) private ArrayList<ActionStep> _do;
     
     @Override
     public void postLoad(Action action) {

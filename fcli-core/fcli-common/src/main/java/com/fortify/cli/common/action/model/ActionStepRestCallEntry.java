@@ -12,7 +12,8 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -32,7 +33,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-public final class ActionStepRestCall extends AbstractActionElementIf implements IMapKeyAware<String> {
+public final class ActionStepRestCallEntry extends AbstractActionElementIf implements IMapKeyAware<String> {
     @JsonIgnore private String key;
     
     @JsonPropertyDescription("""
@@ -62,7 +63,7 @@ public final class ActionStepRestCall extends AbstractActionElementIf implements
         map values specify the query parameter value. Keys must be plain strings, values are evaluated as \
         SpEL template expressions, for example 'someParam: ${var1.prop1]}'.
         """)
-    @JsonProperty(value = "query", required = false) private Map<String,TemplateExpression> query;
+    @JsonProperty(value = "query", required = false) private LinkedHashMap<String,TemplateExpression> query;
     
     @JsonPropertyDescription("""
         Optional SpEL template expression: Request body to send with the REST request.
@@ -74,12 +75,12 @@ public final class ActionStepRestCall extends AbstractActionElementIf implements
         (for now only supported for built-in request targets like 'fod' or 'ssc'), the request will be repeated \
         with the appropriate paging request parameters to load and process all available pages. Defaults value: simple.
         """)
-    @JsonProperty(value = "type", required = false, defaultValue = "simple") private ActionStepRestCall.ActionStepRequestType type = ActionStepRequestType.simple;
+    @JsonProperty(value = "type", required = false, defaultValue = "simple") private ActionStepRestCallEntry.ActionStepRequestType type = ActionStepRequestType.simple;
 
     @JsonPropertyDescription("""
         Optional object: Log progress messages during the various stages of request/response processing.
         """)
-    @JsonProperty(value = "log.progress", required = false) private ActionStepRestCall.ActionStepRestCallLogProgressDescriptor logProgress;
+    @JsonProperty(value = "log.progress", required = false) private ActionStepRestCallEntry.ActionStepRestCallLogProgressDescriptor logProgress;
     
     @JsonPropertyDescription("""
         Optional list: Steps to be executed on each successfull REST response. For simple requests, these \
@@ -88,20 +89,20 @@ public final class ActionStepRestCall extends AbstractActionElementIf implements
         access processed and raw response data respectively. Any steps define in 'on.success' will be executed \
         before processing individual response records through the 'records.for-each' instruction.
         """)
-    @JsonProperty(value = "on.success", required = false) private List<ActionStep> onResponse;
+    @JsonProperty(value = "on.success", required = false) private ArrayList<ActionStep> onResponse;
     
     @JsonPropertyDescription("""
         Optional list: Steps to be executed on request failure. If not specified, an exception will be thrown \
         on request failure. Steps can reference a variable named after the identifier for this REST call, for \
         example 'x_exception', to access the Java Exception object that represents the failure that occurred.
         """)
-    @JsonProperty(value = "on.fail", required = false) private List<ActionStep> onFail;
+    @JsonProperty(value = "on.fail", required = false) private ArrayList<ActionStep> onFail;
 
     @JsonPropertyDescription("""
         Optional object: If the processed (successfull) REST response provides an array of records, this \
         instruction allows for executing the steps provided in the 'do' block for each individual record.
         """)
-    @JsonProperty(value = "records.for-each", required = false) private ActionStepRestCall.ActionStepRequestForEachResponseRecord forEach;
+    @JsonProperty(value = "records.for-each", required = false) private ActionStepRestCallEntry.ActionStepRequestForEachResponseRecord forEach;
     
     /**
      * This method is invoked by {@link ActionStep#postLoad()}
@@ -134,7 +135,7 @@ public final class ActionStepRestCall extends AbstractActionElementIf implements
             data will be available through a property named after the map key, whereas raw response \
             data will be available through a property named [map key]_raw.
             """)
-        @JsonProperty(value = "embed", required = false) private Map<String, ActionStepRestCall> embed;
+        @JsonProperty(value = "embed", required = false) private Map<String, ActionStepRestCallEntry> embed;
         
         protected final void _postLoad(Action action) {}
     }

@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper=true)
-public final class ActionStepForEachRecord extends AbstractActionElementForEachRecord {
+public final class ActionStepRecordsForEach extends AbstractActionElementForEachRecord {
     @JsonPropertyDescription("""
         Required SpEL template expression, evaluating to either an array of values to be iterated over, \
         or an IActionStepForEachProcessor instance like returned by ${#ssc.ruleDescriptionsProcessor(appVersionId)}. \
