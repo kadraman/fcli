@@ -1,9 +1,0 @@
-{
-  "reflection":[
-    {
-      "type": {
-        "proxy": ["com.fortify.cli.common.action.runner.processor.ActionStepProcessorSteps$IActionStepProcessorFactory", "sun.invoke.WrapperInstance"]
-      }
-    }
-  ]
-}
