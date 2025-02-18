@@ -54,6 +54,7 @@ public final class ActionStepWithWriter implements IActionElement {
     
     @Override
     public void postLoad(Action action) {
+        // TODO This doesn't seem to get visited; no exception is thrown if one of these fields is not defined
         Action.checkNotNull("to", this, to);
         Action.checkNotNull("type", this, type);
     }

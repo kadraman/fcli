@@ -15,6 +15,8 @@ steps:
         csv:
           type: csv
           to: /home/rsenden/test.csv
+          options:
+            headers: a, c=Column 2
       do:
         - writer.append:
             csv: ${{a:'column 1 value 1', c:'column 2 value 1'}}

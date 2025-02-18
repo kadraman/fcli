@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvFactory;
 import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.fortify.cli.common.util.StringUtils;
+import com.fortify.cli.common.json.JsonHelper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -34,14 +34,22 @@ public class RecordWriterCSV implements IRecordWriter {
     
     @Override @SneakyThrows
     public final void append(ObjectNode record) {
-        System.out.println(record);
-        getGenerator(record).writeTree(record);
+        var transformedRecord = transformRecord(record);
+        getGenerator(transformedRecord).writeTree(transformedRecord);
     }
     
+    private ObjectNode transformRecord(ObjectNode record) {
+        var headers = config.getHeaders();
+        if ( headers==null ) { return record; }
+        var result = JsonHelper.getObjectMapper().createObjectNode();
+        headers.entrySet().forEach(e->result.set(e.getValue(), record.get(e.getKey())));
+        return result;
+    }
+
     @Override @SneakyThrows
     public final void close() {
         if ( generator!=null) {
-            if ( isSingular() ) { generator.writeEndArray(); }
+            if ( config.isSingular() ) { generator.writeEndArray(); }
             generator.close();
         }
     }
@@ -50,25 +58,22 @@ public class RecordWriterCSV implements IRecordWriter {
     private final CsvGenerator getGenerator(ObjectNode record) {
         if ( generator==null ) {
             if ( record!=null ) {
+                var headers = config.getHeaders();
                 CsvSchema.Builder schemaBuilder = CsvSchema.builder();
                 record.fieldNames().forEachRemaining(schemaBuilder::addColumn);
                 CsvSchema schema = schemaBuilder.build()
-                        .withUseHeader(StringUtils.isNotBlank(config.option("headers")));
+                        .withUseHeader(headers!=null);
                 this.generator = (CsvGenerator)CsvFactory.builder().
                         build().createGenerator(getWriter())
                         .setCodec(new ObjectMapper())
                         .enable(Feature.IGNORE_UNKNOWN);
                 this.generator.setSchema(schema);
-                if ( isSingular() ) {
+                if ( config.isSingular() ) {
                     generator.writeStartArray();
                 }
             }
         }
         return generator;
-    }
-
-    private final boolean isSingular() {
-        return config.booleanOption("singular");
     }
 
     @SneakyThrows
