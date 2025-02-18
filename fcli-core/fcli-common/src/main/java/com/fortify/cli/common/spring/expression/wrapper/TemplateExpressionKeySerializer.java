@@ -27,23 +27,29 @@ package com.fortify.cli.common.spring.expression.wrapper;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 /**
- * This Jackson serializer allows for serializing {@link SimpleExpression} objects
- * to expression strings
+ * This Jackson key deserializer allows for parsing map keys into 
+ * TemplateExpression objects.
  */
 @Reflectable
-public final class SimpleExpressionSerializer extends StdSerializer<SimpleExpression> {
-    private static final long serialVersionUID = 1L;
-    protected SimpleExpressionSerializer() {
-        super(SimpleExpression.class);
-    }
-
+public final class TemplateExpressionKeySerializer extends JsonSerializer<TemplateExpression> {
     @Override
-    public void serialize(SimpleExpression value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-        gen.writeString(value.getExpressionString());
+    public void serialize(TemplateExpression value, JsonGenerator jgen, SerializerProvider provider) 
+        throws IOException, JsonProcessingException
+    {
+        jgen.writeFieldName(value==null ? "" : value.getExpressionString());
+    }
+    
+    public static final ObjectMapper registerOn(ObjectMapper objectMapper) {
+        SimpleModule module = new SimpleModule();
+        module.addKeySerializer(TemplateExpression.class, new TemplateExpressionKeySerializer());
+        return objectMapper.registerModule(module);
     }
 }

@@ -15,8 +15,10 @@ package com.fortify.cli.common.action.model;
 import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spring.expression.SpelHelper;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
@@ -31,6 +33,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
+@JsonInclude(Include.NON_NULL)
 public final class ActionStepRunFcliEntry extends AbstractActionElementIf implements IMapKeyAware<String> {
     @JsonIgnore private String key;
     

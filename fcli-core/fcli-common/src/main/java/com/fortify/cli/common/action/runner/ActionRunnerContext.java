@@ -24,7 +24,6 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry.CheckStatus;
@@ -50,8 +49,6 @@ import lombok.Setter;
 public class ActionRunnerContext implements AutoCloseable {
     /** Jackson {@link ObjectMapper} used for various JSON-related operations */
     private final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
-    /** Jackson {@link ObjectMapper} used for formatting steps in logging/exception messages */
-    private final ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
     /** Action runner configuration, provided through builder method */
     private final ActionRunnerConfig config;
     /** Progress writer, provided through builder method */

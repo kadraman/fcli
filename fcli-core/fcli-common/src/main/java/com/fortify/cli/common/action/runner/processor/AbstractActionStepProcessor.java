@@ -13,14 +13,17 @@
 package com.fortify.cli.common.action.runner.processor;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.AbstractActionElementForEachRecord;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
@@ -28,6 +31,7 @@ import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.spring.expression.wrapper.TemplateExpressionKeySerializer;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.Data;
@@ -36,6 +40,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor @Data @Reflectable
 public abstract class AbstractActionStepProcessor implements IActionStepProcessor {
     protected final Logger LOG = LoggerFactory.getLogger(this.getClass());
+    private static final ObjectMapper yamlObjectMapper = createYamlObjectMapper();
     
     protected final String asString(Object o) {
         if ( o instanceof TextNode ) {
@@ -47,8 +52,8 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         }
     }  
     
-    protected final void processSteps(ArrayList<ActionStep> steps) {
-        new ActionStepsProcessor(getCtx(), getVars(), steps).process();
+    protected final void processSteps(List<ActionStep> steps) {
+        new ActionStepProcessorSteps(getCtx(), getVars(), steps).process();
     }
     
     protected boolean processForEachStepNode(AbstractActionElementForEachRecord forEachRecord, JsonNode node) {
@@ -69,7 +74,7 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
             LOG.debug("SKIPPED due to exit requested:\n"+getEntryAsString(o));
             return false; 
         }
-        if ( o==null ) { return true; } // TODO Was false
+        if ( o==null ) { return true; }
         if (o instanceof Map.Entry<?,?>) {
             var e = (Map.Entry<?,?>)o;
             return _if(e.getKey()) && _if(e.getValue());
@@ -89,8 +94,8 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         if ( value==null ) { return null; }
         try {
             return String.format("%s:\n%s", 
-                StringUtils.indent(value.getClass().getCanonicalName(), "  "),
-                StringUtils.indent(getCtx().getYamlObjectMapper().valueToTree(value).toString(), "    "));
+                StringUtils.indent(value.getClass().getSimpleName(), "  "),
+                StringUtils.indent(yamlObjectMapper.writeValueAsString(value), "  "));
         } catch ( Exception e ) {
             return StringUtils.indent(value.toString(), "  ");
         }
@@ -104,8 +109,15 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         }
     }
     
-    private final Runnable createRunner(PrintStream out, String output) {
+    private static final Runnable createRunner(PrintStream out, String output) {
         return ()->out.print(output);
+    }
+    
+    private static final ObjectMapper createYamlObjectMapper() {
+        return TemplateExpressionKeySerializer.registerOn(new ObjectMapper(
+                new YAMLFactory()
+                    .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+                    .enable(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR)));
     }
     
     public abstract ActionRunnerContext getCtx();

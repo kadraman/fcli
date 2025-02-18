@@ -12,11 +12,13 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import lombok.Data;
@@ -29,6 +31,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
+@JsonInclude(Include.NON_NULL)
 public final class ActionStepWith extends AbstractActionElementIf {
     @JsonPropertyDescription("""
         This instruction allows for running a set of initialization steps before running the \
@@ -50,14 +53,14 @@ public final class ActionStepWith extends AbstractActionElementIf {
         option on the 'fcli * action run' command; they will ignore sessions created through the \
         'with:session' instruction.
         """)
-    @JsonProperty(value = "sessions", required = true) private ArrayList<ActionStepWithSession> sessions;
+    @JsonProperty(value = "sessions", required = true) private List<ActionStepWithSession> sessions;
     
     // TODO Add property that allows for installing a shutdown hook
     
     @JsonPropertyDescription("""
         List of steps to be run within the context of the given configuration.
         """)
-    @JsonProperty(value = "do", required = true) private ArrayList<ActionStep> _do;
+    @JsonProperty(value = "do", required = true) private List<ActionStep> _do;
     
     @Override
     public void postLoad(Action action) {

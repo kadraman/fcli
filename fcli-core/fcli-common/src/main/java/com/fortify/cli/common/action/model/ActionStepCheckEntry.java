@@ -19,8 +19,10 @@ import java.util.HashSet;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
@@ -34,6 +36,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
+@JsonInclude(Include.NON_NULL)
 public final class ActionStepCheckEntry extends AbstractActionElementIf implements IMapKeyAware<String> {
     // Shared property description for passIf/failIf
     private static final String PASS_FAIL_IF = """

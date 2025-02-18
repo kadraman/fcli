@@ -131,7 +131,7 @@ public class ActionStepProcessorRestCall extends AbstractActionStepProcessor {
     }
 
     private void processRequestStepForEachEntryDo(ActionStepRequestForEachResponseRecord forEach, JsonNode currentNode, ActionRunnerVars newVars) {
-        new ActionStepsProcessor(ctx, newVars, forEach.get_do()).process();
+        new ActionStepProcessorSteps(ctx, newVars, forEach.get_do()).process();
     }
     
     private IRequestStepForEachEntryProcessor getRequestForEachEntryEmbedProcessor(ActionStepRequestsProcessor requestExecutor) {

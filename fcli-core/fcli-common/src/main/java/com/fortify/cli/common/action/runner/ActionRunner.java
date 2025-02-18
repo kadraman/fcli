@@ -19,7 +19,7 @@ import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry.CheckStatus;
 import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor;
-import com.fortify.cli.common.action.runner.processor.ActionStepsProcessor;
+import com.fortify.cli.common.action.runner.processor.ActionStepProcessorSteps;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.progress.helper.ProgressWriterType;
 
@@ -43,7 +43,7 @@ public class ActionRunner {
             try ( var ctx = createContext(progressWriter, parameterValues) ) {
                 initializeCheckStatuses(ctx);
                 ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
-                new ActionStepsProcessor(ctx, vars, config.getAction().getSteps()).process();
+                new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();;
              
                 return ()->{
                     ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);

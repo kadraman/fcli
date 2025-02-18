@@ -12,16 +12,10 @@
  */
 package com.fortify.cli.common.action.model;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.lang.invoke.MethodHandleProxies;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,36 +24,18 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.runner.ActionRunnerContext;
-import com.fortify.cli.common.action.runner.ActionRunnerVars;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorCheck;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorExit;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorLogDebug;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorLogProgress;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorLogWarn;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorOutWrite;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorRecordsForEach;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorRestCall;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorRestTarget;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorRunFcli;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorThrow;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorVarRm;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorVarRmGlobal;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorVarSet;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorVarSetGlobal;
-import com.fortify.cli.common.action.runner.processor.ActionStepProcessorWith;
-import com.fortify.cli.common.action.runner.processor.ActionStepsProcessor;
-import com.fortify.cli.common.action.runner.processor.IActionStepProcessor;
 import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 /**
@@ -70,14 +46,19 @@ import lombok.SneakyThrows;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
-
-
-// TODO Remove processor annotation, look up based on field name/json property name?
-//      Or have static initializer blocks in processors, indicating which step they're handling?
-
+@JsonInclude(Include.NON_NULL)
 public final class ActionStep extends AbstractActionElementIf {
-    @JsonIgnore private static final Map<String, IActionStepProcessorFactory<?>> stepProcessorFactories = createStepProcessorFactories();   
-    @JsonIgnore private ActionStepField actionStepField;
+    // Capture fields in this class annotated with @JsonProperty, indexed by JSON property name
+    // Only used to initialize getters and propertyTypes 
+    @JsonIgnore private static final Map<String, Field> fields = createFields();
+    // Capture getter MethodHandles for all fields captured above, indexed by JSON property name
+    @JsonIgnore private static final Map<String, MethodHandle> getters = createGetters(fields);
+    // Capture field types for all fields captured above, indexed by JSON property name
+    // Used by ActionStepProcessorSteps to look up the corresponding processor for each JSON property name
+    @JsonIgnore @Getter private static final Map<String, Class<?>> propertyTypes = createPropertyTypes(fields);
+    // Capture the single non-null property value, indexed by JSON property name
+    @JsonIgnore private Map.Entry<String, Object> stepValue;
+    
     // Partial description for instructions that set variables like 'var.set' and 'var.fmt'
     private static final String VAR_SET = """
         This step takes a list of variables to set, with each list item taking a single yaml property that \
@@ -123,15 +104,13 @@ public final class ActionStep extends AbstractActionElementIf {
         """;
     
     @JsonPropertyDescription("Set one or more variables values for use in later action steps."+VAR_SET)
-    @ActionStepProcessorClass(ActionStepProcessorVarSet.class)
     @JsonProperty(value = "var.set", required = false) private LinkedHashMap<TemplateExpression,TemplateExpressionWithFormatter> varSet;
     
     @JsonPropertyDescription("""
         Remove one or more variables. Variable names to remove can be provided as plain text or \
         as a SpEL template expression.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorVarRm.class)
-    @JsonProperty(value = "var.rm", required = false) private ArrayList<TemplateExpression> varRemove;
+    @JsonProperty(value = "var.rm", required = false) private List<TemplateExpression> varRemove;
     
     @JsonPropertyDescription("""
         Set one or more global variables that can be accessed by both this action, and any other \
@@ -140,18 +119,15 @@ public final class ActionStep extends AbstractActionElementIf {
         later steps in action 1. Global variables can be accessed through ${global.varName}.
         
         """+VAR_SET)
-    @ActionStepProcessorClass(ActionStepProcessorVarSetGlobal.class)
     @JsonProperty(value = "var.set-global", required = false) private LinkedHashMap<TemplateExpression,TemplateExpressionWithFormatter> varSetGlobal;
         
     @JsonPropertyDescription("""
         Remove one or more global variables. Variable names to remove can be provided as plain text or \
         as a SpEL template expression.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorVarRmGlobal.class)
-    @JsonProperty(value = "var.rm-global", required = false) private ArrayList<TemplateExpression> varRemoveGlobal;
+    @JsonProperty(value = "var.rm-global", required = false) private List<TemplateExpression> varRemoveGlobal;
     
     @JsonPropertyDescription("Write a progress message.")
-    @ActionStepProcessorClass(ActionStepProcessorLogProgress.class)
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
     
     @JsonPropertyDescription("""
@@ -159,18 +135,15 @@ public final class ActionStep extends AbstractActionElementIf {
         config:output setting, warning messages may be shown either immediately, or only after all \
         action steps have been executed, to not interfere with progress messages.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorLogWarn.class)
     @JsonProperty(value = "log.warn", required = false) private TemplateExpression logWarn;
     
     @JsonPropertyDescription("Write a debug message to log file (if enabled).")
-    @ActionStepProcessorClass(ActionStepProcessorLogDebug.class)
     @JsonProperty(value = "log.debug", required = false) private TemplateExpression logDebug;
     
     @JsonPropertyDescription("""
         Add REST request targets for use in 'rest.call' steps. This step takes a map, with \
         keys defining REST target names, and values defining the REST target definition. 
         """)
-    @ActionStepProcessorClass(ActionStepProcessorRestTarget.class)
     @JsonProperty(value = "rest.target", required = false) private LinkedHashMap<String, ActionStepRestTargetEntry> restTargets;
     
     @JsonPropertyDescription("""
@@ -201,7 +174,6 @@ public final class ActionStep extends AbstractActionElementIf {
         request. If you need to use the output from one REST call as input for another REST \
         call, these REST calls should be defined in separate 'rest.call' steps.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorRestCall.class)
     @JsonProperty(value = "rest.call", required = false) private LinkedHashMap<String, ActionStepRestCallEntry> restCalls;
     
     @JsonPropertyDescription("""
@@ -218,7 +190,6 @@ public final class ActionStep extends AbstractActionElementIf {
         x_exitCode: Exit code of the fcli invocation
         x_exception: Java Exception instance if fcli invocation threw an exception
         """)
-    @ActionStepProcessorClass(ActionStepProcessorRunFcli.class)
     @JsonProperty(value = "run.fcli", required = false) private LinkedHashMap<String, ActionStepRunFcliEntry> runFcli;
     
     @JsonPropertyDescription("""
@@ -238,7 +209,6 @@ public final class ActionStep extends AbstractActionElementIf {
         /path/to/myFile2: {fmt: myFormatter, if: "${someExpression}"}
         /path/to/myFile3: {value: "${myVar}", fmt: "${myVarFormatterExpression}"}     
         """)
-    @ActionStepProcessorClass(ActionStepProcessorOutWrite.class)
     @JsonProperty(value="out.write", required = false) private LinkedHashMap<TemplateExpression, TemplateExpressionWithFormatter> outWrite;
     
     @JsonPropertyDescription("""
@@ -250,37 +220,31 @@ public final class ActionStep extends AbstractActionElementIf {
         (map key) is used in different 'check' steps, they will be treated as separate checks, and ${checkStatus.checkName} \
         will contain the status of the last executed check for the given check name.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorCheck.class)
     @JsonProperty(value = "check", required = false) private LinkedHashMap<String, ActionStepCheckEntry> check;
     
     @JsonPropertyDescription("""
         Execute the steps defined in the 'do' block for every record provided by the 'from' expression.    
         """)
-    @ActionStepProcessorClass(ActionStepProcessorRecordsForEach.class)
     @JsonProperty(value = "records.for-each", required = false) private ActionStepRecordsForEach recordsForEach;
     
     @JsonPropertyDescription("""
         This step allows for running initialization and cleanup steps around the steps listed in the 'do' block.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorWith.class)
     @JsonProperty(value = "with", required = false) private ActionStepWith with;
     
     @JsonPropertyDescription("""
         Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
         """)
-    @ActionStepProcessorClass(ActionStepsProcessor.class)
-    @JsonProperty(value = "steps", required = false) private ArrayList<ActionStep> steps;
+    @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;
     
     @JsonPropertyDescription("""
         Throw an exception, thereby terminating action execution.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorThrow.class)
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
     
     @JsonPropertyDescription("""
         Terminate action execution and return the given exit code.
         """)
-    @ActionStepProcessorClass(ActionStepProcessorExit.class)
     @JsonProperty(value = "exit", required = false) private TemplateExpression _exit;
     
     /**
@@ -289,109 +253,56 @@ public final class ActionStep extends AbstractActionElementIf {
      * It invokes the postLoad() method on each request descriptor.
      */
     public final void postLoad(Action action) {
-        var nonNullFields = getNonNullFields();
-        checkInstructionCount(nonNullFields);
-        this.actionStepField = nonNullFields.get(0);
-    }
-
-    private void checkInstructionCount(List<ActionStepField> nonNullInstructions) {
-        if ( nonNullInstructions.size()==0 ) {
+        HashMap<String, Object> values = getters.entrySet().stream().collect(
+                HashMap::new, this::putNonNullFieldValue, Map::putAll);
+        if ( values.size()==0 ) {
             throw new FcliActionValidationException("Action step doesn't define any instruction");
         }
-        if ( nonNullInstructions.size()>1 ) {
-            throw new FcliActionValidationException("Action step contains multiple instructions: "
-                    +nonNullInstructions.stream().map(ActionStepField::getName).toList());
+        if ( values.size()>1 ) {
+            throw new FcliActionValidationException("Action step contains multiple instructions: "+values.keySet());
         }
+        this.stepValue = values.entrySet().iterator().next();
     }
 
     @SneakyThrows
-    private List<ActionStepField> getNonNullFields() {
-        var result = new ArrayList<ActionStepField>(); 
-        // Note that 'if' is defined in parent class, so not included by getDeclaredFields()
-        for ( var f : this.getClass().getDeclaredFields() ) {
-            addNonNullField(result, f);
-        }
-        return result;
+    private final void putNonNullFieldValue(HashMap<String, Object> map, Map.Entry<String, MethodHandle> e) {
+        var value=e.getValue().invokeExact(this);
+        if (value!=null) { map.put(e.getKey(), value); }
     }
     
-    @SneakyThrows
-    private void addNonNullField(ArrayList<ActionStepField> result, Field f) {
-        var jsonPropertyName = getJsonPropertyName(f);
-        if ( jsonPropertyName!=null ) {
-            var value = f.get(this); // TODO Use cached Supplier instead, similar to stepProcessorFactories? Might provide slightly better performance
-            if ( value!=null ) {
-                result.add(new ActionStepField(jsonPropertyName, value));
-            }
-        }  
-    }
-    
-    private static final Map<String, IActionStepProcessorFactory<?>> createStepProcessorFactories() {
-        var result = new HashMap<String, IActionStepProcessorFactory<?>>();
+    // Collect all fields annotated with @JsonProperty, indexed by JSON property name
+    private static final Map<String, Field> createFields() {
+        var result = new HashMap<String, Field>();
         for ( var f : ActionStep.class.getDeclaredFields() ) {
-            addStepProcessorFactory(result, f);
+            var jsonPropertyAnnotation = f.getAnnotation(JsonProperty.class); 
+            if ( jsonPropertyAnnotation!=null ) {
+                var jsonPropertyName = jsonPropertyAnnotation.value();
+                if ( StringUtils.isBlank(jsonPropertyName) ) {
+                    throw new FcliBugException("JSON properties in ActionStep must define explicit property name");
+                }
+                result.put(jsonPropertyName, f);
+            }
         }
         return result;
     }
 
-    private static final void addStepProcessorFactory(HashMap<String, IActionStepProcessorFactory<?>> result, Field field) {
-        String jsonPropertyName = getJsonPropertyName(field);
-        if ( jsonPropertyName!=null ) {
-            result.put(jsonPropertyName, createStepProcessorFactory(field));
-        }
+    private static final HashMap<String, Class<?>> createPropertyTypes(Map<String, Field> fields) {
+        return fields.entrySet().stream().collect(
+                HashMap::new, (map,e)->map.put(e.getKey(), e.getValue().getType()), Map::putAll);
     }
-
-    private static final IActionStepProcessorFactory<?> createStepProcessorFactory(Field field) {
-        var processorClazzAnnotation = field.getAnnotation(ActionStepProcessorClass.class);
-        if ( processorClazzAnnotation==null ) {
-            throw new FcliBugException(String.format("Field ActionStep::%s doesn't have required @ActionStepProcessorClass annotation", field.getName()));
-        }
-        var processorClazz = processorClazzAnnotation.value();
-        var valueType = field.getType();
-        return createStepProcessorFactory(processorClazz, valueType);
+    
+    @JsonIgnore
+    private static final Map<String, MethodHandle> createGetters(Map<String, Field> fields) {
+        return fields.entrySet().stream().collect(
+            HashMap::new, (map,e)->map.put(e.getKey(), createGetter(e.getValue())), Map::putAll);
     }
-
-    private static IActionStepProcessorFactory<?> createStepProcessorFactory(Class<? extends IActionStepProcessor> processorClazz,
-            Class<?> valueType) {
+    
+    @JsonIgnore
+    private static final MethodHandle createGetter(Field f) {
         try {
-            return (IActionStepProcessorFactory<?>)MethodHandleProxies.asInterfaceInstance(
-                IActionStepProcessorFactory.class,
-                MethodHandles.lookup().findConstructor(processorClazz,
-                       MethodType.methodType(Void.TYPE, ActionRunnerContext.class, ActionRunnerVars.class, valueType)));
+            return MethodHandles.lookup().unreflectGetter(f).asType(MethodType.methodType(Object.class, ActionStep.class));
         } catch (IllegalAccessException e) {
-            throw new FcliBugException("Can't instantiate step processor", e);
-        } catch (NoSuchMethodException e) {
-            throw new FcliBugException(
-                String.format("Step processor %s doesn't provide required constructor(ActionRunnercontext, ActionRunnerVars, %s)", processorClazz.getSimpleName(), valueType.getSimpleName()));
-        }
-    }
-
-    private static final String getJsonPropertyName(Field field) {
-        var jsonPropertyAnnotation = field.getAnnotation(JsonProperty.class);
-        if ( jsonPropertyAnnotation==null ) { return null; }
-        var nameFromAnnotation = jsonPropertyAnnotation.value();
-        return StringUtils.isBlank(nameFromAnnotation) ? field.getName() : nameFromAnnotation;
-    }
-    
-    @Retention(RUNTIME)
-    @Target(FIELD)
-    private static @interface ActionStepProcessorClass {
-        public Class<? extends IActionStepProcessor> value();
-    }
-    
-    @FunctionalInterface
-    public static interface IActionStepProcessorFactory<T> {
-        IActionStepProcessor create(ActionRunnerContext ctx, ActionRunnerVars vars, T value);
-    }
-    
-    @RequiredArgsConstructor @Data
-    public static class ActionStepField {
-        private final String name;
-        private final Object value;
-        
-        @SuppressWarnings("unchecked")
-        public final <T> IActionStepProcessor createActionStepProcessor(ActionRunnerContext ctx, ActionRunnerVars vars) {
-            var factory = (IActionStepProcessorFactory<T>)stepProcessorFactories.get(name);
-            return factory.create(ctx, vars, (T)value);
+            throw new FcliBugException("Unable to create getter for field "+f.getName(), e);
         }
     }
 }

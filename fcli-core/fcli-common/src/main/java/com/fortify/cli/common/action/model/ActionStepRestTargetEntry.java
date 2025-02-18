@@ -12,22 +12,26 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
  * This class describes a request target.
  */
 @Reflectable @NoArgsConstructor
-@Data
-public final class ActionStepRestTargetEntry implements IActionElement {
+@Data @EqualsAndHashCode(callSuper = true)
+@JsonInclude(Include.NON_NULL)
+public final class ActionStepRestTargetEntry extends AbstractActionElementIf {
     @JsonPropertyDescription("""
         Required SpEL template expression: Base URL to use for REST requests to this request target.
         """)
@@ -36,7 +40,7 @@ public final class ActionStepRestTargetEntry implements IActionElement {
     @JsonPropertyDescription("""
         Optional map(string,SpEL template expression): Headers to be sent to this request target on every request.
         """)
-    @JsonProperty(required = false) private Map<String, TemplateExpression> headers;
+    @JsonProperty(required = false) private LinkedHashMap<String, TemplateExpression> headers;
     
     // TODO Add support for next page URL producer
     // TODO ? Add proxy support ?

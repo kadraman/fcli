@@ -12,7 +12,7 @@
  */
 package com.fortify.cli.common.action.runner.processor;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class ActionStepProcessorVarRmGlobal extends AbstractActionStepProcessorVarRm {
     private final ActionRunnerContext ctx;
     private final ActionRunnerVars vars;
-    private final ArrayList<TemplateExpression> list;
+    private final List<TemplateExpression> list;
 
     @Override
     protected void rmVar(String name) {

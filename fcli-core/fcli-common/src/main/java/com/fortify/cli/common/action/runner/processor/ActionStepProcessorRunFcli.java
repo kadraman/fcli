@@ -110,9 +110,10 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         // See comments on commented out onException in ActionStepRunFcli
         //List<ActionStep> onException = fcli.getOnException();
         //if ( onException==null ) {
-            throw t instanceof RuntimeException 
-                ? (RuntimeException)t
-                : new FcliActionStepException("Fcli command terminated with an exception", t);
+        throw new FcliActionStepException("Fcli command terminated with an exception", t);
+        //    throw t instanceof RuntimeException 
+        //        ? (RuntimeException)t
+        //        : new FcliActionStepException("Fcli command terminated with an exception", t);
         //} else {
         //    processSteps(onException);
         //}

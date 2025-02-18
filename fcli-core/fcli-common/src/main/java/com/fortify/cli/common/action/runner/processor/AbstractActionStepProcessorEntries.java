@@ -25,7 +25,6 @@ public abstract class AbstractActionStepProcessorEntries<T> extends AbstractActi
         if ( _if(entry) ) {
             var entryStringIfDebugEnabled = getEntryAsStringIfDebugEnabled(entry);
             logDebug("Start processing", entryStringIfDebugEnabled, null);
-            
             try {
                 process(entry);
                 logDebug("End processing", entryStringIfDebugEnabled, null);

@@ -84,15 +84,9 @@ public final class FcliCommandExecutorFactory {
             if ( recordConsumer!=null && canCollectRecords() ) {
                 StandardOutputWriter.collectRecords(recordConsumer, stdoutOutputType!=OutputType.show);
             }
+            Result result = null;
             try {
-                var result = OutputHelper.call(()->_execute(), stdoutOutputType, stderrOutputType, StandardCharsets.UTF_8);
-                consume(result, onResult, null);
-                if ( result.getExitCode()==0 ) {
-                    consume(result, onSuccess, null);
-                } else {
-                    consume(result, onFail, this::throwExceptionOnNonZeroExitCode);
-                }
-                return result;
+                result = OutputHelper.call(()->_execute(), stdoutOutputType, stderrOutputType, StandardCharsets.UTF_8);
             } catch ( Throwable t ) {
                 if ( t instanceof ExecutionException ) {
                     t = t.getCause();
@@ -100,6 +94,16 @@ public final class FcliCommandExecutorFactory {
                 consume(t, onException, this::rethrowAsRuntimeException);
                 return new Result(999, "", "");
             }
+            // We want result processing to be outside of the try/catch block above,
+            // as any of these may throw an exception that we don't want to catch in
+            // the catch-block above.
+            consume(result, onResult, null);
+            if ( result.getExitCode()==0 ) {
+                consume(result, onSuccess, null);
+            } else {
+                consume(result, onFail, this::throwExceptionOnNonZeroExitCode);
+            }
+            return result;
         }
     
         private final int _execute() throws Exception {

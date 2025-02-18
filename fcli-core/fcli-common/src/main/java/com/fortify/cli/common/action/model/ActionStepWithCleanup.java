@@ -12,10 +12,12 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.ArrayList;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import lombok.Data;
@@ -28,6 +30,7 @@ import lombok.NoArgsConstructor;
  */
 @Reflectable @NoArgsConstructor
 @Data @EqualsAndHashCode(callSuper = true)
+@JsonInclude(Include.NON_NULL)
 public final class ActionStepWithCleanup extends AbstractActionElementIf {
     // TODO Add property that allows for installing a shutdown hook
     @JsonPropertyDescription("""
@@ -35,13 +38,13 @@ public final class ActionStepWithCleanup extends AbstractActionElementIf {
         If initialization fails, the steps in the do-block will not be run, but steps in the \
         cleanup-block will still be run.
         """)
-    @JsonProperty(value = "init", required = true) private ArrayList<ActionStep> initSteps;
+    @JsonProperty(value = "init", required = true) private List<ActionStep> initSteps;
     
     @JsonPropertyDescription("""
         List of cleanup steps. These steps will run even if the initialization steps or the \
         steps in the do-block terminated with a failure.
         """)
-    @JsonProperty(value = "cleanup", required = true) private ArrayList<ActionStep> cleanupSteps;
+    @JsonProperty(value = "cleanup", required = true) private List<ActionStep> cleanupSteps;
     
     @Override
     public void postLoad(Action action) {
