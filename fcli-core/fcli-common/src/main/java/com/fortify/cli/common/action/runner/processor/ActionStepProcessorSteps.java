@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.formkiq.graalvm.annotations.ReflectableClass;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
@@ -106,8 +105,8 @@ public class ActionStepProcessorSteps extends AbstractActionStepProcessorListEnt
     }
     
     @FunctionalInterface // @Reflectable doesnt't work on interfaces
-    @ReflectableClass(className=IActionStepProcessorFactory.class)
-    public static interface IActionStepProcessorFactory {
+    // So manually added to /fcli-app/src/main/resources/META-INF/native-image/fcli/fcli-app/fcli-common/reflect-config.json
+    public interface IActionStepProcessorFactory {
         IActionStepProcessor create(ActionRunnerContext ctx, ActionRunnerVars vars, Object value);
     }
 }

@@ -12,16 +12,16 @@ config:
 steps:
   - with:
       writers:
-        csv:
+        myCsvWriter:
           type: csv
           to: /home/rsenden/test.csv
           options:
             headers: a, c=Column 2
       do:
         - writer.append:
-            csv: ${{a:'column 1 value 1', c:'column 2 value 1'}}
+            myCsvWriter: ${{a:'column 1 value 1', c:'column 2 value 1'}}
         - writer.append:
-            csv: ${{a:'column 1 value 2', c:'column 2 value 2'}}
+            myCsvWriter: ${{a:'column 1 value 2', c:'column 2 value 2'}}
   
         
         
