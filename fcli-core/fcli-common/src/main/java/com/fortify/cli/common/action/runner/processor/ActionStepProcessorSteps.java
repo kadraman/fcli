@@ -13,7 +13,6 @@
 package com.fortify.cli.common.action.runner.processor;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
@@ -44,30 +43,35 @@ public class ActionStepProcessorSteps extends AbstractActionStepProcessorListEnt
     // Note that if-handling and logging is handled by AbstractActionStepProcessorListEntries
     protected final void process(ActionStep step) {
         var stepValue = step.getStepValue();
-        ActionStepProcessorFactoryHelper.get(stepValue.getKey())
-                .create(ctx, vars, stepValue.getValue())
-                .process();
+        // Using an IActionStepProcessorFactory dynamic proxy as in https://github.com/fortify/fcli/blob/c1c3b1a9705b45278f5e53e0a5c89edb87e242b5/fcli-core/fcli-common/src/main/java/com/fortify/cli/common/action/runner/processor/ActionStepProcessorSteps.java
+        // was much nicer, but couldn't get this to work in native binaries. At some point, maybe
+        // worth another try
+        try {
+            ((IActionStepProcessor)ActionStepProcessorFactoryHelper.get(stepValue.getKey())
+                    .invoke(ctx, vars, stepValue.getValue()))
+                    .process();
+        } catch (Throwable e) {
+            throw new FcliBugException("Unable to invoke ActionStepProcessor constructor", e);
+        }
     }
     
     private static final class ActionStepProcessorFactoryHelper {
-        private static final Map<String, IActionStepProcessorFactory> actionStepProcessorFactories = createActionStepProcessorFactories();
+        private static final Map<String, MethodHandle> actionStepProcessorFactories = createActionStepProcessorFactories();
         
-        public static final IActionStepProcessorFactory get(String jsonPropertyName) {
+        public static final MethodHandle get(String jsonPropertyName) {
             return actionStepProcessorFactories.get(jsonPropertyName);
         }
         
-        private static final Map<String, IActionStepProcessorFactory> createActionStepProcessorFactories() {
+        private static final Map<String, MethodHandle> createActionStepProcessorFactories() {
             return ActionStep.getPropertyTypes().entrySet().stream().collect(
                     HashMap::new, (map,e)->map.put(e.getKey(), createStepProcessorFactory(e)), Map::putAll);
         }
         
-        private static final IActionStepProcessorFactory createStepProcessorFactory(Entry<String, Class<?>> propertyNameAndType) {
+        private static final MethodHandle createStepProcessorFactory(Entry<String, Class<?>> propertyNameAndType) {
             var processorClazz = getProcessorClazz(propertyNameAndType.getKey());
             var valueType = propertyNameAndType.getValue();
             try {
-                return (IActionStepProcessorFactory)MethodHandleProxies.asInterfaceInstance(
-                    IActionStepProcessorFactory.class,
-                    findConstructor(processorClazz, valueType));
+                return findConstructor(processorClazz, valueType);
             } catch (IllegalAccessException e) {
                 throw new FcliBugException("Can't instantiate step processor", e);
             }
@@ -102,11 +106,5 @@ public class ActionStepProcessorSteps extends AbstractActionStepProcessorListEnt
             var elts = jsonPropertyName.split("\\W+");
             return Arrays.stream(elts).map(StringUtils::capitalize).collect(Collectors.joining());
         }
-    }
-    
-    @FunctionalInterface // @Reflectable doesnt't work on interfaces
-    // So manually added to /fcli-app/src/main/resources/META-INF/native-image/fcli/fcli-app/fcli-common/reflect-config.json
-    public interface IActionStepProcessorFactory {
-        IActionStepProcessor create(ActionRunnerContext ctx, ActionRunnerVars vars, Object value);
     }
 }
