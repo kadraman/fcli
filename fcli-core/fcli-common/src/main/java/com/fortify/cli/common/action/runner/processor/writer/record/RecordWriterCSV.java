@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright 2021, 2022 Open Text.
+/**
+ * Copyright 2023 Open Text.
  *
  * The only warranties for products and services of Open Text 
  * and its affiliates and licensors ("Open Text") are as may 
@@ -9,8 +9,10 @@
  * liable for technical or editorial errors or omissions contained 
  * herein. The information contained herein is subject to change 
  * without notice.
- *******************************************************************************/
-package com.fortify.cli.common.output.writer.record.csv;
+ */
+package com.fortify.cli.common.action.runner.processor.writer.record;
+
+import java.io.Writer;
 
 import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,36 +20,46 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvFactory;
 import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.fortify.cli.common.output.writer.record.AbstractFormattedRecordWriter;
-import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.util.StringUtils;
 
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
-public class CsvRecordWriter extends AbstractFormattedRecordWriter {
-    public static enum CsvType { HEADERS, NO_HEADERS }
-    private final CsvType csvType;
+// TODO Do proper exception handling instead of @neakyThrows
+@RequiredArgsConstructor
+public class RecordWriterCSV implements IRecordWriter {
+    private final RecordWriterConfig config;
+    private Writer writer;
     private CsvGenerator generator;
     
-    public CsvRecordWriter(CsvType csvType, RecordWriterConfig config) {
-        super(config);
-        this.csvType = csvType;
+    @Override @SneakyThrows
+    public final void append(ObjectNode record) {
+        System.out.println(record);
+        getGenerator(record).writeTree(record);
+    }
+    
+    @Override @SneakyThrows
+    public final void close() {
+        if ( generator!=null) {
+            if ( isSingular() ) { generator.writeEndArray(); }
+            generator.close();
+        }
     }
     
     @SneakyThrows
-    private CsvGenerator getGenerator(ObjectNode record) {
+    private final CsvGenerator getGenerator(ObjectNode record) {
         if ( generator==null ) {
             if ( record!=null ) {
                 CsvSchema.Builder schemaBuilder = CsvSchema.builder();
                 record.fieldNames().forEachRemaining(schemaBuilder::addColumn);
                 CsvSchema schema = schemaBuilder.build()
-                        .withUseHeader(CsvType.HEADERS==csvType);
+                        .withUseHeader(StringUtils.isNotBlank(config.option("headers")));
                 this.generator = (CsvGenerator)CsvFactory.builder().
                         build().createGenerator(getWriter())
                         .setCodec(new ObjectMapper())
-                        .enable(Feature.IGNORE_UNKNOWN)
-                        .disable(Feature.AUTO_CLOSE_TARGET);
+                        .enable(Feature.IGNORE_UNKNOWN);
                 this.generator.setSchema(schema);
-                if ( !getConfig().isSingular() ) {
+                if ( isSingular() ) {
                     generator.writeStartArray();
                 }
             }
@@ -55,19 +67,13 @@ public class CsvRecordWriter extends AbstractFormattedRecordWriter {
         return generator;
     }
 
-    @Override @SneakyThrows
-    public void writeFormattedRecord(ObjectNode record) {
-        getGenerator(record).writeTree(record);
-    }
-    
-    @Override @SneakyThrows
-    public void close() {
-        if ( generator!=null ) {
-            if ( !getConfig().isSingular() ) {
-                generator.writeEndArray();
-            }
-            generator.close();
-        }
+    private final boolean isSingular() {
+        return config.booleanOption("singular");
     }
 
+    @SneakyThrows
+    private final Writer getWriter() {
+        if ( writer==null ) { writer = config.getWriterSupplier().get(); }
+        return writer;
+    }
 }

@@ -13,12 +13,13 @@
 package com.fortify.cli.common.action.model;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import lombok.Data;
@@ -40,7 +41,7 @@ public final class ActionStepWith extends AbstractActionElementIf {
         be run. 
         """)
     // TODO Do we want to provide this functionality? And what would be a proper name for this instruction?
-    @JsonIgnore /* @JsonProperty(value = "cleanup", required = true) */ private ActionStepWithCleanup cleanup;
+    @JsonIgnore /* @JsonProperty(value = "cleanup", required = false) */ private ActionStepWithCleanup cleanup;
     
     @JsonPropertyDescription("""
         This instruction allows for setting up one or more sessions before running the steps \
@@ -53,12 +54,20 @@ public final class ActionStepWith extends AbstractActionElementIf {
         option on the 'fcli * action run' command; they will ignore sessions created through the \
         'with:session' instruction.
         """)
-    @JsonProperty(value = "sessions", required = true) private List<ActionStepWithSession> sessions;
+    @JsonProperty(value = "sessions", required = false) private List<ActionStepWithSession> sessions;
+    
+    @JsonPropertyDescription("""
+        This instruction allows for setting up one or more record writers that can referenced by \
+        writer.append steps in the associated do-block. After all steps in the do-block have been \
+        executed, the writer will be closed. This instruction takes a map, with map keys defining \
+        writer identifiers, and map values defining the writer configurations. 
+        """)
+    @JsonProperty(value = "writers", required = false) private Map<String, ActionStepWithWriter> writers;
     
     // TODO Add property that allows for installing a shutdown hook
     
     @JsonPropertyDescription("""
-        List of steps to be run within the context of the given configuration.
+        Required list of steps to be run within the context of the given configuration.
         """)
     @JsonProperty(value = "do", required = true) private List<ActionStep> _do;
     

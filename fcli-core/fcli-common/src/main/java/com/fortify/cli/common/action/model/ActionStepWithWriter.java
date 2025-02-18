@@ -12,6 +12,8 @@
  */
 package com.fortify.cli.common.action.model;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,23 +31,31 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 @JsonInclude(Include.NON_NULL)
-public final class ActionStepWithSession implements IActionElement {
+public final class ActionStepWithWriter implements IActionElement {
     @JsonPropertyDescription("""
-        Required SpEL template expression; the session login command to run before running \
-        the steps specified in the do-block.
+        Required SpEL template expression; destination where to write the output of this writer. \
+        Destination can be specified only as a file name for now. If a file already \
+        exists, it will be overwritten.
         """)
-    @JsonProperty(value = "login", required = true) private TemplateExpression loginCommand;
+    @JsonProperty(value = "to", required = true) private TemplateExpression to;
     
     @JsonPropertyDescription("""
-        Required SpEL template expression; the session logout command to run after the steps \
-        in the do-block have been completed either successfully or with failure.
+        Required SpEL template expression defining the writer type. The expression must evaluate \
+        to one of the following values: json, csv, ... TODO
         """)
-    @JsonProperty(value = "logout", required = true) private TemplateExpression logoutCommand;
+    @JsonProperty(value = "type", required = true) private TemplateExpression type;
+    
+    @JsonPropertyDescription("""
+        Optional map defining options for the given writer type. Different writer types may support \
+        different configuration options. Following is a list of supported configuration options, \
+        together with the writer types on which the option is supported. 
+        """) // TODO Add writer option descriptions
+    @JsonProperty(value = "options", required = false) private Map<String, TemplateExpression> options;
     
     @Override
     public void postLoad(Action action) {
-        Action.checkNotNull("login", this, loginCommand);
-        Action.checkNotNull("logout", this, logoutCommand);
+        Action.checkNotNull("to", this, to);
+        Action.checkNotNull("type", this, type);
     }
     
     

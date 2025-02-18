@@ -233,6 +233,11 @@ public final class ActionStep extends AbstractActionElementIf {
     @JsonProperty(value = "with", required = false) private ActionStepWith with;
     
     @JsonPropertyDescription("""
+        Append data to a writer as defined in the surrounding with-step. 
+        """)
+    @JsonProperty(value="writer.append", required = false) private LinkedHashMap<String, TemplateExpressionWithFormatter> writerAppend;
+    
+    @JsonPropertyDescription("""
         Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
         """)
     @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;

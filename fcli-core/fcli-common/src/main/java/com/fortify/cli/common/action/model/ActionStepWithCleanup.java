@@ -15,13 +15,12 @@ package com.fortify.cli.common.action.model;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -29,20 +28,20 @@ import lombok.NoArgsConstructor;
  * be run around a set of steps. 
  */
 @Reflectable @NoArgsConstructor
-@Data @EqualsAndHashCode(callSuper = true)
+@Data
 @JsonInclude(Include.NON_NULL)
-public final class ActionStepWithCleanup extends AbstractActionElementIf {
+public final class ActionStepWithCleanup implements IActionElement {
     // TODO Add property that allows for installing a shutdown hook
     @JsonPropertyDescription("""
-        List of initialization steps to be run before the steps in the do-block will be run. \
-        If initialization fails, the steps in the do-block will not be run, but steps in the \
+        Required list of initialization steps to be run before the steps in the do-block will be \
+        run. If initialization fails, the steps in the do-block will not be run, but steps in the \
         cleanup-block will still be run.
         """)
     @JsonProperty(value = "init", required = true) private List<ActionStep> initSteps;
     
     @JsonPropertyDescription("""
-        List of cleanup steps. These steps will run even if the initialization steps or the \
-        steps in the do-block terminated with a failure.
+        Required list of cleanup steps. These steps will run even if the initialization steps or \
+        the steps in the do-block terminated with a failure.
         """)
     @JsonProperty(value = "cleanup", required = true) private List<ActionStep> cleanupSteps;
     

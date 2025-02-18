@@ -29,6 +29,7 @@ import com.fortify.cli.common.action.model.ActionStepCheckEntry;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry.CheckStatus;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
+import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
@@ -69,6 +70,8 @@ public class ActionRunnerContext implements AutoCloseable {
     
     /** Modifiable map with Request helpers; may be added during context configuration phase or action execution */
     private final Map<String, IActionRequestHelper> requestHelpers = new HashMap<>();
+    /** Modifyable map with IActionStepWriter instances indexed by writer id */
+    @Getter private final Map<String, IRecordWriter> writers = new HashMap<>();
     /** Factory for creating the single {@link ISpelEvaluator} instance. By using a factory, we can
      *  check for illegal access to the {@link ISpelEvaluator} during configuration phase. */
     @Getter(AccessLevel.NONE) private final ActionConfigSpelEvaluatorFactory spelEvaluatorFactory = new ActionConfigSpelEvaluatorFactory(this);
