@@ -46,13 +46,14 @@ public class ActionStepProcessorSteps extends AbstractActionStepProcessorListEnt
         // Using an IActionStepProcessorFactory dynamic proxy as in https://github.com/fortify/fcli/blob/c1c3b1a9705b45278f5e53e0a5c89edb87e242b5/fcli-core/fcli-common/src/main/java/com/fortify/cli/common/action/runner/processor/ActionStepProcessorSteps.java
         // was much nicer, but couldn't get this to work in native binaries. At some point, maybe
         // worth another try
+        IActionStepProcessor processor = null;
         try {
-            ((IActionStepProcessor)ActionStepProcessorFactoryHelper.get(stepValue.getKey())
-                    .invoke(ctx, vars, stepValue.getValue()))
-                    .process();
+            processor = ((IActionStepProcessor)ActionStepProcessorFactoryHelper.get(stepValue.getKey())
+                    .invoke(ctx, vars, stepValue.getValue()));
         } catch (Throwable e) {
             throw new FcliBugException("Unable to invoke ActionStepProcessor constructor", e);
         }
+        processor.process();
     }
     
     private static final class ActionStepProcessorFactoryHelper {
