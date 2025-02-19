@@ -23,6 +23,8 @@ steps:
       ci-vars: 
         cmd: ${#actionCmd('CI_VARS', 'ssc', 'ci-vars')}
         on.success:
+          - var.set-global:
+              ci.av: ${#env('SSC_APPVERSION')?:global.ci.defaultFortifyRepo}
           - if: ${global.ci.av==null}
             throw: SSC application version must be specified through SSC_APPVERSION environment variable
       setup:

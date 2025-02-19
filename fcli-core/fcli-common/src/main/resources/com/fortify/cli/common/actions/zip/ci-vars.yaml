@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=/home/rsenden/workspace/fcli/fcli-other/fcli-doc/build/generated-docs/gh-pages/static/output/schemas/action/fcli-action-schema-dev-2.x-8.json
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
 
 author: Fortify
 usage:
@@ -52,11 +52,10 @@ steps:
 
   # Additional generic variables based on the output of the CI-specific sections above
   - var.set-global:
-      # Set appversion/release, either specified by user through environment variable,
+      # Set default Fortify repository name (SSC application version or FoD release),
       # from a similarly named global variable set by one of the sections above, or 
       # <qualifiedRepoName>:<sourceBranch>
-      ci.av:  ${#env('SSC_APPVERSION')?:global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}
-      ci.rel: ${#env('FOD_RELEASE')?:global.ci.rel?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
+      ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
       
   - log.debug: ${global.ci}
   - out.write:
