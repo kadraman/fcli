@@ -33,10 +33,6 @@ public class ActionStepProcessorVarSet extends AbstractActionStepProcessorVarSet
 
     @Override
     protected void setVar(String name, JsonNode value) {
-        if ( !name.startsWith("global.") ) {
-            vars.set(name, value);
-        } else {
-            vars.setGlobal(name.replaceAll("^global\\.", ""), value);
-        }
+        vars.set(name, value);
     }
 }

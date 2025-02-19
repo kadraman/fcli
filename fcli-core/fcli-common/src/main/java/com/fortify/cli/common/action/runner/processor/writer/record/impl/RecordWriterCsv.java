@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record;
+package com.fortify.cli.common.action.runner.processor.writer.record.impl;
 
 import java.io.Writer;
 
@@ -20,6 +20,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvFactory;
 import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
+import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
+import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.json.JsonHelper;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +31,8 @@ import lombok.SneakyThrows;
 
 // TODO Do proper exception handling instead of @neakyThrows
 @RequiredArgsConstructor
-public class RecordWriterCSV implements IRecordWriter {
+public class RecordWriterCsv implements IRecordWriter {
+    private final RecordWriterStyles styles;
     private final RecordWriterConfig config;
     private Writer writer;
     private CsvGenerator generator;
@@ -58,11 +63,9 @@ public class RecordWriterCSV implements IRecordWriter {
     private final CsvGenerator getGenerator(ObjectNode record) {
         if ( generator==null ) {
             if ( record!=null ) {
-                var headers = config.getHeaders();
                 CsvSchema.Builder schemaBuilder = CsvSchema.builder();
                 record.fieldNames().forEachRemaining(schemaBuilder::addColumn);
-                CsvSchema schema = schemaBuilder.build()
-                        .withUseHeader(headers!=null);
+                CsvSchema schema = schemaBuilder.build().withUseHeader(styles.has(RecordWriterStyle.SHOW_HEADERS));
                 this.generator = (CsvGenerator)CsvFactory.builder().
                         build().createGenerator(getWriter())
                         .setCodec(new ObjectMapper())

@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.runner;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -117,11 +118,22 @@ public final class ActionRunnerVars {
     }
     
     /**
-     * Set a variable on both this instance and any parent instances
+     * Set a variable on both this instance and any parent instances. If
+     * the variable name starts with 'global.', it will be set as a global
+     * variable, otherwise as a normal variable on both this instance and
+     * all parent instances.
      */
     public final void set(String name, JsonNode value) {
-        logDebug(()->String.format("Set %s: %s", name, value==null ? null : value.toPrettyString()));
-        _set(name, value, values::get, this::_setLocalAndParents);
+        BiConsumer<String, JsonNode> setter = this::_setLocalAndParents;
+        Function<String, JsonNode> getter = values::get;
+        if ( name.startsWith("global.") ) {
+            name = name.replaceAll("^global\\.", "");
+            setter = globalValues::set;
+            getter = globalValues::get;
+        }
+        var finalName = name; // Needed for lambda below
+        logDebug(()->String.format("Set %s: %s", finalName, value==null ? null : value.toPrettyString()));
+        _set(finalName, value, getter, setter);
     }
     
     /**
@@ -133,30 +145,18 @@ public final class ActionRunnerVars {
     }
     
     /**
-     * Set a global variable that can be accessed by all actions running within
-     * the same JVM through the 'global' variable.
-     */
-    public final void setGlobal(String name, JsonNode value) {
-        logDebug(()->String.format("Set global %s: %s", name, value==null ? null : value.toPrettyString()));
-        _set(name, value, globalValues::get, globalValues::set);
-    }
-    
-    /**
      * Unset a variable on both this instance and any parent instances;
      */
     public final void rm(String name) {
+        Consumer<String> unsetter = this::_unset;
+        if ( name.startsWith("global.") ) {
+            name = name.replaceAll("^global\\.", "");
+            unsetter = globalValues::remove;
+        }
         rejectProtectedVarNames(name);
-        logDebug(()->String.format("Unset %s", name));
-        _unset(name);
-    }
-    
-    /**
-     * Unset a global variable
-     */
-    public final void rmGlobal(String name) {
-        rejectProtectedVarNames(name);
-        logDebug(()->String.format("Unset global %s", name));
-        globalValues.remove(name);
+        var finalName = name; // Needed for lambda below
+        logDebug(()->String.format("Unset %s", finalName));
+        unsetter.accept(finalName);
     }
     
     /**
