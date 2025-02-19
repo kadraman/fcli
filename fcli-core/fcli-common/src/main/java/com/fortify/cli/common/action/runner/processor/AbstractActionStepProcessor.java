@@ -121,7 +121,8 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         return TemplateExpressionKeySerializer.registerOn(new ObjectMapper(
                 new YAMLFactory()
                     .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-                    .enable(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR)));
+                    .enable(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR)
+                    .disable(YAMLGenerator.Feature.SPLIT_LINES)));
     }
     
     public abstract ActionRunnerContext getCtx();
