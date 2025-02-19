@@ -18,16 +18,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -94,11 +90,10 @@ public class ActionStepProcessorRestCall extends AbstractActionStepProcessor {
                     processRequestStepForEachEmbed(forEach, (ArrayNode)input);
                     processRequestStepForEach(forEach, (ArrayNode)input, this::processRequestStepForEachEntryDo);
                 } else {
-                    var nodeType = input.getNodeType();
-                    var extraInfo = JsonNodeType.OBJECT.equals(nodeType) 
-                            ? "\n  Node properties: "+StreamSupport.stream(Spliterators.spliteratorUnknownSize(input.fieldNames(), Spliterator.ORDERED), false).toList()
-                            : "";
-                    throw new FcliActionValidationException(String.format("forEach not supported on node type %s%s",nodeType,extraInfo));
+                    var extraInfo = input instanceof ObjectNode ? "\n  "+input.toString() : "";
+                    throw new FcliActionStepException(
+                            String.format("Error processing:\n%s\nCaused by: forEach not supported on node type %s%s",
+                                    getEntryAsString(requestDescriptor), input.getNodeType(), extraInfo));
                 }
             }
         }

@@ -29,6 +29,7 @@ import com.fortify.cli.common.action.model.AbstractActionElementForEachRecord;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
+import com.fortify.cli.common.action.model.IMapKeyAware;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpressionKeySerializer;
@@ -93,11 +94,14 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
     protected final String getEntryAsString(Object value) {
         if ( value==null ) { return null; }
         try {
-            return String.format("%s:\n%s", 
-                StringUtils.indent(value.getClass().getSimpleName(), "  "),
-                StringUtils.indent(yamlObjectMapper.writeValueAsString(value), "  "));
+            return StringUtils.indent(String.format("%s%s:\n%s", 
+                value.getClass().getSimpleName(),
+                value instanceof IMapKeyAware<?> ? String.format(" (%s)", ((IMapKeyAware<?>)value).getKey()) : "",
+                yamlObjectMapper.writeValueAsString(value)), "    ");
         } catch ( Exception e ) {
-            return StringUtils.indent(value.toString(), "  ");
+            return StringUtils.indent(String.format("(Fallback to unformatted: %s: %s)\n%s",
+                    e.getClass().getSimpleName(), e.getMessage(),
+                    value.toString()), "  ");
         }
     }
     

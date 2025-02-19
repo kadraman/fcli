@@ -40,7 +40,9 @@ public class FcliSimpleException extends AbstractFcliException {
     private String getCauseAsString() {
         var cause = getCause();
         if ( cause==null ) { return ""; }
-        var causeAsString = (cause instanceof ParameterException) ? getSummary(cause) : ExceptionUtils.getStackTrace(cause);
+        var causeAsString = (cause instanceof ParameterException || cause instanceof FcliSimpleException) 
+                ? getSummary(cause) 
+                : ExceptionUtils.getStackTrace(cause);
         return String.format("\nCaused by: %s", causeAsString);
     }
     

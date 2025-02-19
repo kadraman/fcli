@@ -18,4 +18,5 @@ package com.fortify.cli.common.action.model;
  */
 public interface IMapKeyAware<T> {
     void setKey(T key);
+    T getKey();
 }
