@@ -16,46 +16,46 @@ config:
 steps:
   # Set default ci values. Where possible, steps below should override these
   # variables with CI-specific values
-  - var.set-global:
-      ci.name:               # Name of current CI system
-      ci.id:                 # Id of current CI system, used to look up <id>-* actions 
-      ci.qualifiedRepoName:  # Fully qualified repository name
-      ci.sourceBranch:       # The current branch being processed/scanned 
-      ci.commitSHA:          # Commit SHA for current commit
+  - var.set:
+      global.ci.name:               # Name of current CI system
+      global.ci.id:                 # Id of current CI system, used to look up <id>-* actions 
+      global.ci.qualifiedRepoName:  # Fully qualified repository name
+      global.ci.sourceBranch:       # The current branch being processed/scanned 
+      global.ci.commitSHA:          # Commit SHA for current commit
   
   # GitHub
   - if: ${#isNotBlank(#env('GITHUB_REPOSITORY'))}
-    var.set-global:
-      ci.name:              GitHub
-      ci.id:                github
-      ci.qualifiedRepoName: ${#env('GITHUB_REPOSITORY')}
-      ci.sourceBranch:      ${#env('GITHUB_HEAD_REF')?:#env('GITHUB_REF_NAME')}
-      ci.commitSHA:         ${#env('GITHUB_SHA')}
+    var.set:
+      global.ci.name:              GitHub
+      global.ci.id:                github
+      global.ci.qualifiedRepoName: ${#env('GITHUB_REPOSITORY')}
+      global.ci.sourceBranch:      ${#env('GITHUB_HEAD_REF')?:#env('GITHUB_REF_NAME')}
+      global.ci.commitSHA:         ${#env('GITHUB_SHA')}
       
   # GitLab
   - if: ${#env('GITLAB_CI')=='true'}
-    var.set-global:
-      ci.name:              GitLab
-      ci.id:                gitlab
-      ci.qualifiedRepoName: ${#env('CI_REPOSITORY_URL').replaceAll('[^:]+://[^/]+/(.*)(\.git)?', '$1')}
-      ci.sourceBranch:      ${#env('CI_COMMIT_BRANCH')?:#env('CI_MERGE_REQUEST_SOURCE_BRANCH_NAME')}
-      ci.commitSHA:         ${#env('CI_COMMIT_SHA')}
+    var.set:
+      global.ci.name:              GitLab
+      global.ci.id:                gitlab
+      global.ci.qualifiedRepoName: ${#env('CI_REPOSITORY_URL').replaceAll('[^:]+://[^/]+/(.*)(\.git)?', '$1')}
+      global.ci.sourceBranch:      ${#env('CI_COMMIT_BRANCH')?:#env('CI_MERGE_REQUEST_SOURCE_BRANCH_NAME')}
+      global.ci.commitSHA:         ${#env('CI_COMMIT_SHA')}
       
   # Azure DevOps
   - if: ${#isNotBlank(#env('Build.Repository.Name'))}
-    var.set-global:
-      ci.name:              Azure DevOps
-      ci.id:                ado
-      ci.qualifiedRepoName: ${#env('Build.Repository.Name')}
-      ci.sourceBranch:      # TODO ${#env('Build.SourceBranch') matches 'refs/pull/.*' ? }
-      ci.commitSHA:         ${#env('Build.SourceVersion')}
+    var.set:
+      global.ci.name:              Azure DevOps
+      global.ci.id:                ado
+      global.ci.qualifiedRepoName: ${#env('Build.Repository.Name')}
+      global.ci.sourceBranch:      # TODO ${#env('Build.SourceBranch') matches 'refs/pull/.*' ? }
+      global.ci.commitSHA:         ${#env('Build.SourceVersion')}
 
   # Additional generic variables based on the output of the CI-specific sections above
-  - var.set-global:
+  - var.set:
       # Set default Fortify repository name (SSC application version or FoD release),
       # from a similarly named global variable set by one of the sections above, or 
       # <qualifiedRepoName>:<sourceBranch>
-      ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
+      global.ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
       
   - log.debug: ${global.ci}
   - out.write:

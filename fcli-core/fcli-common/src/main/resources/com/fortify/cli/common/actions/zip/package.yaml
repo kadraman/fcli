@@ -64,8 +64,8 @@ cli.options:
     default: ${#env('USE_PACKAGE')}
       
 steps:
-  - var.set-global:
-      package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
+  - var.set:
+      global.package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
   - if: ${#isBlank(cli.usePackage)}
     run.fcli:
       update-tool-defs: fcli tool definitions update ${cli.toolDefinitions?:""}

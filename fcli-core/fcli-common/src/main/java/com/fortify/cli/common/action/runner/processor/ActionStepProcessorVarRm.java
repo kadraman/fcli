@@ -31,6 +31,10 @@ public class ActionStepProcessorVarRm extends AbstractActionStepProcessorVarRm {
 
     @Override
     protected void rmVar(String name) {
-        vars.rm(name);
+        if ( !name.startsWith("global.") ) {
+            vars.rm(name);
+        } else {
+            vars.rmGlobal(name.replaceAll("^global\\.", ""));
+        }
     }
 }

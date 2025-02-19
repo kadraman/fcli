@@ -59,14 +59,20 @@ public final class ActionStep extends AbstractActionElementIf {
     // Capture the single non-null property value, indexed by JSON property name
     @JsonIgnore private Map.Entry<String, Object> stepValue;
     
-    // Partial description for instructions that set variables like 'var.set' and 'var.fmt'
-    private static final String VAR_SET = """
-        This step takes a list of variables to set, with each list item taking a single yaml property that \
-        represents the variable name to set, which may be specified as an SpEL template expression. Based on \
-        the format of the variable name, this step can either set/replace a single-value variable, \
+    @JsonPropertyDescription("""
+        Set one or more variables values for use in later action steps. This step takes a list of variables to \
+        set, with each list item taking a single yaml property that represents the variable name to set, which \
+        may be specified as an SpEL template expression. 
+        
+        Based on the format of the variable name, this step can either set/replace a single-value variable, \
         set/replace a property on a variable containing a set of properties, or append a value to an array-type \
-        variable. Following are some examples that show how to specify the operation to perform, and thereby \
-        implicitly declaring the variable type:
+        variable. By default, variables are only accessible by the current fcli action, unless they are prefixed \
+        with 'global.', in which case they are also accessible by other actions that execute within the context \
+        of a single fcli command-line invocation. For example, if action 1 uses the run.fcli step to execute action \
+        2, any global variables set in action 1 will be accessibly by action 2, and vice versa. 
+        
+        Following are some examples that show how to specify the operation to perform, and thereby implicitly \
+        declaring the variable type:
         
         # Set/replace the single-value variable named 'var1'
         var1: ...
@@ -78,6 +84,13 @@ public final class ActionStep extends AbstractActionElementIf {
         # Append two items to the array-type variable 'var3' (two trailing dots) 
         var3..: ...
         var3..: ...
+        
+        # Same as above, but setting global variables:
+        global.var1: ...
+        global.var2.prop1: ...
+        global.var2.prop2: ...
+        global.var3..: ...
+        global.var3..: ...
         
         # The following would be illegal, as a variable cannot contain both
         # a set of properties and an array:
@@ -94,38 +107,22 @@ public final class ActionStep extends AbstractActionElementIf {
         format the given value, or, if no value is given, the formatter will be evaluated against \
         the set of all variables. Some examples:
         
-        simpleValue1: Hello ${name}
+        global.name: John Doe
+        simpleValue1: Hello ${global.name}
         formattedValue1: {fmt: myFormatter, if: "${someExpression}"}
         formatterValue2: {value: "${myVar}", fmt: "${myVarFormatterExpression}"}     
         
         Within a single 'var.set*' step, variables are processed in the order that they are \
         declared, allowing earlier declared variables to be referenced by variables or \
         formatters that are declared later in the same step.
-        """;
-    
-    @JsonPropertyDescription("Set one or more variables values for use in later action steps."+VAR_SET)
+        """)
     @JsonProperty(value = "var.set", required = false) private LinkedHashMap<TemplateExpression,TemplateExpressionWithFormatter> varSet;
     
     @JsonPropertyDescription("""
-        Remove one or more variables. Variable names to remove can be provided as plain text or \
-        as a SpEL template expression.
+        Remove one or more local or global variables. Variable names to remove can be provided as plain \
+        text or as a SpEL template expression, resolving to for example 'var1' or 'global.var2'.
         """)
     @JsonProperty(value = "var.rm", required = false) private List<TemplateExpression> varRemove;
-    
-    @JsonPropertyDescription("""
-        Set one or more global variables that can be accessed by both this action, and any other \
-        actions that are executed within the same fcli invocation. For example, if action 1 uses the \
-        'run.fcli' step to run action 2, any global variables set by action 2 can also be accessed by \
-        later steps in action 1. Global variables can be accessed through ${global.varName}.
-        
-        """+VAR_SET)
-    @JsonProperty(value = "var.set-global", required = false) private LinkedHashMap<TemplateExpression,TemplateExpressionWithFormatter> varSetGlobal;
-        
-    @JsonPropertyDescription("""
-        Remove one or more global variables. Variable names to remove can be provided as plain text or \
-        as a SpEL template expression.
-        """)
-    @JsonProperty(value = "var.rm-global", required = false) private List<TemplateExpression> varRemoveGlobal;
     
     @JsonPropertyDescription("Write a progress message.")
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
