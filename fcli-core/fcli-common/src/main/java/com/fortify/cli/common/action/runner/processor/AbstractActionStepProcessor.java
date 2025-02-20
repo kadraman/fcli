@@ -12,7 +12,6 @@
  */
 package com.fortify.cli.common.action.runner.processor;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +25,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.AbstractActionElementForEachRecord;
-import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.IActionStepIfSupplier;
 import com.fortify.cli.common.action.model.IMapKeyAware;
@@ -103,18 +101,6 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
                     e.getClass().getSimpleName(), e.getMessage(),
                     value.toString()), "  ");
         }
-    }
-    
-    protected final void writeImmediateOrDelayed(PrintStream out, String value) {
-        if ( getCtx().getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed ) {
-            getCtx().getDelayedConsoleWriterRunnables().add(createRunner(out, value));
-        } else {
-            out.print(value);
-        }
-    }
-    
-    private static final Runnable createRunner(PrintStream out, String output) {
-        return ()->out.print(output);
     }
     
     private static final ObjectMapper createYamlObjectMapper() {

@@ -12,6 +12,7 @@
  *******************************************************************************/
 package com.fortify.cli.common.progress.helper;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -52,6 +53,9 @@ public enum ProgressWriterType {
     }
     
     private static abstract class AbstractProgressWriter implements IProgressWriter {
+        // Store original stdout/stderr, as these may be suppressed/delayed during fcli action execution 
+        protected final PrintStream stdout = System.out;
+        protected final PrintStream stderr = System.err;
         private final List<String> warnings = new ArrayList<>();
         
         @Override
@@ -62,7 +66,7 @@ public enum ProgressWriterType {
         @Override
         public void close() {
             clearProgress();
-            warnings.forEach(System.err::println);
+            warnings.forEach(stderr::println);
         }
         
         protected final String format(String message, Object... args) {
@@ -110,7 +114,7 @@ public enum ProgressWriterType {
                 // Add extra newline to separate multi-line blocks
                 formattedMessage += "\n";
             }
-            System.out.println(formattedMessage);
+            stdout.println(formattedMessage);
         }
         
         @Override
@@ -135,7 +139,7 @@ public enum ProgressWriterType {
                 // Add extra newline to separate multi-line blocks
                 formattedMessage += "\n";
             }
-            System.err.println(formattedMessage);
+            stderr.println(formattedMessage);
         }
         
         @Override
@@ -161,13 +165,13 @@ public enum ProgressWriterType {
             String formattedMessage = format(message, args);
             if ( formattedMessage.contains("\n") ) { throw new FcliBugException("Multiline status updates are not supported; please file a bug"); }
             clearProgress();
-            System.out.print(formattedMessage);
+            stdout.print(formattedMessage);
             this.lastNumberOfChars = formattedMessage.length();
         }
         
         @Override
         public void clearProgress() {
-            System.out.print(LINE_START+" ".repeat(lastNumberOfChars)+LINE_START);
+            stdout.print(LINE_START+" ".repeat(lastNumberOfChars)+LINE_START);
         }
     }
     
@@ -192,7 +196,7 @@ public enum ProgressWriterType {
         public void writeProgress(String message, Object... args) {
             String formattedMessage = format(message, args);
             clearProgress();
-            System.out.print(formattedMessage);
+            stdout.print(formattedMessage);
             this.lastNumberOfLines = (int)formattedMessage.chars().filter(ch -> ch == '\n').count();
         }
         
@@ -200,7 +204,7 @@ public enum ProgressWriterType {
         public void clearProgress() {
             // TODO Any way we can use ESC[3J to clear all saved lines, instead of removing lines one-by-one?
             //      Not sure what escape code to use for 'start lines to be saved'...
-            System.out.print((LINE_CLEAR+LINE_UP).repeat(lastNumberOfLines)+LINE_CLEAR+LINE_START);
+            stdout.print((LINE_CLEAR+LINE_UP).repeat(lastNumberOfLines)+LINE_CLEAR+LINE_START);
             lastNumberOfLines = 0;
         }
     }

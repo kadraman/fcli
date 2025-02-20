@@ -49,7 +49,7 @@ public class RecordWriterConfig {
         var headersString = option("headers");
         return headersString==null 
                 ? null
-                : Arrays.stream(headersString.split("\\s*,\\s*"))
+                : Arrays.stream(headersString.split("\\s*[,\\n]\\s*"))
                     .map(kv -> kv.split("="))
                     .collect(Collectors.toMap(kv -> kv[0], kv -> kv.length==1 ? kv[0] : kv[1]));
     }

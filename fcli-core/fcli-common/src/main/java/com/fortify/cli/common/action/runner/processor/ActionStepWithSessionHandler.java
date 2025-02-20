@@ -56,6 +56,8 @@ public class ActionStepWithSessionHandler implements IActionStepWithHandler {
     private final void processFcliSessionCmd(TemplateExpression cmd) {
         FcliCommandExecutorFactory.builder()
             .cmd(vars.eval(cmd, String.class))
-        .build().create().execute();
+            .stdout(ctx.getStdout())
+            .stderr(ctx.getStderr())
+            .build().create().execute();
     }
 }

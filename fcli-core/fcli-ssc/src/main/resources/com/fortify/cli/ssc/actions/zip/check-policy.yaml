@@ -14,6 +14,10 @@ cli.options:
   appversion:
     names: --appversion,--av
     description: "Required application version id or <appName>:<versionName>"
+  filterset:
+    names: --filterset, --fs
+    description: "Filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
+    required: false
   
 steps:
   - var.set:

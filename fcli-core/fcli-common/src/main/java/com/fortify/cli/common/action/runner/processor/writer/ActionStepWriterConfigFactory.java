@@ -14,6 +14,7 @@ package com.fortify.cli.common.action.runner.processor.writer;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Map;
@@ -39,6 +40,11 @@ public class ActionStepWriterConfigFactory {
     
     @SneakyThrows
     public static final Writer createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, String target) {
+        if ( "stdout".equals(target) ) {
+            return new OutputStreamWriter(ctx.getStdout());
+        } else if ( "stderr".equals(target) ) {
+            return new OutputStreamWriter(ctx.getStderr());
+        }
         // TODO Add support for stdout/stderr, utilizing ctx to identify whether output should be delayed,
         //      and if so, add delayedConsoleWriterRunnables. If output is not delayed, we can use a non-closing
         //      writer wrapper to wrap System.out/System.err

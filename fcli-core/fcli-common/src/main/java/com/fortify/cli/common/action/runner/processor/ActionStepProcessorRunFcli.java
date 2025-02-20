@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepRunFcliEntry;
 import com.fortify.cli.common.action.model.ActionStepRunFcliEntry.ActionStepFcliForEachDescriptor;
@@ -49,38 +48,25 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         var cmd = vars.eval(entry.getCmd(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd);
         var recordConsumer = createFcliRecordConsumer(entry);
-        var requestedStdoutOutputType = getFcliOutputTypeOrDefault(entry.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
-        var requestedStderrOutputType = getFcliOutputTypeOrDefault(entry.getStderrOutputType(), OutputType.show );
-        var actualStdoutOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStdoutOutputType);
-        var actualStderrOutputType = overrideFcliShowWithCollectOutputTypeIfDelayed(requestedStderrOutputType);
-        var delayedStdout = actualStdoutOutputType==OutputType.collect && requestedStdoutOutputType==OutputType.show;
-        var delayedStderr = actualStderrOutputType==OutputType.collect && requestedStdoutOutputType==OutputType.show;
+        var stdoutOutputType = getFcliOutputTypeOrDefault(entry.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
+        var stderrOutputType = getFcliOutputTypeOrDefault(entry.getStderrOutputType(), OutputType.show );
         var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
                 .progressOptionValueIfNotPresent(ctx.getConfig().getProgressWriterFactory().getType().name())
                 .sessionOptionValueIfNotPresent(ctx.getConfig().getRequestedSessionName())
-                .stdoutOutputType(actualStdoutOutputType)
-                .stderrOutputType(actualStderrOutputType)
-                .onResult(r->onFcliResult(entry, recordConsumer, delayedStdout, delayedStderr, r))
+                .stdout(ctx.getStdout())
+                .stderr(ctx.getStderr())
+                .stdoutOutputType(stdoutOutputType)
+                .stderrOutputType(stderrOutputType)
+                .onResult(r->setFcliVars(entry, recordConsumer, r))
                 .onSuccess(r->onFcliSuccess(entry))
                 .onException(e->onFcliException(entry, e))
-                .onFail(r->onFcliFail(entry, recordConsumer, delayedStdout, delayedStderr, r))
+                .onFail(r->onFcliFail(entry, recordConsumer, r))
                 .recordConsumer(recordConsumer).build().create();
         if ( recordConsumer!=null && !cmdExecutor.canCollectRecords() ) {
             throw new FcliActionValidationException("Can't use records.for-each on fcli command: "+cmd);
         }
         cmdExecutor.execute();
-    }
-    
-    // Set variables, write delayed output
-    private void onFcliResult(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
-        setFcliVars(fcli, recordConsumer, delayedStdout, delayedStderr, result);
-        if ( delayedStderr ) { 
-            writeImmediateOrDelayed(ctx.getStderr(), result.getErr());
-        }
-        if ( delayedStdout ) {
-            writeImmediateOrDelayed(ctx.getStdout(), result.getOut());
-        }
     }
 
     private void onFcliSuccess(ActionStepRunFcliEntry fcli) {
@@ -89,8 +75,8 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         }
     }
 
-    private void onFcliFail(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
-        setFcliVars(fcli, recordConsumer, delayedStdout, delayedStderr, result);
+    private void onFcliFail(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
+        setFcliVars(fcli, recordConsumer, result);
         ArrayList<ActionStep> onFail = fcli.getOnFail();
         if ( onFail==null ) {
             throw new FcliActionStepException(String.format("'%s' returned non-zero exit code %s", 
@@ -119,24 +105,16 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         //}
     }
     
-    private void setFcliVars(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, boolean delayedStdout, boolean delayedStderr, Result result) {
+    private void setFcliVars(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
         var name = fcli.getKey();
         vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
-        // If stdout/stderr were collected for delayed output, we set the variables to empty string
-        vars.set(name+"_stdout", delayedStdout ? "" : result.getOut());
-        vars.set(name+"_stderr", delayedStderr ? "" : result.getErr());
+        vars.set(name+"_stdout", fcli.getStdoutOutputType()==OutputType.collect ? "" : result.getOut());
+        vars.set(name+"_stderr", fcli.getStderrOutputType()==OutputType.collect ? "" : result.getErr());
         vars.set(name+"_exitCode", new IntNode(result.getExitCode()));
     }
 
     private OutputType getFcliOutputTypeOrDefault(OutputType outputType, OutputType _default) {
         return outputType==null ? _default : outputType;
-    }
-    
-    private OutputType overrideFcliShowWithCollectOutputTypeIfDelayed(OutputType requestedOutputType) {
-        return ctx.getConfig().getAction().getConfig().getOutput()==ActionConfigOutput.delayed
-                && requestedOutputType==OutputType.show
-                ? OutputType.collect
-                : requestedOutputType;
     }
 
     private final FcliRecordConsumer createFcliRecordConsumer(ActionStepRunFcliEntry fcli) {
