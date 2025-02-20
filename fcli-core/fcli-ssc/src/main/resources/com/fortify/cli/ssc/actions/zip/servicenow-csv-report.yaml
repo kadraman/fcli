@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+
+author: Fortify
+usage:
+  header: (PREVIEW) Generate ServiceNow CSV report
+  description: |
+    This action generates a CSV report that can be imported into the ServiceNow
+    Vulnerability Response module; please see the following link for details:
+    https://www.servicenow.com/docs/bundle/xanadu-security-management/page/product/vulnerability-response/reference/manual-ingestion-template.html
+    The CSV report includes all SAST, DAST, and 3rd-party issues available in 
+    the given SSC application version and filter set.
+
+config:
+  rest.target.default: ssc
+  
+cli.options:
+  file:
+    names: --file, -f
+    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: servicenow-fortify.csv"
+    default: servicenow-fortify.csv
+  appversion:
+    names: --appversion,--av
+    description: "Required application version id or <appName>:<versionName>"
+  filterset:
+    names: --filterset, --fs
+    description: "Filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
+    required: false
+  
+steps:
+  - var.set:
+      av: ${#ssc.appVersion(cli.appversion)}
+      fs: ${#ssc.filterSet(av, cli.filterset)}
+  - with:
+      writers:
+        sn:
+          to: ${cli.file}
+          type: csv
+      do:
+        - run.fcli:
+            issues:
+              cmd: ssc issue ls --av=${av.id} --embed=details
+              records.for-each:
+                record.var-name: issue
+                do:
+                  - log.progress: Processing issue ${issue.issueInstanceId} 
+                  - writer.append:
+                      sn: {fmt: csvRow}
+  - if: ${!{'stdout','stderr'}.contains(cli.file)}
+    out.write:
+      stdout: |
+        Output written to ${cli.file}
+                      
+formatters:
+  csvRow:
+    Asset ID: ${id}
+    Mac Address: ""
+    FQDN: ${#ssc.issueBrowserUrl(issue,fs)}
+    NETBIOS: ""
+    IP Address: ""
+    Hostname: ""
+    Vulnerability ID: ${issue.issueInstanceId}
+    Vulnerability Summary: ${issue.details?.brief?:''}
+    Severity: ${issue.enginePriority}
+    Port: ""
+    Protocol: ""
+    Proof: ${issue.fullFileName}
+    State: ""
+        
