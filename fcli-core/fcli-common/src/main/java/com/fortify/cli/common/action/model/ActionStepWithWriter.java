@@ -34,22 +34,33 @@ import lombok.NoArgsConstructor;
 public final class ActionStepWithWriter implements IActionElement {
     @JsonPropertyDescription("""
         Required SpEL template expression; destination where to write the output of this writer. \
-        Destination can be specified only as a file name for now. If a file already \
-        exists, it will be overwritten.
+        Destination can be specified as one of the following: 
+        
+        - A file name to write the output to
+        - 'stdout' to write the output to stdout
+        - 'stderr' to write the output to stderr
+        - 'var.text:varName' to write the output as text into the given 'varName' action variable  
+        - 'var.array:varName' to write the output as an array into the given 'varName' action variable
+        
+        With 'var.text' and 'var.array', the output is available to steps after the current 'with' block \
+        has completed through ${varName}. Note that 'var.array' is only support for 'type: json'. 
         """)
     @JsonProperty(value = "to", required = true) private TemplateExpression to;
     
     @JsonPropertyDescription("""
         Required SpEL template expression defining the writer type. The expression must evaluate \
-        to one of the following values: json, csv, ... TODO
+        to one of the following values:
+        
+        - csv: CSV output with header
+        - csv-plain: CSV output without header
+        - json: For now, only supported in combination with 'to: var.array:varName' 
         """)
     @JsonProperty(value = "type", required = true) private TemplateExpression type;
     
     @JsonPropertyDescription("""
         Optional map defining options for the given writer type. Different writer types may support \
-        different configuration options. Following is a list of supported configuration options, \
-        together with the writer types on which the option is supported. 
-        """) // TODO Add writer option descriptions
+        different configuration options.
+        """) // TODO Add writer option descriptions, together with the writer types that they apply to
     @JsonProperty(value = "options", required = false) private Map<String, TemplateExpression> options;
     
     @Override

@@ -225,12 +225,20 @@ public final class ActionStep extends AbstractActionElementIf {
     @JsonProperty(value = "records.for-each", required = false) private ActionStepRecordsForEach recordsForEach;
     
     @JsonPropertyDescription("""
-        This step allows for running initialization and cleanup steps around the steps listed in the 'do' block.
+        This step allows for running initialization and cleanup steps around the steps listed in the 'do' block. \
+        This includes the ability to run the do-block within the context of an fcli session, with the session \
+        being created before running the do-block and being terminated afterwards, and the ability to define \
+        writers than can output data in various formats like CSV, appending data to those writers in the do-block, \
+        and closing those writers once the steps in the do-block have completed. Compared to the 'out.write' instruction, \
+        these writers support more output formats, and, depending on writer type and configuration, allows for streaming \
+        output, rather than having to collect all data in memory first.
         """)
     @JsonProperty(value = "with", required = false) private ActionStepWith with;
     
     @JsonPropertyDescription("""
-        Append data to a writer as defined in the surrounding with-step. 
+        This instruction may only be used from within a with:do, with the with:writers instruction defining the writers \
+        that the writer.append instruction can append data to. The given data will be formatted an written according to \
+        the corresponding writer configuration.  
         """)
     @JsonProperty(value="writer.append", required = false) private LinkedHashMap<String, TemplateExpressionWithFormatter> writerAppend;
     

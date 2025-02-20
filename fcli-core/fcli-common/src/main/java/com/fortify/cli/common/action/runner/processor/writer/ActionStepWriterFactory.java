@@ -33,8 +33,8 @@ public final class ActionStepWriterFactory {
     public static final IRecordWriter createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
         var type = vars.eval(withWriter.getType(), String.class);
         var to = vars.eval(withWriter.getTo(), String.class);
-        if ( to.startsWith("var.json:") ) {
-            return createJsonVarRecordWriter(vars, type, to.replaceAll("^var.json:", ""));
+        if ( to.startsWith("var.array:") ) {
+            return createJsonVarRecordWriter(vars, type, to.replaceAll("^var.array:", ""));
         } else {
             return createStandardWriter(ctx, vars, withWriter, type, to);
         }
@@ -54,7 +54,7 @@ public final class ActionStepWriterFactory {
     
     private static final IRecordWriter createJsonVarRecordWriter(ActionRunnerVars vars, String type, String varName) {
         if ( !type.equals("json") ) {
-            throw new FcliActionValidationException("'to: var.json' can only be used with 'type: json'");
+            throw new FcliActionValidationException("'to: var.array' can only be used with 'type: json'");
         } else {
             return new FcliActionJsonVarRecordWriter(vars, varName);
         }

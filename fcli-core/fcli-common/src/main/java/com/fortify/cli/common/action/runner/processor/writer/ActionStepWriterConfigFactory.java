@@ -48,7 +48,7 @@ public class ActionStepWriterConfigFactory {
         // TODO Add support for stdout/stderr, utilizing ctx to identify whether output should be delayed,
         //      and if so, add delayedConsoleWriterRunnables. If output is not delayed, we can use a non-closing
         //      writer wrapper to wrap System.out/System.err
-        if ( target.startsWith("var.text:") ) { // Note that var.json: is handled in ActionStepWriterFactory
+        if ( target.startsWith("var.text:") ) { // Note that var.array: is handled in ActionStepWriterFactory
             return new FcliActionVariableWriter(vars, target.replaceAll("^var.text:", ""));
         } else {
             return new FileWriter(target);
