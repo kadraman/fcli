@@ -42,9 +42,9 @@ steps:
               records.for-each:
                 record.var-name: issue
                 do:
-                  - log.progress: Processing issue ${issue.issueInstanceId} 
                   - writer.append:
                       sn: {fmt: csvRow}
+                  - log.progress: Processed ${sn.count} issues
   - if: ${!{'stdout','stderr'}.contains(cli.file)}
     log.info: Output written to ${cli.file}
                       

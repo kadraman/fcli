@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.runner.processor;
 import java.util.Collections;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fortify.cli.common.action.model.ActionStepWith;
 import com.fortify.cli.common.action.model.ActionStepWithWriter;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -41,6 +42,7 @@ public class ActionStepWithWriterHandler implements IActionStepWithHandler {
     @Override
     public final void doBefore() {
         ctx.getWriters().put(id, ActionStepWriterFactory.createWriter(ctx, vars, withWriter));
+        vars.set(String.format("%s.count", id), new IntNode(0));
     }
     
     @Override

@@ -26,15 +26,17 @@ import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriter
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.json.JsonHelper;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
-// TODO Do proper exception handling instead of @neakyThrows
+// TODO Do proper exception handling instead of @SneakyThrows
 @RequiredArgsConstructor
 public class RecordWriterCsv implements IRecordWriter {
     private final RecordWriterStyles styles;
     private final RecordWriterConfig config;
-    private Writer writer;
+    @Getter(value = AccessLevel.PRIVATE, lazy=true) private final Writer writer = createWriter();
     private CsvGenerator generator;
     
     @Override @SneakyThrows
@@ -80,8 +82,7 @@ public class RecordWriterCsv implements IRecordWriter {
     }
 
     @SneakyThrows
-    private final Writer getWriter() {
-        if ( writer==null ) { writer = config.getWriterSupplier().get(); }
-        return writer;
+    private final Writer createWriter() {
+        return config.getWriterSupplier().get();
     }
 }

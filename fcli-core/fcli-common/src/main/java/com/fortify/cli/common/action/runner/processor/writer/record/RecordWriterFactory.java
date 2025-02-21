@@ -16,6 +16,15 @@ import java.util.function.BiFunction;
 
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
+import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
+import com.fortify.cli.common.output.OutputFormat.OutputStructure;
+import com.fortify.cli.common.output.writer.record.expr.ExprRecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.json_properties.JsonPropertiesRecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.table.TableRecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.table.TableRecordWriter.TableType;
+import com.fortify.cli.common.output.writer.record.tree.TreeRecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.xml.XmlRecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.yaml.YamlRecordWriterFactory;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +33,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor 
 public enum RecordWriterFactory {
     csv(RecordWriterCsv::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)),
-    csv_plain(RecordWriterCsv::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN));
+    csv_plain(RecordWriterCsv::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN)),
+    json(RecordWriterJson::new, RecordWriterStyles.none());
+    // The below are not yet implemented
+    // json_flat(RecordWriterJson::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
+    // table(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)) 
+    // table_plain(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
+    // tree(RecordWriterTree::new, RecordWriterStyles.none()) 
+    // tree_flat(RecordWriterTree::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
+    // xml(RecordWriterXml::new, RecordWriterStyles.none()) 
+    // xml_flat(RecordWriterXml::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
+    // yaml(RecordWriterYaml::new, RecordWriterStyles.none())
+    // yaml_flat(RecordWriterYaml::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
+    // expr(RecordWriterExpr::new, RecordWriterStyles.none())
+    // json_properties(RecordWriterJsonProperties::new, RecordWriterStyles.none())
 
     private final BiFunction<RecordWriterStyles,RecordWriterConfig,IRecordWriter> factory;
     private final RecordWriterStyles styles;

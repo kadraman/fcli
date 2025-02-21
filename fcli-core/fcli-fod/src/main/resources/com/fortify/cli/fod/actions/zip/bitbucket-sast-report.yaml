@@ -29,25 +29,32 @@ steps:
   - var.set:
       rel: ${#fod.release(cli.release)}
   - log.progress: Processing issue data
-  - rest.call:
-      issues:
-        uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
-        query:
-          filters: scantype:Static
-        log.progress:
-          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
-        records.for-each:
-          record.var-name: issue
-          embed:
-            details:
-              uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
-          do:
-          - var.set:
-              annotations..: {fmt: annotations}
+  - with:
+        writers:
+          annotations:
+            to: ${cli['annotations-file']}
+            type: json
+            options:
+              pretty: true
+        do:
+          - rest.call:
+              issues:
+                uri: /api/v3/releases/${rel.releaseId}/vulnerabilities?limit=50
+                query:
+                  filters: scantype:Static
+                log.progress:
+                  page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
+                records.for-each:
+                  record.var-name: issue
+                  embed:
+                    details:
+                      uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/details
+                  do:
+                  - writer.append:
+                      annotations: {fmt: annotation}
   - var.set:
       report: {fmt: report}
   - out.write:
-      ${cli['annotations-file']}: ${annotations?:{}}
       ${cli['report-file']}: ${report}
   - if: ${cli['annotations-file']!='stdout' && cli['report-file']!='stdout'}
     log.info: |
@@ -58,7 +65,7 @@ formatters:
   report:
       # uuid:
       title: Fortify Scan Report
-      details: Fortify on Demand detected ${rel.issueCount} ${rel.issueCount==1 ? 'vulnerability':'vulnerabilities'}
+      details: Fortify on Demand detected ${annotations.count} ${annotations.count==1 ? 'vulnerability':'vulnerabilities'}
       #external_id:
       reporter: Fortify on Demand
       link: ${#fod.releaseBrowserUrl(rel)}
@@ -98,7 +105,7 @@ formatters:
           title: Low (Overall)
           value: ${rel.low}
 
-  annotations:
+  annotation:
       external_id: FTFY-${issue.id}
       # uuid:
       annotation_type: VULNERABILITY

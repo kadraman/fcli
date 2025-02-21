@@ -66,27 +66,34 @@ steps:
           groupingtype: 11111111-1111-1111-1111-111111111150
           filterset: ${fs.guid}      
   - log.progress: Processing issue data
-  - rest.call:
-      issues:
-        uri: /api/v1/projectVersions/${av.id}/issues
-        query:
-          filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
-          filterset: ${fs.guid}
-          limit: ${cli['page-size']}
-        log.progress:
-          page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
-        records.for-each:
-          record.var-name: issue
-          embed:
-            details:
-              uri: /api/v1/issueDetails/${issue.id}
-          do:
-            - var.set:
-                annotations..: {fmt: annotations}
+  - with:
+      writers:
+        annotations:
+          to: ${cli['annotations-file']}
+          type: json
+          options:
+            pretty: true
+      do:
+        - rest.call:
+            issues:
+              uri: /api/v1/projectVersions/${av.id}/issues
+              query:
+                filter: ISSUE[11111111-1111-1111-1111-111111111151]:SCA
+                filterset: ${fs.guid}
+                limit: ${cli['page-size']}
+              log.progress:
+                page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.count} issues
+              records.for-each:
+                record.var-name: issue
+                embed:
+                  details:
+                    uri: /api/v1/issueDetails/${issue.id}
+                do: 
+                  - writer.append:
+                      annotations: {fmt: annotation}
   - var.set:
       report: {fmt: report}
   - out.write:
-      ${cli['annotations-file']}: ${annotations?:{}}
       ${cli['report-file']}: ${report}
   - if: ${cli['annotations-file']!='stdout' && cli['report-file']!='stdout'}
     log.info: |
@@ -97,7 +104,7 @@ formatters:
   report:
       # uuid:
       title: Fortify Scan Report
-      details: Fortify detected ${annotations?.size()?:0} static ${annotations?.size()==1 ? 'vulnerability':'vulnerabilities'}
+      details: Fortify detected ${annotations.count} static ${annotations.count==1 ? 'vulnerability':'vulnerabilities'}
       #external_id:
       reporter: Fortify Static Code Analyzer ${lastStaticScan?.engineVersion?:''}
       link: ${#ssc.appversionBrowserUrl(av,fs)}
@@ -137,7 +144,7 @@ formatters:
           title: Low (Overall)
           value: ${fpo_counts_total.^[id=='Low']?.visibleCount?:0}
 
-  annotations:
+  annotation:
       external_id: FTFY-${issue.id}
       # uuid:
       annotation_type: VULNERABILITY

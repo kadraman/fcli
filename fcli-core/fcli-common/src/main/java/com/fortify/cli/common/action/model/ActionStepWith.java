@@ -60,7 +60,9 @@ public final class ActionStepWith extends AbstractActionElementIf {
         This instruction allows for setting up one or more record writers that can referenced by \
         writer.append steps in the associated do-block. After all steps in the do-block have been \
         executed, the writer will be closed. This instruction takes a map, with map keys defining \
-        writer identifiers, and map values defining the writer configurations. 
+        writer identifiers, and map values defining the writer configurations. The number of records \
+        that have been appended to the current writer can be accessed through the 'writerId.count' \
+        variable.
         """)
     @JsonProperty(value = "writers", required = false) private Map<String, ActionStepWithWriter> writers;
     

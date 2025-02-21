@@ -13,6 +13,7 @@
 package com.fortify.cli.common.action.runner.processor;
 import java.util.LinkedHashMap;
 
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
@@ -26,7 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor @Data @EqualsAndHashCode(callSuper = true) @Reflectable
-public class ActionStepProcessorWriterAppend extends AbstractActionStepProcessorMapEntries<String, TemplateExpressionWithFormatter> {
+public class ActionStepProcessorWriterAppend extends AbstractActionStepProcessorMapEntries<String, TemplateExpressionWithFormatter>{
     private final ActionRunnerContext ctx;
     private final ActionRunnerVars vars;
     private final LinkedHashMap<String,TemplateExpressionWithFormatter> map;
@@ -42,5 +43,7 @@ public class ActionStepProcessorWriterAppend extends AbstractActionStepProcessor
             throw new FcliActionValidationException("Data to append to writer must be an ObjectNode; actual type: "+value.getClass().getSimpleName());
         }
         writer.append((ObjectNode)value);
+        var countVarName = String.format("%s.count", writerId);  
+        vars.set(countVarName, new IntNode(vars.eval(countVarName, Integer.class)+1));
     }
 }

@@ -53,7 +53,7 @@ public final class ActionStepWithWriter implements IActionElement {
         
         - csv: CSV output with header
         - csv-plain: CSV output without header
-        - json: For now, only supported in combination with 'to: var.array:varName' 
+        - json: JSON output
         """)
     @JsonProperty(value = "type", required = true) private TemplateExpression type;
     

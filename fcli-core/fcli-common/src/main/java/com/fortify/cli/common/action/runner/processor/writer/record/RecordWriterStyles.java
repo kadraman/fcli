@@ -25,6 +25,10 @@ public final class RecordWriterStyles {
         return new RecordWriterStyles(List.of(styles));
     }
     
+    public static final RecordWriterStyles none() {
+        return apply();
+    }
+    
     public final boolean has(RecordWriterStyle style) {
         return styles.contains(style);
     }
