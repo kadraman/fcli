@@ -35,6 +35,11 @@ public abstract class AbstractProgressWriterWrapper implements IProgressWriter {
     }
     
     @Override
+    public final void writeInfo(String message, Object... args) {
+        getProgressWriter().writeInfo(message, args);
+    }
+    
+    @Override
     public final void writeWarning(String message, Object... args) {
         getProgressWriter().writeWarning(message, args);
     }

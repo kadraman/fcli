@@ -118,8 +118,7 @@ steps:
       reviewBody: {fmt: reviewBody}
       reviewRequestBody: {fmt: reviewRequestBody}
   - if: ${cli.dryrun}
-    out.write:
-      stdout: ${reviewRequestBody}
+    log.info: ${reviewRequestBody}
   - if: ${!cli.dryrun}
     rest.call:
       postPRComment:

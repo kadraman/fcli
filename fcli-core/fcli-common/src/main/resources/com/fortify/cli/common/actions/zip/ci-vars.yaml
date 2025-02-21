@@ -56,17 +56,12 @@ steps:
       # from a similarly named global variable set by one of the sections above, or 
       # <qualifiedRepoName>:<sourceBranch>
       global.ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
-      
-  - log.debug: ${global.ci}
-  - out.write:
-      stdout: |
-        ${global.ci.name!=null ? 'Detected '+global.ci.name : 'No CI system detected'}
+  - log.info: "${global.ci.name!=null ? 'Detected '+global.ci.name : 'No CI system detected'}"
   - records.for-each:
       from: ${#properties(global.ci)}
       record.var-name: p
       do:
-        - out.write: 
-            stdout: "${'  '+p.key+': '+p.value+'\n'}"
+        - log.info: "${'  '+p.key+': '+p.value+'\n'}"
   
         
         

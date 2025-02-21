@@ -200,10 +200,8 @@ steps:
   # Write output based on data collected above, and value template defined below 
   - out.write:
       ${cli.file}: {fmt: summary-md}
-  - if: ${cli.file!='stdout'}
-    out.write:
-      stdout: |
-        Output written to ${cli.file}
+  - if: ${!{'stdout','stderr'}.contains(cli.file)}
+    log.info: Output written to ${cli.file}
 
 formatters:
   summary-md: |

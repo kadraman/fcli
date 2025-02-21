@@ -89,8 +89,7 @@ steps:
       ${cli['annotations-file']}: ${annotations?:{}}
       ${cli['report-file']}: ${report}
   - if: ${cli['annotations-file']!='stdout' && cli['report-file']!='stdout'}
-    out.write:
-      stdout: |
+    log.info: |
         Report written to ${cli['report-file']}
         Annotations written to ${cli['annotations-file']}
 

@@ -46,9 +46,7 @@ steps:
                   - writer.append:
                       sn: {fmt: csvRow}
   - if: ${!{'stdout','stderr'}.contains(cli.file)}
-    out.write:
-      stdout: |
-        Output written to ${cli.file}
+    log.info: Output written to ${cli.file}
                       
 formatters:
   csvRow:

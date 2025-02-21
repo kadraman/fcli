@@ -37,8 +37,4 @@ steps:
           --publish-to "${global.ci.av}" --store sc_sast_scan
       sast-wait-for:
         cmd: ${#fcliCmd('SC_SAST_PUBLISH', 'fcli sc-sast scan wait-for')} "::sc_sast_scan::"
-          
-  - out.write:
-      stdout: |
-        Package: ${global.package.output}
       

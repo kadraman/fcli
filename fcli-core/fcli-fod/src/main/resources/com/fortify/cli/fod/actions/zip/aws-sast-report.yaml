@@ -60,10 +60,8 @@ steps:
                 vulnerabilities..: {fmt: issues}
   - out.write:
       ${cli['file']}: {fmt: report}
-  - if: ${cli.file!='stdout'}
-    out.write:
-      stdout: |
-        Report written to ${cli['report-file']}
+  - if: ${!{'stdout','stderr'}.contains(cli.file)}
+    log.info: Report written to ${cli['report-file']}
 
 formatters:
   report:

@@ -124,8 +124,22 @@ public final class ActionStep extends AbstractActionElementIf {
         """)
     @JsonProperty(value = "var.rm", required = false) private List<TemplateExpression> varRemove;
     
-    @JsonPropertyDescription("Write a progress message.")
+    @JsonPropertyDescription("""
+        Write a progress message. Progress messages are usually written to console and log \
+        file directly. Depending on progress writer configuration, progress messages may \
+        disappear when the next progress message is written, or after all action steps have \
+        been executed. If you need to write an information message that is always displayed \
+        to the end user, without the possibility of the message being removed, please use \
+        log.info instead.     
+        """)
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
+    
+    @JsonPropertyDescription("""
+        Write an informational message to console and log file (if enabled). Note that depending \
+        on the config:output setting, informational messages may be shown either immediately, or \
+        only after all action steps have been executed, to not interfere with progress messages.
+        """)
+    @JsonProperty(value = "log.info", required = false) private TemplateExpression logInfo;
     
     @JsonPropertyDescription("""
         Write a warning message to console and log file (if enabled). Note that depending on the \

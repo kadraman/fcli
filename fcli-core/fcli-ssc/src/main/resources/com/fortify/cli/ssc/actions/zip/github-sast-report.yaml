@@ -93,10 +93,8 @@ steps:
             rules..: {fmt: rules}
   - out.write:
       ${cli.file}: {fmt: github-sast-report}
-  - if: ${cli.file!='stdout'}
-    out.write:
-      stdout: |
-        Output written to ${cli.file}
+  - if: ${!{'stdout','stderr'}.contains(cli.file)}
+    log.info: Output written to ${cli.file}
 
 formatters:
   github-sast-report:

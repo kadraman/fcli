@@ -4,7 +4,10 @@ author: Fortify
 usage:
   header: Package source code
   description: |
-    This action can be used to package source code using ScanCentral Client.
+    This action can be used to package source code using ScanCentral Client. It will 
+    take care of installing the specified ScanCentral Client version, followed by
+    executing the 'scancentral package' command using the specified ScanCentral 
+    Client version.
 
 config:
   output: immediate

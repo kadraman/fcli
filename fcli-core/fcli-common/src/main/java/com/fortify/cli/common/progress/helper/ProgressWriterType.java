@@ -62,6 +62,7 @@ public enum ProgressWriterType {
         protected final PrintStream stdout = System.out;
         protected final PrintStream stderr = System.err;
         private final List<String> warnings = new ArrayList<>();
+        private final List<String> info = new ArrayList<>();
         
         @Override
         public final void writeWarning(String message, Object... args) {
@@ -84,9 +85,21 @@ public enum ProgressWriterType {
         protected abstract void writeProgress(String message);
         
         @Override
+        public final void writeInfo(String message, Object... args) {
+            var msg = format(message, args);
+            LOG.info(msg);
+            writeInfo(msg);
+        }
+
+        protected void writeInfo(String message) {
+            info.add(message);
+        }
+        
+        @Override
         public void close() {
             clearProgress();
             warnings.forEach(stderr::println);
+            info.forEach(stdout::println);
         }
         
         private final String format(String message, Object... args) {
