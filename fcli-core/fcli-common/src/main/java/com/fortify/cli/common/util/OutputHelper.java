@@ -41,6 +41,8 @@ public class OutputHelper {
     @Builder.Default private final Charset charset = StandardCharsets.UTF_8;
     
     public final <T extends OutputStream> Result call(Callable<Integer> callable) throws Exception {
+        var orgStdout = System.out;
+        var orgStderr = System.err;
         try ( var stdoutStream = stdoutType.streamSupplier.apply(stdout);
               var stderrStream = stderrType.streamSupplier.apply(stderr);
               var stdoutPS = new PrintStream(stdoutStream);
@@ -52,8 +54,8 @@ public class OutputHelper {
             System.err.flush();
             return new Result(exitCode, stdoutType.stringFunction.apply(stdoutStream, charset), stderrType.stringFunction.apply(stderrStream, charset));
         } finally {
-            System.setOut(stdout);
-            System.setErr(stderr);
+            System.setOut(orgStdout);
+            System.setErr(orgStderr);
         }
     }
     

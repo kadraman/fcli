@@ -43,7 +43,7 @@ public class ActionRunner {
             try ( var ctx = createContext(progressWriter, parameterValues) ) {
                 initializeCheckStatuses(ctx);
                 ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
-                new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();;
+                new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();
              
                 return ()->{
                     ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);
@@ -51,7 +51,7 @@ public class ActionRunner {
                         ctx.getCheckStatuses().entrySet().forEach(
                             e-> printCheckResult(ctx, e.getValue(), e.getKey()));
                         var overallStatus = CheckStatus.combine(ctx.getCheckStatuses().values());
-                        ctx.getStdout().println("Status: "+overallStatus);
+                        System.out.println("Status: "+overallStatus);
                         if ( ctx.getExitCode()==0 && overallStatus==CheckStatus.FAIL ) {
                             ctx.setExitCode(100);
                         }
@@ -103,8 +103,7 @@ public class ActionRunner {
             // Even when flushing, output may appear in incorrect order if some 
             // check statuses are written to stdout and others to stderr.
             //var out = status==CheckStatus.PASS?stdout:stderr;
-            var out = ctx.getStdout();
-            out.println(String.format("%s: %s", status, checkStep.getDisplayName()));
+            System.out.println(String.format("%s: %s", status, checkStep.getDisplayName()));
             //out.flush();
         }
     }
