@@ -61,7 +61,7 @@ steps:
       from: ${#properties(global.ci)}
       record.var-name: p
       do:
-        - log.info: "${'  '+p.key+': '+p.value+'\n'}"
+        - log.info: "${'  '+p.key+': '+p.value}"
   
         
         
