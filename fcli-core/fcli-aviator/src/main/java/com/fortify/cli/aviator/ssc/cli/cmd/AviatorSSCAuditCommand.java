@@ -1,4 +1,4 @@
-package com.fortify.cli.ssc.aviator.cli.cmd;
+package com.fortify.cli.aviator.ssc.cli.cmd;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
@@ -33,13 +33,13 @@ import java.io.IOException;
 
 @Command(name = "audit")
 @DefaultVariablePropertyName("artifactId")
-public class SSCAviatorAuditCommand extends AbstractSSCJsonNodeOutputCommand implements IRecordTransformer, IActionCommandResultSupplier {
+public class AviatorSSCAuditCommand extends AbstractSSCJsonNodeOutputCommand implements IRecordTransformer, IActionCommandResultSupplier {
     @Getter @Mixin private OutputHelperMixins.TableNoQuery outputHelper;
     @Mixin private ProgressWriterFactoryMixin progressWriterFactoryMixin;
     @Mixin private SSCAppVersionResolverMixin.RequiredOption appVersionResolver;
     @Option(names = {"-t", "--token"}, required = true) private String token;
     @Option(names = {"-u", "--url"}, required = true) private String url;
-    private static final Logger LOG = LoggerFactory.getLogger(SSCAviatorAuditCommand.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AviatorSSCAuditCommand.class);
 
     @Override
     @SneakyThrows

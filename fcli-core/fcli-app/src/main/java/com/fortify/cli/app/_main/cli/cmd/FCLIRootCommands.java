@@ -13,6 +13,7 @@
 package com.fortify.cli.app._main.cli.cmd;
 
 import com.fortify.cli.app.FortifyCLIVersionProvider;
+import com.fortify.cli.aviator._main.cli.cmd.AviatorCommands;
 import com.fortify.cli.common.cli.cmd.AbstractContainerCommand;
 import com.fortify.cli.common.util.DisableTest;
 import com.fortify.cli.common.util.DisableTest.TestType;
@@ -45,6 +46,7 @@ import picocli.CommandLine.ScopeType;
     versionProvider = FortifyCLIVersionProvider.class,
     subcommands = {
             GenericActionCommands.class,
+            AviatorCommands.class,
             ConfigCommands.class,
             FoDCommands.class,
             SCDastCommands.class,

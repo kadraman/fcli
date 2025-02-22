@@ -5,6 +5,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 dependencies {
 	implementation project("${fcliCommonRef}")
 	implementation project("${fcliActionRef}")
+    implementation project("${fcliAviatorRef}")
     implementation project("${fcliConfigRef}")
 	implementation project("${fcliFoDRef}")
     implementation project("${fcliSSCRef}")

@@ -12,17 +12,17 @@
  */
 package com.fortify.cli.common.action.runner.processor.writer.record;
 
-import java.util.List;
+import java.util.Set;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RecordWriterStyles {
-    private final List<RecordWriterStyle> styles;
+    private final Set<RecordWriterStyle> styles;
     
     public static final RecordWriterStyles apply(RecordWriterStyle... styles) {
-        return new RecordWriterStyles(List.of(styles));
+        return new RecordWriterStyles(Set.of(styles));
     }
     
     public static final RecordWriterStyles none() {
