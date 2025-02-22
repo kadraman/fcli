@@ -39,11 +39,10 @@ public final class ActionStepWithWriter implements IActionElement {
         - A file name to write the output to
         - 'stdout' to write the output to stdout
         - 'stderr' to write the output to stderr
-        - 'var.text:varName' to write the output as text into the given 'varName' action variable  
-        - 'var.array:varName' to write the output as an array into the given 'varName' action variable
+        - 'var:varName' to write the output as text into the given 'varName' action variable  
         
-        With 'var.text' and 'var.array', the output is available to steps after the current 'with' block \
-        has completed through ${varName}. Note that 'var.array' is only support for 'type: json'. 
+        With 'var:varName', the given variable name will be available to steps after the current \
+        'with' block has completed. 
         """)
     @JsonProperty(value = "to", required = true) private TemplateExpression to;
     

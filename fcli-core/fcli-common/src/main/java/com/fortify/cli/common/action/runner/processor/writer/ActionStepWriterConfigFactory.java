@@ -44,12 +44,8 @@ public class ActionStepWriterConfigFactory {
             return new OutputStreamWriter(ctx.getStdout());
         } else if ( "stderr".equals(target) ) {
             return new OutputStreamWriter(ctx.getStderr());
-        }
-        // TODO Add support for stdout/stderr, utilizing ctx to identify whether output should be delayed,
-        //      and if so, add delayedConsoleWriterRunnables. If output is not delayed, we can use a non-closing
-        //      writer wrapper to wrap System.out/System.err
-        if ( target.startsWith("var.text:") ) { // Note that var.array: is handled in ActionStepWriterFactory
-            return new FcliActionVariableWriter(vars, target.replaceAll("^var.text:", ""));
+        } else if ( target.startsWith("var:") ) {
+            return new FcliActionVariableWriter(vars, target.replaceAll("^var:", ""));
         } else {
             return new FileWriter(target);
         }

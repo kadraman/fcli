@@ -16,15 +16,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.model.ActionStepWithWriter;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.json.JsonHelper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,11 +30,7 @@ public final class ActionStepWriterFactory {
     public static final IRecordWriter createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
         var type = vars.eval(withWriter.getType(), String.class);
         var to = vars.eval(withWriter.getTo(), String.class);
-        if ( to.startsWith("var.array:") ) {
-            return createJsonVarRecordWriter(vars, type, to.replaceAll("^var.array:", ""));
-        } else {
-            return createStandardWriter(ctx, vars, withWriter, type, to);
-        }
+        return createStandardWriter(ctx, vars, withWriter, type, to);
     }
 
     private static final IRecordWriter createStandardWriter(ActionRunnerContext ctx, ActionRunnerVars vars,
@@ -50,29 +43,5 @@ public final class ActionStepWriterFactory {
                 .findFirst()
                 .map(e->e.createWriter(config))
                 .orElseThrow(()->new FcliActionValidationException("Unknown writer type: "+type));
-    }
-    
-    private static final IRecordWriter createJsonVarRecordWriter(ActionRunnerVars vars, String type, String varName) {
-        if ( !type.equals("json") ) {
-            throw new FcliActionValidationException("'to: var.array' can only be used with 'type: json'");
-        } else {
-            return new FcliActionJsonVarRecordWriter(vars, varName);
-        }
-    }
-    
-    @RequiredArgsConstructor
-    private static final class FcliActionJsonVarRecordWriter implements IRecordWriter {
-        private final ActionRunnerVars vars;
-        private final String varName;
-        private final ArrayNode result = JsonHelper.getObjectMapper().createArrayNode();
-        
-        @Override
-        public void append(ObjectNode node) {
-            result.add(node);
-        }
-        @Override
-        public void close() {
-            vars.set(varName, result);
-        }
     }
 }
