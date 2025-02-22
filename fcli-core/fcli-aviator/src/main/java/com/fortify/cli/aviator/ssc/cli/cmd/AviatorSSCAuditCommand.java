@@ -1,8 +1,15 @@
 package com.fortify.cli.aviator.ssc.cli.cmd;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
 import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
+import com.fortify.cli.aviator._common.session.cli.mixin.AviatorDescriptorSessionSupplier;
 import com.fortify.cli.aviator.config.AviatorLoggerImpl;
 import com.fortify.cli.aviator.core.AuditFPR;
 import com.fortify.cli.common.exception.FcliSimpleException;
@@ -19,17 +26,12 @@ import com.fortify.cli.ssc._common.rest.ssc.transfer.SSCFileTransferHelper;
 import com.fortify.cli.ssc.appversion.cli.mixin.SSCAppVersionResolverMixin;
 import com.fortify.cli.ssc.appversion.helper.SSCAppVersionDescriptor;
 import com.fortify.cli.ssc.appversion.helper.SSCAppVersionHelper;
+
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
-
-import java.io.File;
-import java.io.IOException;
 
 @Command(name = "audit")
 @DefaultVariablePropertyName("artifactId")
@@ -37,13 +39,13 @@ public class AviatorSSCAuditCommand extends AbstractSSCJsonNodeOutputCommand imp
     @Getter @Mixin private OutputHelperMixins.TableNoQuery outputHelper;
     @Mixin private ProgressWriterFactoryMixin progressWriterFactoryMixin;
     @Mixin private SSCAppVersionResolverMixin.RequiredOption appVersionResolver;
-    @Option(names = {"-t", "--token"}, required = true) private String token;
-    @Option(names = {"-u", "--url"}, required = true) private String url;
+    @Mixin private AviatorDescriptorSessionSupplier sessionDescriptorSupplier;
     private static final Logger LOG = LoggerFactory.getLogger(AviatorSSCAuditCommand.class);
 
     @Override
     @SneakyThrows
     public JsonNode getJsonNode(UnirestInstance unirest) {
+        var sessionDescriptor = sessionDescriptorSupplier.getSessionDescriptor();
         try (IProgressWriter progressWriter = progressWriterFactoryMixin.create()) {
             AviatorLoggerImpl logger = new AviatorLoggerImpl(progressWriter);
 
@@ -58,7 +60,7 @@ public class AviatorSSCAuditCommand extends AbstractSSCJsonNodeOutputCommand imp
                     SSCFileTransferHelper.ISSCAddDownloadTokenFunction.ROUTEPARAM_DOWNLOADTOKEN);
 
             progressWriter.writeProgress("Status: Processing FPR with Aviator");
-            File processedFile = AuditFPR.auditFPR(fprFile, token, url, logger);
+            File processedFile = AuditFPR.auditFPR(fprFile, sessionDescriptor.getAviatorToken(), sessionDescriptor.getAviatorUrl(), logger);
             processedFile.deleteOnExit();
 
             progressWriter.writeProgress("Status: Uploading FPR to SSC");

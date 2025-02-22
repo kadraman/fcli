@@ -32,7 +32,7 @@ public class SSCSessionLogoutCommand extends AbstractSessionLogoutCommand<SSCAnd
     @Mixin @Getter private OutputHelperMixins.Logout outputHelper;
     @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
     @Mixin private SSCAndScanCentralSessionLogoutOptions logoutOptions;
-    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "ssc.session.name.arggroup") 
     private SSCSessionNameArgGroup sessionNameSupplier;
     
     @Override

@@ -31,7 +31,7 @@ import picocli.CommandLine.ArgGroup;
 
 public final class FoDUnirestInstanceSupplierMixin extends AbstractSessionUnirestInstanceSupplierMixin<FoDSessionDescriptor>
 {   
-    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "fod.session.name.arggroup") 
     private FoDSessionNameArgGroup sessionNameSupplier;
     
     @Override

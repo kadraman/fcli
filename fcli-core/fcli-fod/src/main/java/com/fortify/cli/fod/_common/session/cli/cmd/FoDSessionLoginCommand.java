@@ -33,7 +33,7 @@ public class FoDSessionLoginCommand extends AbstractSessionLoginCommand<FoDSessi
     @Getter @Mixin private OutputHelperMixins.Login outputHelper;
     @Getter private FoDSessionHelper sessionHelper = FoDSessionHelper.instance();
     @Mixin private FoDSessionLoginOptions loginOptions;
-    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "fod.session.name.arggroup") 
     private FoDSessionNameArgGroup sessionNameSupplier;
     
     @Override

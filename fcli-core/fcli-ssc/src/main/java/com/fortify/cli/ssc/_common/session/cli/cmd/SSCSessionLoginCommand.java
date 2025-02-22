@@ -31,7 +31,7 @@ public class SSCSessionLoginCommand extends AbstractSessionLoginCommand<SSCAndSc
     @Mixin @Getter private OutputHelperMixins.Login outputHelper;
     @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
     @Mixin private SSCAndScanCentralSessionLoginOptions sessionLoginOptions;
-    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "ssc.session.name.arggroup") 
     private SSCSessionNameArgGroup sessionNameSupplier;
     
     @Override

@@ -24,7 +24,7 @@ import lombok.Getter;
 import picocli.CommandLine.ArgGroup;
 
 public class SSCAndScanCentralUnirestInstanceSupplierMixin extends AbstractSessionDescriptorSupplierMixin<SSCAndScanCentralSessionDescriptor> {
-    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "ssc.session.name.arggroup") 
     private SSCSessionNameArgGroup sessionNameSupplier;
     
     @Override
