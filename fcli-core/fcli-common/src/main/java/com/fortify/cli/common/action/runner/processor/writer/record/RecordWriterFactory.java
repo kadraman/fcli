@@ -17,14 +17,6 @@ import java.util.function.BiFunction;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
-import com.fortify.cli.common.output.OutputFormat.OutputStructure;
-import com.fortify.cli.common.output.writer.record.expr.ExprRecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.json_properties.JsonPropertiesRecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.table.TableRecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.table.TableRecordWriter.TableType;
-import com.fortify.cli.common.output.writer.record.tree.TreeRecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.xml.XmlRecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.yaml.YamlRecordWriterFactory;
 
 import lombok.RequiredArgsConstructor;
 

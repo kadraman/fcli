@@ -17,9 +17,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fortify.cli.common.action.model.ActionStepWithWriter;
-import com.fortify.cli.common.action.model.FcliActionValidationException;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.action.runner.FcliActionStepException;
 import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterFactory;
 
@@ -42,6 +42,6 @@ public final class ActionStepWriterFactory {
                 .filter(e->e.toString().equalsIgnoreCase(type))
                 .findFirst()
                 .map(e->e.createWriter(config))
-                .orElseThrow(()->new FcliActionValidationException("Unknown writer type: "+type));
+                .orElseThrow(()->new FcliActionStepException("Unknown writer type: "+type));
     }
 }
