@@ -13,6 +13,7 @@
 package com.fortify.cli.common.action.runner;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,8 +57,8 @@ public class ActionRunnerConfig {
      *  on {@link ActionRunnerContext} during the configuration phase, but they may call getSpelEvaluator()
      *  on the {@link ActionRunnerConfig} as returned by the {@link ActionRunnerContext#getConfig()} method. */
     @Singular private final Collection<BiConsumer<ActionRunnerContext, SimpleEvaluationContext>> actionContextSpelEvaluatorConfigurers;
-    /** Requested session name */
-    private final String requestedSessionName;
+    /** Default options to pass to fcli commands in run.fcli steps (if the fcli command supports that option) */ 
+    @Singular private final Map<String,String> defaultFcliRunOptions;
     
     /** Factory for creating the single {@link ISpelEvaluator} instance. By using a factory, we can
      *  check for illegal access to the {@link ISpelEvaluator} during configuration phase. */

@@ -44,7 +44,7 @@ public class FoDActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected void configure(ActionRunnerConfigBuilder configBuilder) {
        configBuilder
-            .requestedSessionName(unirestInstanceSupplier.getSessionName())
+            .defaultFcliRunOption("--fod-session", unirestInstanceSupplier.getSessionName())
             .actionContextConfigurer(this::configureActionContext)
             .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
     }

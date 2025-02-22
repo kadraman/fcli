@@ -18,10 +18,12 @@ import com.fortify.cli.common.session.cli.cmd.AbstractSessionLogoutCommand;
 import com.fortify.cli.common.session.cli.mixin.UserCredentialOptions;
 import com.fortify.cli.common.session.helper.FcliSessionLogoutException;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLogoutOptions;
+import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionNameArgGroup;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 
 import lombok.Getter;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
@@ -30,6 +32,8 @@ public class SSCSessionLogoutCommand extends AbstractSessionLogoutCommand<SSCAnd
     @Mixin @Getter private OutputHelperMixins.Logout outputHelper;
     @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
     @Mixin private SSCAndScanCentralSessionLogoutOptions logoutOptions;
+    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    private SSCSessionNameArgGroup sessionNameSupplier;
     
     @Override
     protected void logout(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {

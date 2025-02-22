@@ -26,7 +26,7 @@ public class SSCTokenCommandUrlConfigMixin implements IUrlConfigSupplier {
     
     private static final class SSCUrlConfigOrSessionName {
         @ArgGroup(exclusive=false) private UrlConfigOptions urlConfig = new UrlConfigOptions();
-        @Option(names="--session", defaultValue="default") private String sessionName;
+        @Option(names="--ssc-session", defaultValue="default", required=false) private String sessionName;
     } 
     
     @Override

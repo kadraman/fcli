@@ -15,12 +15,14 @@ package com.fortify.cli.ssc._common.session.cli.cmd;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLoginCommand;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLoginOptions;
+import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionNameArgGroup;
 import com.fortify.cli.ssc._common.session.helper.ISSCAndScanCentralCredentialsConfig;
 import com.fortify.cli.ssc._common.session.helper.ISSCAndScanCentralUrlConfig;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 
 import lombok.Getter;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
@@ -29,6 +31,8 @@ public class SSCSessionLoginCommand extends AbstractSessionLoginCommand<SSCAndSc
     @Mixin @Getter private OutputHelperMixins.Login outputHelper;
     @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
     @Mixin private SSCAndScanCentralSessionLoginOptions sessionLoginOptions;
+    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    private SSCSessionNameArgGroup sessionNameSupplier;
     
     @Override
     protected void logoutBeforeNewLogin(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {

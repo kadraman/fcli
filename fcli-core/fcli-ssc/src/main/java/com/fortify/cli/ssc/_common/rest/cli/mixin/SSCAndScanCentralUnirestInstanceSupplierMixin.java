@@ -15,12 +15,18 @@ package com.fortify.cli.ssc._common.rest.cli.mixin;
 import com.fortify.cli.common.rest.unirest.GenericUnirestFactory;
 import com.fortify.cli.common.session.cli.mixin.AbstractSessionDescriptorSupplierMixin;
 import com.fortify.cli.ssc._common.rest.helper.SSCAndScanCentralUnirestHelper;
+import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionNameArgGroup;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 
 import kong.unirest.UnirestInstance;
+import lombok.Getter;
+import picocli.CommandLine.ArgGroup;
 
 public class SSCAndScanCentralUnirestInstanceSupplierMixin extends AbstractSessionDescriptorSupplierMixin<SSCAndScanCentralSessionDescriptor> {
+    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    private SSCSessionNameArgGroup sessionNameSupplier;
+    
     @Override
     protected final SSCAndScanCentralSessionDescriptor getSessionDescriptor(String sessionName) {
         return SSCAndScanCentralSessionHelper.instance().get(sessionName, true);

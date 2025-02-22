@@ -16,6 +16,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -59,8 +60,8 @@ public final class FcliCommandExecutorFactory {
     private final Consumer<Result> onSuccess; // Executed after onResult, if 0 exit code
     private final Consumer<Result> onFail; // Executed after onResult, if non-zero exit code
     private final Consumer<Throwable> onException;
-    public final String progressOptionValueIfNotPresent;
-    public final String sessionOptionValueIfNotPresent;
+    public final String progressOptionValueIfNotPresent; // TODO Should we integrate this into defaultOptionsIfNotPresent?
+    public final Map<String, String> defaultOptionsIfNotPresent;
     
     public final FcliCommandExecutor create() {
         if ( rootCommandLine==null ) {
@@ -121,8 +122,12 @@ public final class FcliCommandExecutorFactory {
 
         private String[] addOptionsIfNotPresent(String[] resolvedArgs) {
             var result = new ArrayList<>(Arrays.asList(resolvedArgs));
-            addOptionIfNotPresent(result, "--progress", progressOptionValueIfNotPresent);
-            addOptionIfNotPresent(result, "--session", sessionOptionValueIfNotPresent);
+            addOptionIfNotPresent(result, "--progress", progressOptionValueIfNotPresent); // TODO Integrate with below?
+            if ( defaultOptionsIfNotPresent!=null ) {
+                for ( var e : defaultOptionsIfNotPresent.entrySet() ) {
+                    addOptionIfNotPresent(result, e.getKey(), e.getValue());
+                }
+            }
             return result.toArray(String[]::new);
         }
         

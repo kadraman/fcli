@@ -44,10 +44,10 @@ steps:
       ciEnvPrefix: ${moduleUpperCase}_CI
   - with:
       sessions:
-        - login: ${#fcliCmd(loginEnvPrefix, loginCmd)} --session ${sessionName} ${#optsFromEnv(loginOpts)}
-          logout: ${#fcliCmd(logoutEnvPrefix, logoutCmd)} --session ${sessionName} ${#optsFromEnv(logoutOpts)}
+        - login: ${#fcliCmd(loginEnvPrefix, loginCmd)} --${module}-session ${sessionName} ${#optsFromEnv(loginOpts)}
+          logout: ${#fcliCmd(logoutEnvPrefix, logoutCmd)} --${module}-session ${sessionName} ${#optsFromEnv(logoutOpts)}
       do:
         - run.fcli: 
-            ci: ${#actionCmd(ciEnvPrefix, module, 'ci')} --session=${sessionName}
+            ci: ${#actionCmd(ciEnvPrefix, module, 'ci')} --${module}-session=${sessionName}
       
       

@@ -14,10 +14,12 @@ package com.fortify.cli.fod._common.session.cli.cmd;
 
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLogoutCommand;
+import com.fortify.cli.fod._common.session.cli.mixin.FoDSessionNameArgGroup;
 import com.fortify.cli.fod._common.session.helper.FoDSessionDescriptor;
 import com.fortify.cli.fod._common.session.helper.FoDSessionHelper;
 
 import lombok.Getter;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
@@ -25,6 +27,8 @@ import picocli.CommandLine.Mixin;
 public class FoDSessionLogoutCommand extends AbstractSessionLogoutCommand<FoDSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.Logout outputHelper;
     @Getter private FoDSessionHelper sessionHelper = FoDSessionHelper.instance();
+    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    private FoDSessionNameArgGroup sessionNameSupplier;
     
     @Override
     protected void logout(String sessionName, FoDSessionDescriptor sessionDescriptor) {

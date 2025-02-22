@@ -53,7 +53,7 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
                 .progressOptionValueIfNotPresent(ctx.getConfig().getProgressWriterFactory().getType().name())
-                .sessionOptionValueIfNotPresent(ctx.getConfig().getRequestedSessionName())
+                .defaultOptionsIfNotPresent(ctx.getConfig().getDefaultFcliRunOptions())
                 .stdout(ctx.getStdout())
                 .stderr(ctx.getStderr())
                 .stdoutOutputType(stdoutOutputType)

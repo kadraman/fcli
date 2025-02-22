@@ -72,7 +72,7 @@ public class SSCActionRunCommand extends AbstractActionRunCommand {
     @Override
     protected void configure(ActionRunnerConfigBuilder configBuilder) {
        configBuilder
-            .requestedSessionName(unirestInstanceSupplier.getSessionName())
+            .defaultFcliRunOption("--ssc-session", unirestInstanceSupplier.getSessionName())
             .actionContextConfigurer(this::configureActionContext)
             .actionContextSpelEvaluatorConfigurer(this::configureSpelContext);
     }

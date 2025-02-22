@@ -26,9 +26,14 @@ import com.fortify.cli.fod._common.session.helper.FoDSessionHelper;
 import kong.unirest.Config;
 import kong.unirest.UnirestInstance;
 import kong.unirest.apache.ApacheClient;
+import lombok.Getter;
+import picocli.CommandLine.ArgGroup;
 
 public final class FoDUnirestInstanceSupplierMixin extends AbstractSessionUnirestInstanceSupplierMixin<FoDSessionDescriptor>
 {   
+    @Getter @ArgGroup(headingKey = "session.name.arggroup") 
+    private FoDSessionNameArgGroup sessionNameSupplier;
+    
     @Override
     protected final FoDSessionDescriptor getSessionDescriptor(String sessionName) {
         return FoDSessionHelper.instance().get(sessionName, true);
