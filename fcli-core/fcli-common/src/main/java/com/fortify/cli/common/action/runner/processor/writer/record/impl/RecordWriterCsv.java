@@ -40,7 +40,7 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
         // For CSV, we always flatten the output
-        return createObjectNodePropertiesTransformer().andThen(createFlattenTransformer());
+        return createSelectedFieldsTransformer().andThen(createFlattenTransformer());
     }   
     
     @Override

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.transform.AbstractJsonNodeTransformer;
-import com.fortify.cli.common.output.transform.PropertyPathFormatter;
 
 public final class SelectedFieldsTransformer extends AbstractJsonNodeTransformer {
     private static final JsonNode NA_NODE = new TextNode("N/A");
@@ -42,7 +41,7 @@ public final class SelectedFieldsTransformer extends AbstractJsonNodeTransformer
         if ( propertyNames==null ) { return input; }
         var result = JsonHelper.getObjectMapper().createObjectNode();
         propertyNames.entrySet()
-            .forEach(e->result.set(PropertyPathFormatter.camelCase(e.getValue()), evaluateValue(input, e.getKey())));
+            .forEach(e->result.set(e.getValue(), evaluateValue(input, e.getKey())));
         return result;
     }
     

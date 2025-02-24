@@ -42,7 +42,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
         // For table, we always flatten the output
-        return createObjectNodePropertiesTransformer().andThen(createFlattenTransformer());
+        return createSelectedFieldsTransformer().andThen(createFlattenTransformer());
     }   
     
     @Override
