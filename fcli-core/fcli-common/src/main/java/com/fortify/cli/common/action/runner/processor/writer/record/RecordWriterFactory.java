@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
+import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterTable;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor 
 public enum RecordWriterFactory {
     csv(RecordWriterCsv::new),
-    json(RecordWriterJson::new);
+    json(RecordWriterJson::new),
+    table(RecordWriterTable::new)
     // The below are not yet implemented
     // json_flat(RecordWriterJson::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
     // table(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)) 
@@ -37,6 +39,7 @@ public enum RecordWriterFactory {
     // yaml_flat(RecordWriterYaml::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
     // expr(RecordWriterExpr::new, RecordWriterStyles.none())
     // json_properties(RecordWriterJsonProperties::new, RecordWriterStyles.none())
+    ;
 
     private final Function<RecordWriterConfig,IRecordWriter> factory;
     public IRecordWriter createWriter(RecordWriterConfig config) {

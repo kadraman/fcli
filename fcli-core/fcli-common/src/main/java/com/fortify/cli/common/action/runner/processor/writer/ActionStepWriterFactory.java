@@ -49,7 +49,7 @@ public final class ActionStepWriterFactory {
             this.ctx = ctx;
             this.vars = vars;
             this.factory = getFactory(vars.eval(withWriter.getType(), String.class));
-            this.to = vars.eval(withWriter.getType(), String.class);
+            this.to = vars.eval(withWriter.getTo(), String.class);
             this.styles = getStyles(vars, withWriter);
             this.options = vars.eval(withWriter.getOptions(), String.class);
         }

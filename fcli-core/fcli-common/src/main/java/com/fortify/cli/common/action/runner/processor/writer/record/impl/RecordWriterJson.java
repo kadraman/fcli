@@ -38,7 +38,8 @@ public class RecordWriterJson extends AbstractRecordWriter<JsonGenerator> {
     
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
-        return Function.identity();
+        return createObjectNodePropertiesTransformer()
+                .andThen(config.getStyles().isFlat()?createFlattenTransformer():Function.identity());
     }
     
     @Override

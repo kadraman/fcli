@@ -19,6 +19,9 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.output.transform.PropertyPathFormatter;
+import com.fortify.cli.common.output.transform.fields.SelectedFieldsTransformer;
+import com.fortify.cli.common.output.transform.flatten.FlattenTransformer;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -49,6 +52,14 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
         if ( out!=null) {
             close(out);
         }
+    }
+    
+    protected final Function<ObjectNode, ObjectNode> createFlattenTransformer() {
+        return new FlattenTransformer(PropertyPathFormatter::camelCase, ".", false)::transformObjectNode;
+    }
+
+    protected final Function<ObjectNode, ObjectNode> createObjectNodePropertiesTransformer() {
+        return new SelectedFieldsTransformer(getConfig().getOptions(), false)::transformObjectNode;
     }
     
     @SneakyThrows

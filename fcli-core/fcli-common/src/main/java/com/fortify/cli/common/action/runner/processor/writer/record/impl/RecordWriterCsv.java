@@ -23,7 +23,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvFactory;
 import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.json.JsonHelper;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +39,9 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
-        return this::transformRecord; // TODO Use proper formatter instance, such that we don't need to parse headers each time?
-    }
+        // For CSV, we always flatten the output
+        return createObjectNodePropertiesTransformer().andThen(createFlattenTransformer());
+    }   
     
     @Override
     protected void close(CsvGenerator out) throws IOException {
@@ -63,14 +63,6 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
         if ( config.getStyles().isArray() ) {
             result.writeStartArray();
         }
-        return result;
-    }
-    
-    private ObjectNode transformRecord(ObjectNode record) {
-        var headers = config.parseOptionsAsHeaders();
-        if ( headers==null ) { return record; }
-        var result = JsonHelper.getObjectMapper().createObjectNode();
-        headers.entrySet().forEach(e->result.set(e.getValue(), record.get(e.getKey())));
         return result;
     }
 }
