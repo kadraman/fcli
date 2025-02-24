@@ -10,10 +10,10 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.cli.cmd;
+package com.fortify.cli.aviator._common.session.admin.cli.cmd;
 
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionDescriptor;
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionHelper;
+import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionDescriptor;
+import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionHelper;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionListCommand;
 
@@ -22,7 +22,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.List.CMD_NAME, sortOptions = false)
-public class AviatorSessionListCommand extends AbstractSessionListCommand<AviatorSessionDescriptor> {
+public class AviatorAdminSessionListCommand extends AbstractSessionListCommand<AviatorAdminSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.List outputHelper;
-    @Getter private AviatorSessionHelper sessionHelper = AviatorSessionHelper.instance();
+    @Getter private AviatorAdminSessionHelper sessionHelper = AviatorAdminSessionHelper.instance();
 }

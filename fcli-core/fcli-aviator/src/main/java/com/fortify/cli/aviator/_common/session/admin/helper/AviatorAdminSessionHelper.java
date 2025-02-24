@@ -10,26 +10,26 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.helper;
+package com.fortify.cli.aviator._common.session.admin.helper;
 
 import com.fortify.cli.common.session.helper.AbstractSessionHelper;
 
-public class AviatorSessionHelper extends AbstractSessionHelper<AviatorSessionDescriptor> {
-    private static final AviatorSessionHelper INSTANCE = new AviatorSessionHelper();
+public class AviatorAdminSessionHelper extends AbstractSessionHelper<AviatorAdminSessionDescriptor> {
+    private static final AviatorAdminSessionHelper INSTANCE = new AviatorAdminSessionHelper();
     
-    private AviatorSessionHelper() {}
+    private AviatorAdminSessionHelper() {}
     
     @Override
     public String getType() {
-        return "aviator";
+        return "aviator-admin";
     }
 
     @Override
-    protected Class<AviatorSessionDescriptor> getSessionDescriptorType() {
-        return AviatorSessionDescriptor.class;
+    protected Class<AviatorAdminSessionDescriptor> getSessionDescriptorType() {
+        return AviatorAdminSessionDescriptor.class;
     }
     
-    public static final AviatorSessionHelper instance() {
+    public static final AviatorAdminSessionHelper instance() {
         return INSTANCE;
     }
 }

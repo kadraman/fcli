@@ -10,11 +10,11 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.cli.cmd;
+package com.fortify.cli.aviator._common.session.user.cli.cmd;
 
-import com.fortify.cli.aviator._common.session.cli.mixin.AviatorSessionNameArgGroup;
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionDescriptor;
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionHelper;
+import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionNameArgGroup;
+import com.fortify.cli.aviator._common.session.user.helper.AviatorUserSessionDescriptor;
+import com.fortify.cli.aviator._common.session.user.helper.AviatorUserSessionHelper;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLogoutCommand;
 
@@ -24,14 +24,14 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = OutputHelperMixins.Logout.CMD_NAME, sortOptions = false)
-public class AviatorSessionLogoutCommand extends AbstractSessionLogoutCommand<AviatorSessionDescriptor> {
+public class AviatorUserSessionLogoutCommand extends AbstractSessionLogoutCommand<AviatorUserSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.Logout outputHelper;
-    @Getter private AviatorSessionHelper sessionHelper = AviatorSessionHelper.instance();
-    @Getter @ArgGroup(headingKey = "aviator.session.name.arggroup") 
-    private AviatorSessionNameArgGroup sessionNameSupplier;
+    @Getter private AviatorUserSessionHelper sessionHelper = AviatorUserSessionHelper.instance();
+    @Getter @ArgGroup(headingKey = "aviator.user-session.name.arggroup") 
+    private AviatorUserSessionNameArgGroup sessionNameSupplier;
     
     @Override
-    protected void logout(String sessionName, AviatorSessionDescriptor sessionDescriptor) {
+    protected void logout(String sessionName, AviatorUserSessionDescriptor sessionDescriptor) {
        // Nothing to do
     }
 }

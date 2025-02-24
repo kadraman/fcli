@@ -10,21 +10,21 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.cli.mixin;
+package com.fortify.cli.aviator._common.session.admin.cli.mixin;
 
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionDescriptor;
-import com.fortify.cli.aviator._common.session.helper.AviatorSessionHelper;
+import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionDescriptor;
+import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionHelper;
 import com.fortify.cli.common.session.cli.mixin.AbstractSessionDescriptorSupplierMixin;
 
 import lombok.Getter;
 import picocli.CommandLine.ArgGroup;
 
-public class AviatorDescriptorSessionSupplier extends AbstractSessionDescriptorSupplierMixin<AviatorSessionDescriptor> {
-    @Getter @ArgGroup(headingKey = "aviator.session.name.arggroup") 
-    private AviatorSessionNameArgGroup sessionNameSupplier;
+public class AviatorAdminSessionDescriptorSupplier extends AbstractSessionDescriptorSupplierMixin<AviatorAdminSessionDescriptor> {
+    @Getter @ArgGroup(headingKey = "aviator.admin-session.name.arggroup") 
+    private AviatorAdminSessionNameArgGroup sessionNameSupplier;
     
     @Override
-    public final AviatorSessionDescriptor getSessionDescriptor(String sessionName) {
-        return AviatorSessionHelper.instance().get(sessionName, true);
+    public final AviatorAdminSessionDescriptor getSessionDescriptor(String sessionName) {
+        return AviatorAdminSessionHelper.instance().get(sessionName, true);
     }
 }

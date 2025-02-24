@@ -12,7 +12,8 @@
  *******************************************************************************/
 package com.fortify.cli.aviator._main.cli.cmd;
 
-import com.fortify.cli.aviator._common.session.cli.cmd.AviatorSessionCommands;
+import com.fortify.cli.aviator._common.session.admin.cli.cmd.AviatorAdminSessionCommands;
+import com.fortify.cli.aviator._common.session.user.cli.cmd.AviatorUserSessionCommands;
 import com.fortify.cli.aviator.ssc.cli.cmd.AviatorSSCCommands;
 import com.fortify.cli.common.cli.cmd.AbstractContainerCommand;
 
@@ -30,7 +31,8 @@ import picocli.CommandLine.Command;
                 //   command and looks better in the usage command list, as usually 
                 //   'rest' has a different header ('Interact with' compared to most 
                 //   other commands ('Manage').
-                AviatorSessionCommands.class,
+                AviatorAdminSessionCommands.class,
+                AviatorUserSessionCommands.class,
                 AviatorSSCCommands.class,
         }
 )

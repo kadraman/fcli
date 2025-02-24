@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.cli.cmd;
+package com.fortify.cli.aviator._common.session.user.cli.cmd;
 
 import com.fortify.cli.common.cli.cmd.AbstractContainerCommand;
 
@@ -19,10 +19,10 @@ import picocli.CommandLine.Command;
 @Command(
         name = "session",
         subcommands = {
-                AviatorSessionListCommand.class,
-                AviatorSessionLoginCommand.class,
-                AviatorSessionLogoutCommand.class 
+                AviatorUserSessionListCommand.class,
+                AviatorUserSessionLoginCommand.class,
+                AviatorUserSessionLogoutCommand.class 
         }
 )
-public class AviatorSessionCommands extends AbstractContainerCommand {
+public class AviatorUserSessionCommands extends AbstractContainerCommand {
 }

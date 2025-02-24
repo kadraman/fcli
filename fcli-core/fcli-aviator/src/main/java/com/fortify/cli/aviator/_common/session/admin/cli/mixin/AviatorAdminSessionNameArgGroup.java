@@ -10,14 +10,14 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.aviator._common.session.cli.mixin;
+package com.fortify.cli.aviator._common.session.admin.cli.mixin;
 
 import com.fortify.cli.common.session.cli.mixin.ISessionNameSupplier;
 
 import lombok.Getter;
 import picocli.CommandLine.Option;
 
-public final class AviatorSessionNameArgGroup implements ISessionNameSupplier { 
-    @Getter @Option(names={"--aviator-session", "--av-session"}, defaultValue="default", required=false)
+public final class AviatorAdminSessionNameArgGroup implements ISessionNameSupplier { 
+    @Getter @Option(names={"--aviator-admin-session", "--av-admin-session"}, defaultValue="default", required=false)
     private String sessionName;
 }

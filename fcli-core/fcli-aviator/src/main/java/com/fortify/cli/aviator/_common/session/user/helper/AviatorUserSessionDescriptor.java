@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.aviator._common.session.helper;
+package com.fortify.cli.aviator._common.session.user.helper;
 
 import java.util.Date;
 
@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
 @Data @EqualsAndHashCode(callSuper = true) 
 @Reflectable @NoArgsConstructor @AllArgsConstructor @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AviatorSessionDescriptor extends AbstractSessionDescriptor {
+public class AviatorUserSessionDescriptor extends AbstractSessionDescriptor {
     private String aviatorUrl;
     private String aviatorToken;
     
@@ -44,6 +44,6 @@ public class AviatorSessionDescriptor extends AbstractSessionDescriptor {
     
     @Override @JsonIgnore
     public String getType() {
-        return AviatorSessionHelper.instance().getType();
+        return AviatorUserSessionHelper.instance().getType();
     }
 }
