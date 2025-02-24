@@ -12,28 +12,89 @@
  */
 package com.fortify.cli.common.action.runner.processor.writer.record;
 
-import java.util.Set;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fortify.cli.common.exception.FcliSimpleException;
 
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RecordWriterStyles {
-    private final Set<RecordWriterStyle> styles;
+    private final Map<RecordWriterStyleGroup, RecordWriterStyle> stylesByGroup;
+    
+    public static final RecordWriterStyles apply(String... styles) {
+        return styles==null 
+                ? apply(new RecordWriterStyle[] {})
+                : apply(Arrays.stream(styles)
+                        .map(RecordWriterStyle::asStyle)
+                        .toArray(RecordWriterStyle[]::new));
+    }
     
     public static final RecordWriterStyles apply(RecordWriterStyle... styles) {
-        return new RecordWriterStyles(Set.of(styles));
+        var stylesByGroup = new HashMap<RecordWriterStyleGroup, RecordWriterStyle>();
+        for (var style : styles) {
+            var existingStyle = stylesByGroup.get(style.getGroup());
+            if ( existingStyle!=null && existingStyle!=style ) {
+                throw new FcliSimpleException("Conflicting styles specified: %s, %s", existingStyle, style);
+            }
+            stylesByGroup.put(style.getGroup(), style);
+        }
+        return new RecordWriterStyles(stylesByGroup);
     }
     
-    public static final RecordWriterStyles none() {
-        return apply();
+    public final boolean withHeaders() {
+        return getOrDefault(RecordWriterStyleGroup.HEADER)==RecordWriterStyle.header;
     }
     
-    public final boolean has(RecordWriterStyle style) {
-        return styles.contains(style);
+    public final boolean isPretty() {
+        return getOrDefault(RecordWriterStyleGroup.PRETTY)==RecordWriterStyle.pretty;
     }
     
+    public final boolean isFlat() {
+        return getOrDefault(RecordWriterStyleGroup.FLAT)==RecordWriterStyle.flat;
+    }
+    
+    public final boolean isArray() {
+        return getOrDefault(RecordWriterStyleGroup.SINGULAR)==RecordWriterStyle.array;
+    }
+    
+    private final RecordWriterStyle getOrDefault(RecordWriterStyleGroup group) {
+        return stylesByGroup.getOrDefault(group, group.defaultStyle());
+    }
+    
+    @RequiredArgsConstructor
     public static enum RecordWriterStyle {
-        SHOW_HEADERS, FLATTEN
+        header(RecordWriterStyleGroup.HEADER), no_header(RecordWriterStyleGroup.HEADER),
+        pretty(RecordWriterStyleGroup.PRETTY), no_pretty(RecordWriterStyleGroup.PRETTY),
+        flat(RecordWriterStyleGroup.FLAT), no_flat(RecordWriterStyleGroup.FLAT),
+        array(RecordWriterStyleGroup.SINGULAR), single(RecordWriterStyleGroup.SINGULAR);
+        
+        @Getter private final RecordWriterStyleGroup group;
+        
+        public String toString() {
+            return name().replace('_', '-');
+        }
+        
+        public static final RecordWriterStyle asStyle(String s) {
+            return valueOf(RecordWriterStyle.class, s.replace('-', '_'));
+        }
+    }
+    
+    @RequiredArgsConstructor
+    public static enum RecordWriterStyleGroup {
+        HEADER("header"), 
+        PRETTY("pretty"), 
+        FLAT("no-flat"), 
+        SINGULAR("array");
+        
+        private final String defaultStyleName;
+        
+        public RecordWriterStyle defaultStyle() {
+            return RecordWriterStyle.asStyle(defaultStyleName);
+        }
     }
 }

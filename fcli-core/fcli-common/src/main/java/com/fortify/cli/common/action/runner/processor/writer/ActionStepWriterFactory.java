@@ -13,8 +13,6 @@
 package com.fortify.cli.common.action.runner.processor.writer;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.fortify.cli.common.action.model.ActionStepWithWriter;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
@@ -22,26 +20,50 @@ import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.FcliActionStepException;
 import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterFactory;
+import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public final class ActionStepWriterFactory {
     public static final IRecordWriter createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
-        var type = vars.eval(withWriter.getType(), String.class);
-        var to = vars.eval(withWriter.getTo(), String.class);
-        return createStandardWriter(ctx, vars, withWriter, type, to);
+        var config = new WithWriterConfig(ctx, vars, withWriter);
+        return createStandardWriter(config);
     }
 
-    private static final IRecordWriter createStandardWriter(ActionRunnerContext ctx, ActionRunnerVars vars,
-            ActionStepWithWriter withWriter, String type, String to) {
-        Map<String,String> options = withWriter.getOptions()==null ? null : withWriter.getOptions().entrySet().stream()
-                .collect(HashMap::new, (map,e)->map.put(e.getKey(), vars.eval(e.getValue(), String.class)), HashMap::putAll);
-        var config = ActionStepWriterConfigFactory.createRecordWriterConfig(ctx, vars, to, options);
-        return Arrays.stream(RecordWriterFactory.values())
-                .filter(e->e.toString().equalsIgnoreCase(type))
-                .findFirst()
-                .map(e->e.createWriter(config))
-                .orElseThrow(()->new FcliActionStepException("Unknown writer type: "+type));
+    private static final IRecordWriter createStandardWriter(WithWriterConfig config) {
+        return config.getFactory().createWriter(ActionStepWriterConfigFactory.createRecordWriterConfig(config));
+    }
+    
+    @Getter
+    static final class WithWriterConfig {
+        private final ActionRunnerContext ctx;
+        private final ActionRunnerVars vars;
+        private final RecordWriterFactory factory;
+        private final String to;
+        private final RecordWriterStyles styles;
+        private final String options;
+        
+        public WithWriterConfig(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
+            this.ctx = ctx;
+            this.vars = vars;
+            this.factory = getFactory(vars.eval(withWriter.getType(), String.class));
+            this.to = vars.eval(withWriter.getType(), String.class);
+            this.styles = getStyles(vars, withWriter);
+            this.options = vars.eval(withWriter.getOptions(), String.class);
+        }
+
+        private RecordWriterStyles getStyles(ActionRunnerVars vars, ActionStepWithWriter withWriter) {
+            var stylesString = vars.eval(withWriter.getStyle(), String.class);
+            return RecordWriterStyles.apply(stylesString==null?null:stylesString.split("[\\s,]+"));
+        }
+
+        private static final RecordWriterFactory getFactory(String type) {
+            return Arrays.stream(RecordWriterFactory.values())
+                    .filter(e->e.toString().equalsIgnoreCase(type))
+                    .findFirst()
+                    .orElseThrow(()->new FcliActionStepException("Unknown writer type: "+type));
+        }   
     }
 }

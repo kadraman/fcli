@@ -12,8 +12,6 @@
  */
 package com.fortify.cli.common.action.model;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -47,20 +45,21 @@ public final class ActionStepWithWriter implements IActionElement {
     @JsonProperty(value = "to", required = true) private TemplateExpression to;
     
     @JsonPropertyDescription("""
-        Required SpEL template expression defining the writer type. The expression must evaluate \
-        to one of the following values:
+        Required SpEL template expression defining the writer type.
         
-        - csv: CSV output with header
-        - csv-plain: CSV output without header
-        - json: JSON output
+        TODO
         """)
     @JsonProperty(value = "type", required = true) private TemplateExpression type;
     
     @JsonPropertyDescription("""
-        Optional map defining options for the given writer type. Different writer types may support \
-        different configuration options.
-        """) // TODO Add writer option descriptions, together with the writer types that they apply to
-    @JsonProperty(value = "options", required = false) private Map<String, TemplateExpression> options;
+        Required SpEL template expression defining the writer type.
+        """)
+    @JsonProperty(value = "style", required = true) private TemplateExpression style;
+    
+    @JsonPropertyDescription("""
+        TODO
+        """)
+    @JsonProperty(value = "options", required = false) private TemplateExpression options;
     
     @Override
     public void postLoad(Action action) {

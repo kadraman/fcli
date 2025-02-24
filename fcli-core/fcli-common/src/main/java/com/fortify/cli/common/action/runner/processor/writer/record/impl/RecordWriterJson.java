@@ -12,7 +12,9 @@
  *******************************************************************************/
 package com.fortify.cli.common.action.runner.processor.writer.record.impl;
 
+import java.io.IOException;
 import java.io.Writer;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -20,55 +22,42 @@ import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 @RequiredArgsConstructor
-public class RecordWriterJson implements IRecordWriter {
-    private final RecordWriterStyles styles;
-    private final RecordWriterConfig config;
-    @Getter(value = AccessLevel.PRIVATE, lazy=true) private final Writer writer = createWriter();
-    private JsonGenerator generator;
+public class RecordWriterJson extends AbstractRecordWriter<JsonGenerator> {
+    @Getter private final RecordWriterConfig config;
     
-    @Override @SneakyThrows
-    public void append(ObjectNode record) {
-        // TODO Handle flattening
-        styles.has(RecordWriterStyle.FLATTEN); // Just remove warning about unused field for now
-        getGenerator(record).writeTree(record);
+    @Override
+    protected void append(JsonGenerator out, ObjectNode formattedRecord) throws IOException {
+        out.writeTree(formattedRecord);
     }
     
-    @SneakyThrows
-    private JsonGenerator getGenerator(ObjectNode record) {
-        if ( generator==null ) {
-            PrettyPrinter pp = !config.isPretty() ? null : new DefaultPrettyPrinter(); 
-            this.generator = JsonFactory.builder().
-                    build().createGenerator(getWriter())
-                    .setPrettyPrinter(pp)
-                    .setCodec(new ObjectMapper());
-            if ( !config.isSingular() ) {
-                generator.writeStartArray();
-            }
+    @Override
+    protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
+        return Function.identity();
+    }
+    
+    @Override
+    protected void close(JsonGenerator out) throws IOException {
+        if ( config.getStyles().isArray() ) { out.writeEndArray(); }
+        out.close();
+    }
+    
+    @Override
+    protected JsonGenerator createOut(Writer writer, ObjectNode formattedRecord) throws IOException {
+        if ( formattedRecord==null ) { return null; }
+        PrettyPrinter pp = !config.getStyles().isPretty() ? null : new DefaultPrettyPrinter(); 
+        var result = JsonFactory.builder().
+            build().createGenerator(writer)
+            .setPrettyPrinter(pp)
+            .setCodec(new ObjectMapper());
+        if ( config.getStyles().isArray() ) {
+            result.writeStartArray();
         }
-        return generator;
-    }
-
-    @Override @SneakyThrows
-    public void close() {
-        if ( generator!=null) {
-            if ( !config.isSingular() ) { generator.writeEndArray(); }
-            generator.close();
-        }
-    }
-    
-    @SneakyThrows
-    private final Writer createWriter() {
-        return config.getWriterSupplier().get();
+        return result;
     }
 }

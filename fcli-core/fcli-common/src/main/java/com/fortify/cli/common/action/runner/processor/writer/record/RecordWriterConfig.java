@@ -18,38 +18,19 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.fortify.cli.common.util.StringUtils;
-
 import lombok.Builder;
 import lombok.Getter;
 
 @Builder
 public class RecordWriterConfig {
     @Getter private final Supplier<Writer> writerSupplier;
-    private final Map<String, String> options;
+    @Getter private final RecordWriterStyles styles;
+    @Getter private final String options;
     
-    public String option(String name) {
-        return options==null ? null : options.get(name);
-    }
-    
-    public boolean booleanOption(String name) {
-        var value = option(name);
-        return StringUtils.isNotBlank(value) && Boolean.valueOf(value);
-    }
-    
-    public boolean isSingular() {
-        return booleanOption("singular");
-    }
-    
-    public boolean isPretty() {
-        return booleanOption("pretty");
-    }
-    
-    public Map<String,String> getHeaders() {
-        var headersString = option("headers");
-        return headersString==null 
+    public Map<String,String> parseOptionsAsHeaders() {
+        return options==null 
                 ? null
-                : Arrays.stream(headersString.split("\\s*[,\\n]\\s*"))
+                : Arrays.stream(options.split("\\s*[,\\n]\\s*"))
                     .map(kv -> kv.split("="))
                     .collect(Collectors.toMap(kv -> kv[0], kv -> kv.length==1 ? kv[0] : kv[1]));
     }

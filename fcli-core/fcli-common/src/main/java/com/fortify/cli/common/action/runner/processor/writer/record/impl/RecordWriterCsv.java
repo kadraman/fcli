@@ -12,7 +12,9 @@
  */
 package com.fortify.cli.common.action.runner.processor.writer.record.impl;
 
+import java.io.IOException;
 import java.io.Writer;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,69 +22,55 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvFactory;
 import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.json.JsonHelper;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 // TODO Do proper exception handling instead of @SneakyThrows
 @RequiredArgsConstructor
-public class RecordWriterCsv implements IRecordWriter {
-    private final RecordWriterStyles styles;
-    private final RecordWriterConfig config;
-    @Getter(value = AccessLevel.PRIVATE, lazy=true) private final Writer writer = createWriter();
-    private CsvGenerator generator;
+public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
+    @Getter private final RecordWriterConfig config;
     
-    @Override @SneakyThrows
-    public final void append(ObjectNode record) {
-        var transformedRecord = transformRecord(record);
-        getGenerator(transformedRecord).writeTree(transformedRecord);
+    @Override
+    protected void append(CsvGenerator out, ObjectNode formattedRecord) throws IOException {
+        out.writeTree(formattedRecord);
+    }
+    
+    @Override
+    protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
+        return this::transformRecord; // TODO Use proper formatter instance, such that we don't need to parse headers each time?
+    }
+    
+    @Override
+    protected void close(CsvGenerator out) throws IOException {
+        if ( config.getStyles().isArray() ) { out.writeEndArray(); }
+        out.close();
+    }
+    
+    @Override
+    protected CsvGenerator createOut(Writer writer, ObjectNode formattedRecord) throws IOException {
+        if ( formattedRecord==null ) { return null; }
+        CsvSchema.Builder schemaBuilder = CsvSchema.builder();
+        formattedRecord.fieldNames().forEachRemaining(schemaBuilder::addColumn);
+        CsvSchema schema = schemaBuilder.build().withUseHeader(config.getStyles().withHeaders());
+        var result = (CsvGenerator)CsvFactory.builder().
+                build().createGenerator(writer)
+                .setCodec(new ObjectMapper())
+                .enable(Feature.IGNORE_UNKNOWN);
+        result.setSchema(schema);
+        if ( config.getStyles().isArray() ) {
+            result.writeStartArray();
+        }
+        return result;
     }
     
     private ObjectNode transformRecord(ObjectNode record) {
-        var headers = config.getHeaders();
+        var headers = config.parseOptionsAsHeaders();
         if ( headers==null ) { return record; }
         var result = JsonHelper.getObjectMapper().createObjectNode();
         headers.entrySet().forEach(e->result.set(e.getValue(), record.get(e.getKey())));
         return result;
-    }
-
-    @Override @SneakyThrows
-    public final void close() {
-        if ( generator!=null) {
-            if ( config.isSingular() ) { generator.writeEndArray(); }
-            generator.close();
-        }
-    }
-    
-    @SneakyThrows
-    private final CsvGenerator getGenerator(ObjectNode record) {
-        if ( generator==null ) {
-            if ( record!=null ) {
-                CsvSchema.Builder schemaBuilder = CsvSchema.builder();
-                record.fieldNames().forEachRemaining(schemaBuilder::addColumn);
-                CsvSchema schema = schemaBuilder.build().withUseHeader(styles.has(RecordWriterStyle.SHOW_HEADERS));
-                this.generator = (CsvGenerator)CsvFactory.builder().
-                        build().createGenerator(getWriter())
-                        .setCodec(new ObjectMapper())
-                        .enable(Feature.IGNORE_UNKNOWN);
-                this.generator.setSchema(schema);
-                if ( config.isSingular() ) {
-                    generator.writeStartArray();
-                }
-            }
-        }
-        return generator;
-    }
-
-    @SneakyThrows
-    private final Writer createWriter() {
-        return config.getWriterSupplier().get();
     }
 }

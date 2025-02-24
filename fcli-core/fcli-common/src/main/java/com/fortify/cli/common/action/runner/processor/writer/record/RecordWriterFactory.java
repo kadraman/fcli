@@ -12,9 +12,8 @@
  */
 package com.fortify.cli.common.action.runner.processor.writer.record;
 
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles.RecordWriterStyle;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
 
@@ -24,9 +23,8 @@ import lombok.RequiredArgsConstructor;
 // implementation for both actions and general fcli output framework.
 @RequiredArgsConstructor 
 public enum RecordWriterFactory {
-    csv(RecordWriterCsv::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)),
-    csv_plain(RecordWriterCsv::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN)),
-    json(RecordWriterJson::new, RecordWriterStyles.none());
+    csv(RecordWriterCsv::new),
+    json(RecordWriterJson::new);
     // The below are not yet implemented
     // json_flat(RecordWriterJson::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
     // table(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)) 
@@ -40,10 +38,9 @@ public enum RecordWriterFactory {
     // expr(RecordWriterExpr::new, RecordWriterStyles.none())
     // json_properties(RecordWriterJsonProperties::new, RecordWriterStyles.none())
 
-    private final BiFunction<RecordWriterStyles,RecordWriterConfig,IRecordWriter> factory;
-    private final RecordWriterStyles styles;
+    private final Function<RecordWriterConfig,IRecordWriter> factory;
     public IRecordWriter createWriter(RecordWriterConfig config) {
-        return factory.apply(styles, config);
+        return factory.apply(config);
     }
     
     @Override

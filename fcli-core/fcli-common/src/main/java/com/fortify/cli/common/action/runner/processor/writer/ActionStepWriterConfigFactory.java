@@ -17,11 +17,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.action.runner.processor.writer.ActionStepWriterFactory.WithWriterConfig;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.action.runner.processor.writer.record.util.AbstractWriterWrapper;
 
@@ -31,23 +30,27 @@ import lombok.SneakyThrows;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ActionStepWriterConfigFactory {
-    public static final RecordWriterConfig createRecordWriterConfig(ActionRunnerContext ctx, ActionRunnerVars vars, String to, Map<String, String> options) {
+    public static RecordWriterConfig createRecordWriterConfig(WithWriterConfig config) {
         return RecordWriterConfig.builder()
-                .writerSupplier(()->createWriter(ctx, vars, to))
-                .options(options)
+                .writerSupplier(()->createWriter(config))
+                .styles(config.getStyles())
+                .options(config.getOptions())
                 .build();
     }
     
     @SneakyThrows
-    public static final Writer createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, String target) {
-        if ( "stdout".equals(target) ) {
+    public static final Writer createWriter(WithWriterConfig config) {
+        var to = config.getTo();
+        var ctx = config.getCtx();
+        var vars = config.getVars();
+        if ( "stdout".equals(to) ) {
             return new OutputStreamWriter(ctx.getStdout());
-        } else if ( "stderr".equals(target) ) {
+        } else if ( "stderr".equals(to) ) {
             return new OutputStreamWriter(ctx.getStderr());
-        } else if ( target.startsWith("var:") ) {
-            return new FcliActionVariableWriter(vars, target.replaceAll("^var:", ""));
+        } else if ( to.startsWith("var:") ) {
+            return new FcliActionVariableWriter(vars, to.replaceAll("^var:", ""));
         } else {
-            return new FileWriter(target);
+            return new FileWriter(to);
         }
     }
     

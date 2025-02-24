@@ -20,6 +20,10 @@ public class FcliSimpleException extends AbstractFcliException {
     private static final long serialVersionUID = 1L;
 
     public FcliSimpleException() {}
+    
+    public FcliSimpleException(String fmt, Object... args) {
+        super(String.format(fmt, args));
+    }
 
     public FcliSimpleException(String message) {
         super(message);
