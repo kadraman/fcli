@@ -27,7 +27,6 @@ import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriter
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-// TODO Do proper exception handling instead of @SneakyThrows
 @RequiredArgsConstructor
 public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     @Getter private final RecordWriterConfig config;
@@ -39,8 +38,8 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
-        // For CSV, we always flatten the output
-        return createSelectedFieldsTransformer().andThen(createFlattenTransformer());
+        // For CSV, we always flatten, keeping the original dot-separated property path as headers
+        return createStructuredOutputTransformer(true, Function.identity());
     }   
     
     @Override

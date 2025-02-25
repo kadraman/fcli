@@ -29,7 +29,6 @@ import com.github.freva.asciitable.HorizontalAlign;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-// TODO Do proper exception handling instead of @SneakyThrows
 @RequiredArgsConstructor
 public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
     @Getter private final RecordWriterConfig config;
@@ -41,8 +40,8 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
     
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
-        // For table, we always flatten the output
-        return createSelectedFieldsTransformer().andThen(createFlattenTransformer());
+        // For tables, we always flatten, keeping the original dot-separated property path as headers
+        return createStructuredOutputTransformer(true, Function.identity());
     }   
     
     @Override

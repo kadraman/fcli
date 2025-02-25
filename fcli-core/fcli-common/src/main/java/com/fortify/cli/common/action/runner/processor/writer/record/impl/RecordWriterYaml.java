@@ -15,37 +15,39 @@ package com.fortify.cli.common.action.runner.processor.writer.record.impl;
 import java.io.IOException;
 import java.io.Writer;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator> {
+public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator> {
     @Getter private final RecordWriterConfig config;
     
     @Override
-    protected JsonGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
-        PrettyPrinter pp = !config.getStyles().isPretty() ? null : new DefaultPrettyPrinter(); 
-        return JsonFactory.builder().
-            build().createGenerator(writer)
-            .setPrettyPrinter(pp)
-            .setCodec(new ObjectMapper());
+    protected YAMLGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
+        YAMLFactory factory = new YAMLFactory();
+        var result = (YAMLGenerator)factory.createGenerator(writer);
+        result.configure(YAMLGenerator.Feature.MINIMIZE_QUOTES, true)
+                .configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false)
+                .setCodec(new ObjectMapper());
+        if ( config.getStyles().isPretty() ) {
+            result = result.useDefaultPrettyPrinter();
+        }
+        return result;
     }
     
     @Override
-    protected void writeStart(JsonGenerator out) throws IOException {
+    protected void writeStart(YAMLGenerator out) throws IOException {
         if ( config.getStyles().isArray() ) { out.writeStartArray(); }
     }
     
     @Override
-    protected void writeEnd(JsonGenerator out) throws IOException {
+    protected void writeEnd(YAMLGenerator out) throws IOException {
         if ( getConfig().getStyles().isArray() ) { out.writeEndArray(); }
     }
 }

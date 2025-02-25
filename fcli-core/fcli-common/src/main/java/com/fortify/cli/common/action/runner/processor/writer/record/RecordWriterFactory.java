@@ -15,8 +15,11 @@ package com.fortify.cli.common.action.runner.processor.writer.record;
 import java.util.function.Function;
 
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
+import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterExpr;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
 import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterTable;
+import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterXml;
+import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterYaml;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,29 +28,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor 
 public enum RecordWriterFactory {
     csv(RecordWriterCsv::new),
+    table(RecordWriterTable::new),
+    expr(RecordWriterExpr::new),
     json(RecordWriterJson::new),
-    table(RecordWriterTable::new)
-    // The below are not yet implemented
-    // json_flat(RecordWriterJson::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
-    // table(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN, RecordWriterStyle.SHOW_HEADERS)) 
-    // table_plain(RecordWriterTable::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
-    // tree(RecordWriterTree::new, RecordWriterStyles.none()) 
-    // tree_flat(RecordWriterTree::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
-    // xml(RecordWriterXml::new, RecordWriterStyles.none()) 
-    // xml_flat(RecordWriterXml::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
-    // yaml(RecordWriterYaml::new, RecordWriterStyles.none())
-    // yaml_flat(RecordWriterYaml::new, RecordWriterStyles.apply(RecordWriterStyle.FLATTEN))
-    // expr(RecordWriterExpr::new, RecordWriterStyles.none())
-    // json_properties(RecordWriterJsonProperties::new, RecordWriterStyles.none())
-    ;
+    xml(RecordWriterXml::new),
+    yaml(RecordWriterYaml::new);
 
     private final Function<RecordWriterConfig,IRecordWriter> factory;
     public IRecordWriter createWriter(RecordWriterConfig config) {
         return factory.apply(config);
-    }
-    
-    @Override
-    public String toString() {
-        return name().replace('_', '-');
     }
 }

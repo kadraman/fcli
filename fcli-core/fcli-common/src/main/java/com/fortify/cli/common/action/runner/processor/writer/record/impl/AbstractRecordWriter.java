@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
@@ -53,8 +55,17 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
         }
     }
     
-    protected final Function<ObjectNode, ObjectNode> createFlattenTransformer() {
-        return new FlattenTransformer(Function.identity(), ".", false)::transformObjectNode;
+    protected final Function<ObjectNode, ObjectNode> createStructuredOutputTransformer(boolean flatten, Function<String,String> propertyNameFormatter) {
+        if ( StringUtils.isNotBlank(getConfig().getOptions()) ) {
+            return createSelectedFieldsTransformer(); // This already flattens, so no need to flatten again
+        } else if ( flatten ) {
+            return createFlattenTransformer(propertyNameFormatter);
+        }
+        return Function.identity();
+    }
+    
+    protected final Function<ObjectNode, ObjectNode> createFlattenTransformer(Function<String,String> propertyNameFormatter) {
+        return new FlattenTransformer(propertyNameFormatter, ".", false)::transformObjectNode;
     }
 
     protected final Function<ObjectNode, ObjectNode> createSelectedFieldsTransformer() {

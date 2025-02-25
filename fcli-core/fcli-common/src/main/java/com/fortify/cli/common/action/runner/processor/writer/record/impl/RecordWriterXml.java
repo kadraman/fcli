@@ -15,37 +15,46 @@ package com.fortify.cli.common.action.runner.processor.writer.record.impl;
 import java.io.IOException;
 import java.io.Writer;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import javax.xml.namespace.QName;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.xml.XmlFactory;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator> {
+public class RecordWriterXml extends AbstractRecordWriterJackson<ToXmlGenerator> {
     @Getter private final RecordWriterConfig config;
     
     @Override
-    protected JsonGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
-        PrettyPrinter pp = !config.getStyles().isPretty() ? null : new DefaultPrettyPrinter(); 
-        return JsonFactory.builder().
-            build().createGenerator(writer)
-            .setPrettyPrinter(pp)
-            .setCodec(new ObjectMapper());
+    protected void append(ToXmlGenerator out, ObjectNode formattedRecord) throws IOException {
+        out.writeFieldName("item");
+        out.writeTree(formattedRecord);
     }
     
     @Override
-    protected void writeStart(JsonGenerator out) throws IOException {
-        if ( config.getStyles().isArray() ) { out.writeStartArray(); }
+    protected ToXmlGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
+        XmlFactory factory = new XmlFactory();
+        var result = (ToXmlGenerator)factory.createGenerator(writer)
+                .setCodec(new ObjectMapper());
+        if ( config.getStyles().isPretty() ) {
+            result = (ToXmlGenerator) result.useDefaultPrettyPrinter();
+        }
+        return result;
     }
     
     @Override
-    protected void writeEnd(JsonGenerator out) throws IOException {
-        if ( getConfig().getStyles().isArray() ) { out.writeEndArray(); }
+    protected void writeStart(ToXmlGenerator out) throws IOException {
+        out.setNextName(new QName(null, "items"));
+        out.writeStartObject();
+    }
+    
+    @Override
+    protected void writeEnd(ToXmlGenerator out) throws IOException {
+        out.writeEndObject();
     }
 }
