@@ -33,7 +33,7 @@ import com.fortify.cli.common.output.writer.output.query.OutputWriterWithQuery;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
 import com.fortify.cli.common.output.writer.record.util.AppendOnCloseWriterWrapper;
 import com.fortify.cli.common.output.writer.record.util.NonClosingWriterWrapper;
 import com.fortify.cli.common.rest.paging.INextPageRequestProducer;
@@ -348,7 +348,7 @@ public class StandardOutputWriter implements IOutputWriter {
                     .addActionColumn(cmd!=null && cmd instanceof IActionCommandResultSupplier)
                     .options(options)
                     .recordWriterFactory(recordWriterFactory)
-                    .recordWriterStyles(RecordWriterStyles.apply(outputOptions.getOutputStyles()))
+                    .recordWriterStyle(RecordWriterStyle.apply(outputOptions.getOutputStyleElements()))
                     .writerSupplier(()->createWriter())
                     .build()
                     .createRecordWriter();

@@ -26,8 +26,8 @@ import com.fortify.cli.common.output.writer.IMessageResolver;
 import com.fortify.cli.common.output.writer.output.OutputRecordWriterFactory;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle.RecordWriterStyleElement;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -94,7 +94,7 @@ public abstract class AbstractReportWriter implements IReportWriter {
                 .messageResolver(messageResolver)
                 .options(options)
                 .recordWriterFactory(recordWriterFactory)
-                .recordWriterStyles(RecordWriterStyles.apply(RecordWriterStyle.pretty))
+                .recordWriterStyle(RecordWriterStyle.apply(RecordWriterStyleElement.pretty))
                 .singular(singular)
                 .writerSupplier(()->bufferedWriter(fileName))
                 .build();

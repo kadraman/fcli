@@ -21,6 +21,6 @@ import lombok.Getter;
 @Builder
 public class RecordWriterConfig {
     @Getter private final Supplier<Writer> writerSupplier;
-    @Getter private final RecordWriterStyles styles;
+    @Getter private final RecordWriterStyle style;
     @Getter private final String options;
 }

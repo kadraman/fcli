@@ -20,7 +20,7 @@ import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.FcliActionStepException;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public final class ActionStepRecordWriterFactory {
         private final ActionRunnerVars vars;
         private final RecordWriterFactory factory;
         private final String to;
-        private final RecordWriterStyles styles;
+        private final RecordWriterStyle style;
         private final String options;
         
         public WithWriterConfig(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
@@ -50,13 +50,13 @@ public final class ActionStepRecordWriterFactory {
             this.vars = vars;
             this.factory = getFactory(vars.eval(withWriter.getType(), String.class));
             this.to = vars.eval(withWriter.getTo(), String.class);
-            this.styles = getStyles(vars, withWriter);
+            this.style = getStyle(vars, withWriter);
             this.options = vars.eval(withWriter.getOptions(), String.class);
         }
 
-        private RecordWriterStyles getStyles(ActionRunnerVars vars, ActionStepWithWriter withWriter) {
-            var stylesString = vars.eval(withWriter.getStyle(), String.class);
-            return RecordWriterStyles.apply(stylesString==null?null:stylesString.split("[\\s,]+"));
+        private RecordWriterStyle getStyle(ActionRunnerVars vars, ActionStepWithWriter withWriter) {
+            var styleElementsString = vars.eval(withWriter.getStyle(), String.class);
+            return RecordWriterStyle.apply(styleElementsString==null?null:styleElementsString.split("[\\s,]+"));
         }
 
         private static final RecordWriterFactory getFactory(String type) {

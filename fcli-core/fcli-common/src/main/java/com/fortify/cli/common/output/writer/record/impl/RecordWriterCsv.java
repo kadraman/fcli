@@ -44,7 +44,7 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     
     @Override
     protected void close(CsvGenerator out) throws IOException {
-        if ( config.getStyles().isArray() ) { out.writeEndArray(); }
+        if ( config.getStyle().isArray() ) { out.writeEndArray(); }
         out.close();
     }
     
@@ -53,13 +53,13 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
         if ( formattedRecord==null ) { return null; }
         CsvSchema.Builder schemaBuilder = CsvSchema.builder();
         formattedRecord.fieldNames().forEachRemaining(schemaBuilder::addColumn);
-        CsvSchema schema = schemaBuilder.build().withUseHeader(config.getStyles().withHeaders());
+        CsvSchema schema = schemaBuilder.build().withUseHeader(config.getStyle().withHeaders());
         var result = (CsvGenerator)CsvFactory.builder().
                 build().createGenerator(writer)
                 .setCodec(new ObjectMapper())
                 .enable(Feature.IGNORE_UNKNOWN);
         result.setSchema(schema);
-        if ( config.getStyles().isArray() ) {
+        if ( config.getStyle().isArray() ) {
             result.writeStartArray();
         }
         return result;

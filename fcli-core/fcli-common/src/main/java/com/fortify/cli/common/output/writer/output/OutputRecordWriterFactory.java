@@ -22,8 +22,8 @@ import com.fortify.cli.common.output.writer.IMessageResolver;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle.RecordWriterStyleElement;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.Builder;
@@ -32,7 +32,7 @@ import lombok.Builder;
 public class OutputRecordWriterFactory {
     private final RecordWriterFactory recordWriterFactory;
     private final String options;
-    private final RecordWriterStyles recordWriterStyles;
+    private final RecordWriterStyle recordWriterStyle;
     private final Supplier<Writer> writerSupplier;
     private final IMessageResolver messageResolver;
     private final boolean addActionColumn;
@@ -41,15 +41,15 @@ public class OutputRecordWriterFactory {
     public IRecordWriter createRecordWriter() {
         var config = RecordWriterConfig.builder()
             .options(resolveOptions())
-            .styles(resolveStyles())
+            .style(resolveStyle())
             .writerSupplier(writerSupplier)
             .build();
         return recordWriterFactory.createWriter(config);
     }
     
-    private RecordWriterStyles resolveStyles() {
-        var newStyles = recordWriterStyles!=null ? recordWriterStyles : RecordWriterStyles.none();
-        return newStyles.applyDefaultStyles(singular ? RecordWriterStyle.single : RecordWriterStyle.array);
+    private RecordWriterStyle resolveStyle() {
+        var newStyle = recordWriterStyle!=null ? recordWriterStyle : RecordWriterStyle.none();
+        return newStyle.applyDefaultStyleElements(singular ? RecordWriterStyleElement.single : RecordWriterStyleElement.array);
     }
 
     private String resolveOptions() {

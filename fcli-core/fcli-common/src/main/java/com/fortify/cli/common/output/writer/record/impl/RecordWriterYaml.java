@@ -35,7 +35,7 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
         result.configure(YAMLGenerator.Feature.MINIMIZE_QUOTES, true)
                 .configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false)
                 .setCodec(new ObjectMapper());
-        if ( config.getStyles().isPretty() ) {
+        if ( config.getStyle().isPretty() ) {
             result = result.useDefaultPrettyPrinter();
         }
         return result;
@@ -43,11 +43,11 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
     
     @Override
     protected void writeStart(YAMLGenerator out) throws IOException {
-        if ( config.getStyles().isArray() ) { out.writeStartArray(); }
+        if ( config.getStyle().isArray() ) { out.writeStartArray(); }
     }
     
     @Override
     protected void writeEnd(YAMLGenerator out) throws IOException {
-        if ( getConfig().getStyles().isArray() ) { out.writeEndArray(); }
+        if ( getConfig().getStyle().isArray() ) { out.writeEndArray(); }
     }
 }

@@ -14,11 +14,11 @@ package com.fortify.cli.common.output.writer.output.standard;
 
 import java.io.File;
 
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle.RecordWriterStyleElement;
 
 public interface IOutputOptions {
     OutputFormatConfig getOutputFormatConfig();
-    RecordWriterStyle[] getOutputStyles();
+    RecordWriterStyleElement[] getOutputStyleElements();
     VariableStoreConfig getVariableStoreConfig();
     File getOutputFile(); 
 }

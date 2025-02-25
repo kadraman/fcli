@@ -90,7 +90,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
                     .map(h->new Column()
                             .dataAlign(HorizontalAlign.LEFT)
                             .headerAlign(HorizontalAlign.LEFT)
-                            .header(config.getStyles().withHeaders() ? h : null))
+                            .header(config.getStyle().withHeaders() ? h : null))
                     .toArray(Column[]::new);
                 return AsciiTable.getTable(AsciiTable.NO_BORDERS, columns, rows.toArray(String[][]::new)); 
             }

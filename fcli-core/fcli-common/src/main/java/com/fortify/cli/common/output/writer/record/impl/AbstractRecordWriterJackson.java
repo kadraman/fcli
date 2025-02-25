@@ -32,7 +32,7 @@ public abstract class AbstractRecordWriterJackson<T extends JsonGenerator> exten
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
         // For JSON, we optionally flatten, converting the dot-separated property path to camel case
-        return createStructuredOutputTransformer(getConfig().getStyles().isFlat(), PropertyPathFormatter::camelCase);
+        return createStructuredOutputTransformer(getConfig().getStyle().isFlat(), PropertyPathFormatter::camelCase);
     }
     
     @Override

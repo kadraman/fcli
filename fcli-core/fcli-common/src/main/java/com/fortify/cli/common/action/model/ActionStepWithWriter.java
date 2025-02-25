@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.json.JsonPropertyDescriptionAppend;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
@@ -56,10 +56,10 @@ public final class ActionStepWithWriter implements IActionElement {
     
     @JsonPropertyDescription("""
         Optional SpEL template expression defining the writer style. If specified, \
-        the expression should evaluate to a comma-separated list of styles to be \
-        applied to the output. Supported styles:
+        the expression should evaluate to a comma-separated list of style elements \
+        to be applied to the output. Supported style elements:
         """)
-    @JsonPropertyDescriptionAppend(RecordWriterStyles.RecordWriterStyle.class)
+    @JsonPropertyDescriptionAppend(RecordWriterStyle.RecordWriterStyleElement.class)
     @JsonProperty(value = "style", required = false) private TemplateExpression style;
     
     @JsonPropertyDescription("""

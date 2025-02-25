@@ -20,7 +20,9 @@ import com.fortify.cli.common.output.writer.output.standard.OutputFormatConfigCo
 import com.fortify.cli.common.output.writer.output.standard.OutputFormatConfigConverter.OutputFormatIterable;
 import com.fortify.cli.common.output.writer.output.standard.VariableStoreConfig;
 import com.fortify.cli.common.output.writer.output.standard.VariableStoreConfigConverter;
-import com.fortify.cli.common.output.writer.record.RecordWriterStyles.RecordWriterStyle;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyle.RecordWriterStyleElement;
+import com.fortify.cli.common.util.DisableTest;
+import com.fortify.cli.common.util.DisableTest.TestType;
 
 import lombok.Getter;
 import picocli.CommandLine.Option;
@@ -29,8 +31,8 @@ public final class OutputOptionsArgGroup implements IOutputOptions {
     @Option(names = {"-o", "--output"}, order=1, converter = OutputFormatConfigConverter.class, completionCandidates = OutputFormatIterable.class, paramLabel = "format[=<options>]")
     @Getter private OutputFormatConfig outputFormatConfig;
     
-    @Option(names = {"--styles"}, split = ",", order=2)
-    @Getter private RecordWriterStyle[] outputStyles;
+    @Option(names = {"--style"}, split = ",", order=2) @DisableTest(TestType.MULTI_OPT_PLURAL_NAME)
+    @Getter private RecordWriterStyleElement[] outputStyleElements;
     
     @Option(names = {"--store"}, order=3, converter = VariableStoreConfigConverter.class, paramLabel = "variableName[:<propertyNames>]")
     @Getter private VariableStoreConfig variableStoreConfig;

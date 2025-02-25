@@ -33,7 +33,7 @@ public class ActionStepRecordWriterConfigFactory {
     public static RecordWriterConfig createRecordWriterConfig(WithWriterConfig config) {
         return RecordWriterConfig.builder()
                 .writerSupplier(()->createWriter(config))
-                .styles(config.getStyles())
+                .style(config.getStyle())
                 .options(config.getOptions())
                 .build();
     }

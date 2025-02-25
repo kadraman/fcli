@@ -41,7 +41,7 @@ public class RecordWriterXml extends AbstractRecordWriterJackson<ToXmlGenerator>
         XmlFactory factory = new XmlFactory();
         var result = (ToXmlGenerator)factory.createGenerator(writer)
                 .setCodec(new ObjectMapper());
-        if ( config.getStyles().isPretty() ) {
+        if ( config.getStyle().isPretty() ) {
             result = (ToXmlGenerator) result.useDefaultPrettyPrinter();
         }
         return result;

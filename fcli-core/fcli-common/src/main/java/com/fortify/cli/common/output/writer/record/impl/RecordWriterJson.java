@@ -32,7 +32,7 @@ public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator>
     
     @Override
     protected JsonGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
-        PrettyPrinter pp = !config.getStyles().isPretty() ? null : new DefaultPrettyPrinter(); 
+        PrettyPrinter pp = !config.getStyle().isPretty() ? null : new DefaultPrettyPrinter(); 
         return JsonFactory.builder().
             build().createGenerator(writer)
             .setPrettyPrinter(pp)
@@ -41,11 +41,11 @@ public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator>
     
     @Override
     protected void writeStart(JsonGenerator out) throws IOException {
-        if ( config.getStyles().isArray() ) { out.writeStartArray(); }
+        if ( config.getStyle().isArray() ) { out.writeStartArray(); }
     }
     
     @Override
     protected void writeEnd(JsonGenerator out) throws IOException {
-        if ( getConfig().getStyles().isArray() ) { out.writeEndArray(); }
+        if ( getConfig().getStyle().isArray() ) { out.writeEndArray(); }
     }
 }
