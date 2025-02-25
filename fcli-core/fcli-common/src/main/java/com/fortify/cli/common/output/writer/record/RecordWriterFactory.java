@@ -10,16 +10,16 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record;
+package com.fortify.cli.common.output.writer.record;
 
 import java.util.function.Function;
 
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterCsv;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterExpr;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterJson;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterTable;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterXml;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterYaml;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterCsv;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterExpr;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterJson;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterTable;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterXml;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterYaml;
 
 import lombok.RequiredArgsConstructor;
 

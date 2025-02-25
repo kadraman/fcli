@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record;
+package com.fortify.cli.common.output.writer.record;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,14 +27,14 @@ public final class RecordWriterStyles {
     private final Map<RecordWriterStyleGroup, RecordWriterStyle> stylesByGroup;
     
     public static final RecordWriterStyles apply(String... styles) {
-        return styles==null 
-                ? apply(new RecordWriterStyle[] {})
-                : apply(Arrays.stream(styles)
-                        .map(RecordWriterStyle::asStyle)
-                        .toArray(RecordWriterStyle[]::new));
+        if ( styles==null ) { return none(); }
+        return apply(Arrays.stream(styles)
+                    .map(RecordWriterStyle::asStyle)
+                    .toArray(RecordWriterStyle[]::new));
     }
     
     public static final RecordWriterStyles apply(RecordWriterStyle... styles) {
+        if ( styles==null ) { return none(); }
         var stylesByGroup = new HashMap<RecordWriterStyleGroup, RecordWriterStyle>();
         for (var style : styles) {
             var existingStyle = stylesByGroup.get(style.getGroup());
@@ -44,6 +44,22 @@ public final class RecordWriterStyles {
             stylesByGroup.put(style.getGroup(), style);
         }
         return new RecordWriterStyles(stylesByGroup);
+    }
+    
+    public static final RecordWriterStyles none() {
+        return new RecordWriterStyles(new HashMap<RecordWriterStyleGroup, RecordWriterStyle>());
+    }
+    
+    public RecordWriterStyles applyDefaultStyles(RecordWriterStyle... styles) {
+        if ( styles!=null ) {
+            for (var style : styles) {
+                var group = style.getGroup();
+                if ( !stylesByGroup.containsKey(group) ) {
+                    stylesByGroup.put(group, style);
+                }
+            }
+        }
+        return this; // Allow for chaining
     }
     
     public final boolean withHeaders() {

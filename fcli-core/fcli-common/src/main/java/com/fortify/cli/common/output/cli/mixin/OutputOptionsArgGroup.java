@@ -20,6 +20,7 @@ import com.fortify.cli.common.output.writer.output.standard.OutputFormatConfigCo
 import com.fortify.cli.common.output.writer.output.standard.OutputFormatConfigConverter.OutputFormatIterable;
 import com.fortify.cli.common.output.writer.output.standard.VariableStoreConfig;
 import com.fortify.cli.common.output.writer.output.standard.VariableStoreConfigConverter;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyles.RecordWriterStyle;
 
 import lombok.Getter;
 import picocli.CommandLine.Option;
@@ -28,9 +29,12 @@ public final class OutputOptionsArgGroup implements IOutputOptions {
     @Option(names = {"-o", "--output"}, order=1, converter = OutputFormatConfigConverter.class, completionCandidates = OutputFormatIterable.class, paramLabel = "format[=<options>]")
     @Getter private OutputFormatConfig outputFormatConfig;
     
-    @Option(names = {"--store"}, order=1, converter = VariableStoreConfigConverter.class, paramLabel = "variableName[:<propertyNames>]")
+    @Option(names = {"--styles"}, split = ",", order=2)
+    @Getter private RecordWriterStyle[] outputStyles;
+    
+    @Option(names = {"--store"}, order=3, converter = VariableStoreConfigConverter.class, paramLabel = "variableName[:<propertyNames>]")
     @Getter private VariableStoreConfig variableStoreConfig;
     
-    @Option(names = {"--to-file"}, order=7)
+    @Option(names = {"--to-file"}, order=4)
     @Getter private File outputFile; 
 }

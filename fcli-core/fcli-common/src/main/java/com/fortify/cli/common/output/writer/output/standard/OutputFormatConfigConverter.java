@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-import com.fortify.cli.common.output.OutputFormat;
+import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
 
 import picocli.CommandLine.ITypeConverter;
 
@@ -30,14 +30,14 @@ public final class OutputFormatConfigConverter implements ITypeConverter<OutputF
     }
     
     public static final String[] formattedValueStrings() {
-        return Stream.of(OutputFormat.values())
-                .map(OutputFormat::name)
+        return Stream.of(RecordWriterFactory.values())
+                .map(RecordWriterFactory::name)
                 .map(s->s.replace('_', '-'))
                 .toArray(String[]::new);
     }
     
-    public static final OutputFormat valueOfFormattedString(String s) {
-        return OutputFormat.valueOf(s.replace('-', '_'));
+    public static final RecordWriterFactory valueOfFormattedString(String s) {
+        return RecordWriterFactory.valueOf(s.replace('-', '_'));
     }
     
     public static final class OutputFormatIterable extends ArrayList<String> {

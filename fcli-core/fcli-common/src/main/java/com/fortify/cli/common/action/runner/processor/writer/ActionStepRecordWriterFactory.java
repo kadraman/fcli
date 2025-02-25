@@ -18,22 +18,22 @@ import com.fortify.cli.common.action.model.ActionStepWithWriter;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.FcliActionStepException;
-import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
+import com.fortify.cli.common.output.writer.record.IRecordWriter;
+import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public final class ActionStepWriterFactory {
+public final class ActionStepRecordWriterFactory {
     public static final IRecordWriter createWriter(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
         var config = new WithWriterConfig(ctx, vars, withWriter);
         return createStandardWriter(config);
     }
 
     private static final IRecordWriter createStandardWriter(WithWriterConfig config) {
-        return config.getFactory().createWriter(ActionStepWriterConfigFactory.createRecordWriterConfig(config));
+        return config.getFactory().createWriter(ActionStepRecordWriterConfigFactory.createRecordWriterConfig(config));
     }
     
     @Getter

@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record.impl;
+package com.fortify.cli.common.output.writer.record.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -25,10 +25,10 @@ import org.springframework.expression.spel.SpelNode;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterExpr.ExpressionWriter;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterExpr.ExpressionWriter;
 import com.fortify.cli.common.spring.expression.validator.AbstractSimpleSpelNodeValidator;
 
 import lombok.Getter;

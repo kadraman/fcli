@@ -20,16 +20,16 @@ import java.io.Writer;
 
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
-import com.fortify.cli.common.action.runner.processor.writer.ActionStepWriterFactory.WithWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.util.AbstractWriterWrapper;
+import com.fortify.cli.common.action.runner.processor.writer.ActionStepRecordWriterFactory.WithWriterConfig;
+import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.output.writer.record.util.AbstractWriterWrapper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ActionStepWriterConfigFactory {
+public class ActionStepRecordWriterConfigFactory {
     public static RecordWriterConfig createRecordWriterConfig(WithWriterConfig config) {
         return RecordWriterConfig.builder()
                 .writerSupplier(()->createWriter(config))

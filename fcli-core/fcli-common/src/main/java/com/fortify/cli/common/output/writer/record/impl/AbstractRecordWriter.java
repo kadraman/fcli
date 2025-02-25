@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record.impl;
+package com.fortify.cli.common.output.writer.record.impl;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -19,10 +19,10 @@ import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.action.runner.processor.writer.record.IRecordWriter;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.output.transform.fields.SelectedFieldsTransformer;
 import com.fortify.cli.common.output.transform.flatten.FlattenTransformer;
+import com.fortify.cli.common.output.writer.record.IRecordWriter;
+import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -51,6 +51,7 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
     @Override @SneakyThrows
     public final void close() {
         if ( out!=null) {
+            getWriter().flush();
             close(out);
         }
     }

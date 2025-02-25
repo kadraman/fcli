@@ -13,6 +13,7 @@
 package com.fortify.cli.common.output.transform.fields;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,10 @@ public final class SelectedFieldsTransformer extends AbstractJsonNodeTransformer
                 ? null
                 : Arrays.stream(propertyNamesString.split("\\s*[,\\n]\\s*"))
                     .map(kv -> kv.split("=")) // TODO Handle multiple equals-signs in single entry?
-                    .collect(Collectors.toMap(kv -> kv[0], kv -> kv.length==1 ? kv[0] : kv[1]));
+                    .collect(Collectors.toMap(
+                            kv -> kv[0], 
+                            kv -> kv.length==1 ? kv[0] : kv[1],
+                            (v1,v2)->v1,
+                            LinkedHashMap::new));
     }
 }

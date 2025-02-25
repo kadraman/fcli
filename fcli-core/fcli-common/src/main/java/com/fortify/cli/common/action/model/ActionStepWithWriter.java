@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterFactory;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterStyles;
 import com.fortify.cli.common.json.JsonPropertyDescriptionAppend;
+import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
+import com.fortify.cli.common.output.writer.record.RecordWriterStyles;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;

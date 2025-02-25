@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record.impl;
+package com.fortify.cli.common.output.writer.record.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
-import com.fortify.cli.common.action.runner.processor.writer.record.impl.RecordWriterTable.TableWriter;
+import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.output.writer.record.impl.RecordWriterTable.TableWriter;
 import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;

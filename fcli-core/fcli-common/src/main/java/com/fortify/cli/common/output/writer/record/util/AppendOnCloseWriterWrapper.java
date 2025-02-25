@@ -10,23 +10,27 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record.util;
+package com.fortify.cli.common.output.writer.record.util;
 
 import java.io.IOException;
 import java.io.Writer;
 
 /**
  * This class wraps a Writer instance, delegating all method calls to the
- * wrappee, except for the close() method, thereby preventing the underlying
- * writer from being closed.
+ * wrappee. Before closing the wrappee, the string specified in the constructor 
+ * will be appended to the wrappee.
  */
-public class NonClosingWriterWrapper extends AbstractWriterWrapper<Writer> {
-    public NonClosingWriterWrapper(Writer wrappee) {
+public class AppendOnCloseWriterWrapper extends AbstractWriterWrapper<Writer> {
+    private final String stringToAppend;
+    public AppendOnCloseWriterWrapper(String stringToAppend, Writer wrappee) {
         super(wrappee);
+        this.stringToAppend = stringToAppend;
     }
     
     @Override
     public void close() throws IOException {
-        // Do nothing
+        getWrappee().append(stringToAppend);
+        getWrappee().flush();
+        super.close();
     }
 }

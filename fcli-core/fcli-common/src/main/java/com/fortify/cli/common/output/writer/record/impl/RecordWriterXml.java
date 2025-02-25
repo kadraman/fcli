@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.common.action.runner.processor.writer.record.impl;
+package com.fortify.cli.common.output.writer.record.impl;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
-import com.fortify.cli.common.action.runner.processor.writer.record.RecordWriterConfig;
+import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

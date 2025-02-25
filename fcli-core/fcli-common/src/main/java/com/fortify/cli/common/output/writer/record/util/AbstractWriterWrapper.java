@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  */
-package com.fortify.cli.common.action.runner.processor.writer.record.util;
+package com.fortify.cli.common.output.writer.record.util;
 
 import java.io.IOException;
 import java.io.Writer;
