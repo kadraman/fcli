@@ -50,11 +50,18 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
     
     @Override @SneakyThrows
     public final void close() {
-        if ( out!=null) {
+        var writer = getWriter();
+        if ( out==null) {
+            closeWithNoData(writer);
+            writer.flush();
+            writer.close();
+        } else {
             getWriter().flush();
-            close(out);
+            close(out); // This should also close the writer
         }
     }
+    
+    protected abstract void closeWithNoData(Writer writer) throws IOException;
     
     protected final Function<ObjectNode, ObjectNode> createStructuredOutputTransformer(boolean flatten, Function<String,String> propertyNameFormatter) {
         if ( StringUtils.isNotBlank(getConfig().getOptions()) ) {

@@ -27,6 +27,7 @@ import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+// TODO This class uses a Jackson generator, so should we extend from AbstractRecordWriterJackson? 
 @RequiredArgsConstructor
 public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     @Getter private final RecordWriterConfig config;
@@ -63,5 +64,10 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
             result.writeStartArray();
         }
         return result;
+    }
+    
+    @Override
+    protected void closeWithNoData(Writer writer) {
+        // Nothing to do
     }
 }

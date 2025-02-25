@@ -57,4 +57,10 @@ public class RecordWriterXml extends AbstractRecordWriterJackson<ToXmlGenerator>
     protected void writeEnd(ToXmlGenerator out) throws IOException {
         out.writeEndObject();
     }
+    
+    @Override
+    protected void closeWithNoData(Writer writer) {
+        // TODO Write empty object or array, depending on config.getStyle().isArray()?
+        // TODO Handle this in parent class?
+    }
 }

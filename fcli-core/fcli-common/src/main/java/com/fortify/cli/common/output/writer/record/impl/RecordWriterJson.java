@@ -46,6 +46,12 @@ public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator>
     
     @Override
     protected void writeEnd(JsonGenerator out) throws IOException {
-        if ( getConfig().getStyle().isArray() ) { out.writeEndArray(); }
+        if ( config.getStyle().isArray() ) { out.writeEndArray(); }
+    }
+    
+    @Override
+    protected void closeWithNoData(Writer writer) {
+        // TODO Write empty object or array, depending on config.getStyle().isArray()?
+        // TODO Handle this in parent class?
     }
 }

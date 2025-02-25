@@ -50,6 +50,11 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
     }
     
     @Override
+    protected void closeWithNoData(Writer writer) throws IOException {
+        writer.write("No data");
+    }
+    
+    @Override
     protected TableWriter createOut(Writer writer, ObjectNode formattedRecord) throws IOException {
         if ( formattedRecord==null ) { return null; }
         return new TableWriter(writer, formattedRecord.properties().stream().map(e->e.getKey()).toList());
@@ -84,7 +89,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
         
         private final String asTable() {
             if ( rows.isEmpty() ) {
-                return "No data"; // TODO properly handle this
+                return "No data"; // TODO This shouldn't happen, as we're only called if at least one row has been appended
             } else {
                 Column[] columns = headers.stream()
                     .map(h->new Column()

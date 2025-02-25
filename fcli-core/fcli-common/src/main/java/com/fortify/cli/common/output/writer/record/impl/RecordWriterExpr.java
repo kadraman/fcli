@@ -46,13 +46,17 @@ public class RecordWriterExpr extends AbstractRecordWriter<ExpressionWriter> {
     
     @Override
     protected Function<ObjectNode, ObjectNode> createRecordFormatter(ObjectNode objectNode) throws IOException {
-        // For tables, we always flatten, keeping the original dot-separated property path as headers
-        return createStructuredOutputTransformer(true, Function.identity());
+        return Function.identity();
     }   
     
     @Override
     protected void close(ExpressionWriter out) throws IOException {
         out.close();
+    }
+    
+    @Override
+    protected void closeWithNoData(Writer writer) {
+        // Nothing to do
     }
     
     @Override

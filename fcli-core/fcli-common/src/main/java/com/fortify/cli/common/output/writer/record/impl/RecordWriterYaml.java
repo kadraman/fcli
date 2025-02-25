@@ -50,4 +50,10 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
     protected void writeEnd(YAMLGenerator out) throws IOException {
         if ( getConfig().getStyle().isArray() ) { out.writeEndArray(); }
     }
+    
+    @Override
+    protected void closeWithNoData(Writer writer) {
+        // TODO Write empty object or array, depending on config.getStyle().isArray()?
+        // TODO Handle this in parent class?
+    }
 }
