@@ -2,6 +2,20 @@
 
 Upgrading from fcli v2.x to v3.x may require some changes to existing fcli command invocations, as some commands, options, or accepted option values have changed. This document describes those changes for each of the affected fcli modules. Note that this document only describes breaking changes, it doesn't describe any new functionality. Please see the fcli change log for an overview of new features.
 
+== `--output` option
+
+Breaking changes:
+
+* The following formats are no longer accepted by the `-o` / `--output` option:
+** `json-properties`; to view available properties, please use `json` format instead.
+** `tree` & `tree-flat`; to get tree-like output, please use `yaml` format instead.
+** `csv-plain` & `table-plain`; please use the new `--style=no-headers` option instead.
+** `json-flat`, `xml-flat` & `yaml-flat`; please use the new `--style=flat` option instead.
+* There may be subtle differences in the output produced by the various output formats. For example:
+** `csv` output will now by default use the original JSON property names as headers, instead of attempting to format these as human-readable text. 
+** Similarly, when specifying what properties to include in the `table` output, for example with `-o table=p1,p2`, the original property names will be used as table headers.
+** Optionally, you can specify alternative header names, for example with `-o table=p1=First Property,p2=Second Property` or `-o csv=p3=Property 3,p4=Property 4`
+
 == `fcli fod`
 
 Breaking changes:
