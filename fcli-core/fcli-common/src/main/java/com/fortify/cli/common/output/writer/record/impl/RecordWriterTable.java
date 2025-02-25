@@ -18,8 +18,11 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.output.writer.record.impl.RecordWriterTable.TableWriter;
 import com.github.freva.asciitable.AsciiTable;
@@ -76,7 +79,15 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
 
         private final String getColumnValue(ObjectNode formattedRecord, String property) {
             var node = formattedRecord.get(property);
-            return node==null || node.isNull() ? "N/A" : node.asText();
+            if ( node==null || node.isNull() ) { return "N/A"; }
+            if ( node.isArray() ) { 
+                // TODO Did we handle this in TableRecordWriter in the old framework, or
+                //      was this handled somewhere else?
+                return JsonHelper.stream((ArrayNode)node)
+                        .map(n->n.asText())
+                        .collect(Collectors.joining(","));
+            }
+            return node.asText();
         }
 
         @Override

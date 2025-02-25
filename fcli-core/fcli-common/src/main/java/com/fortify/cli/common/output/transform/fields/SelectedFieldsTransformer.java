@@ -59,7 +59,7 @@ public final class SelectedFieldsTransformer extends AbstractJsonNodeTransformer
     private static final Map<String,String> parsePropertyNames(String propertyNamesString) {
         return propertyNamesString==null 
                 ? null
-                : Arrays.stream(propertyNamesString.split("\\s*[,\\n]\\s*"))
+                : Arrays.stream(propertyNamesString.split("\\s*,\\s*"))
                     .map(kv -> kv.split("=")) // TODO Handle multiple equals-signs in single entry?
                     .collect(Collectors.toMap(
                             kv -> kv[0], 
