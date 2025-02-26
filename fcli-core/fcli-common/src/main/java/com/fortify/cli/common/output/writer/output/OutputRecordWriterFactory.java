@@ -61,7 +61,7 @@ public class OutputRecordWriterFactory {
     
     private String addActionColumn(String options) {
         if ( addActionColumn && !StringUtils.isBlank(options) && !options.contains(IActionCommandResultSupplier.actionFieldName) ) {
-            return options+String.format(",%s=%s", IActionCommandResultSupplier.actionFieldName, "Action");
+            return options+String.format(",%s:%s", IActionCommandResultSupplier.actionFieldName, "Action");
         }
         return options;
     }
@@ -97,6 +97,6 @@ public class OutputRecordWriterFactory {
             // output for example.
             header = PropertyPathFormatter.humanReadable(option.replaceAll("String$", ""));
         }
-        return String.format("%s=%s", option, header);
+        return String.format("%s:%s", option, header);
     }
 }

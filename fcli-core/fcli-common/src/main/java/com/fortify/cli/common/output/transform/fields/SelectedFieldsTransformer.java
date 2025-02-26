@@ -60,7 +60,7 @@ public final class SelectedFieldsTransformer extends AbstractJsonNodeTransformer
         return propertyNamesString==null 
                 ? null
                 : Arrays.stream(propertyNamesString.split("\\s*,\\s*"))
-                    .map(kv -> kv.split("=")) // TODO Handle multiple equals-signs in single entry?
+                    .map(kv -> kv.split(":")) // TODO Handle multiple colon-signs in single entry?
                     .collect(Collectors.toMap(
                             kv -> kv[0], 
                             kv -> kv.length==1 ? kv[0] : kv[1],
