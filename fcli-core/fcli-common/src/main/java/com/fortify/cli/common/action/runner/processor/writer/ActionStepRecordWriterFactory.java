@@ -43,7 +43,7 @@ public final class ActionStepRecordWriterFactory {
         private final RecordWriterFactory factory;
         private final String to;
         private final RecordWriterStyle style;
-        private final String options;
+        private final String recordWriterArgs;
         
         public WithWriterConfig(ActionRunnerContext ctx, ActionRunnerVars vars, ActionStepWithWriter withWriter) {
             this.ctx = ctx;
@@ -51,7 +51,7 @@ public final class ActionStepRecordWriterFactory {
             this.factory = getFactory(vars.eval(withWriter.getType(), String.class));
             this.to = vars.eval(withWriter.getTo(), String.class);
             this.style = getStyle(vars, withWriter);
-            this.options = vars.eval(withWriter.getOptions(), String.class);
+            this.recordWriterArgs = vars.eval(withWriter.getTypeArgs(), String.class);
         }
 
         private RecordWriterStyle getStyle(ActionRunnerVars vars, ActionStepWithWriter withWriter) {

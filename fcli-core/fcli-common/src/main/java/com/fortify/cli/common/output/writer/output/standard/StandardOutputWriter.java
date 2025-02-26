@@ -340,13 +340,13 @@ public class StandardOutputWriter implements IOutputWriter {
 
         private IRecordWriter createUnsuppressedOutputRecordWriter() {
             Object cmd = commandSpec.userObject();
-            var options = outputOptions==null || outputOptions.getOutputFormatConfig()==null
-                    ? null : outputOptions.getOutputFormatConfig().getOptions();
+            var recordWriterArgs = outputOptions==null || outputOptions.getOutputFormatConfig()==null
+                    ? null : outputOptions.getOutputFormatConfig().getRecordWriterArgs();
             return OutputRecordWriterFactory.builder()
                     .singular(isSingularOutput())
                     .messageResolver(messageResolver)
                     .addActionColumn(cmd!=null && cmd instanceof IActionCommandResultSupplier)
-                    .options(options)
+                    .recordWriterArgs(recordWriterArgs)
                     .recordWriterFactory(recordWriterFactory)
                     .recordWriterStyle(RecordWriterStyle.apply(outputOptions.getOutputStyleElements()))
                     .writerSupplier(()->createWriter())
@@ -463,7 +463,7 @@ public class StandardOutputWriter implements IOutputWriter {
         private OutputRecordWriterFactory createOutputRecordWriterFactory() {
             return createRecordWriterConfigBuilder()
                     .writerSupplier(()->createWriter(variableDefinition))
-                    .options(variableDefinition.getVariableOptions())
+                    .recordWriterArgs(variableDefinition.getRecordWriterArgs())
                     .recordWriterFactory(RecordWriterFactory.json)
                     .build();
         }
@@ -490,13 +490,13 @@ public class StandardOutputWriter implements IOutputWriter {
          */
         private VariableDefinition createVariableDefinition(VariableStoreConfig variableStoreConfig) {
             String variableName = variableStoreConfig.getVariableName();
-            String options = variableStoreConfig.getOptions();
+            String recordWriterArgs = variableStoreConfig.getRecordWriterArgs();
             DefaultVariablePropertyName defaultPropertyNameAnnotation = PicocliSpecHelper.findAnnotation(commandSpec, DefaultVariablePropertyName.class);
             String defaultPropertyName = defaultPropertyNameAnnotation==null ? null : defaultPropertyNameAnnotation.value();
             boolean encrypt = PicocliSpecHelper.findAnnotation(commandSpec, EncryptVariable.class)!=null;
             return VariableDefinition.builder()
                     .variableName(variableName)
-                    .variableOptions(options)
+                    .recordWriterArgs(recordWriterArgs)
                     .singular(isSingularOutput())
                     .defaultPropertyName(defaultPropertyName)
                     .encrypt(encrypt).build();
@@ -509,7 +509,7 @@ public class StandardOutputWriter implements IOutputWriter {
     @Data @Builder
     private static final class VariableDefinition {
         private final String variableName;
-        private final String variableOptions;
+        private final String recordWriterArgs;
         private final String defaultPropertyName;
         private final boolean singular;
         private final boolean encrypt;

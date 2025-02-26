@@ -72,7 +72,7 @@ public class RecordWriterExpr extends AbstractRecordWriter<ExpressionWriter> {
     }
     
     private Expression getExpression() {
-        var expressionString = config.getOptions();
+        var expressionString = config.getArgs();
         try {
             return PARSER.parseExpression(
                     insertControlCharacters(expressionString), 
@@ -110,7 +110,7 @@ public class RecordWriterExpr extends AbstractRecordWriter<ExpressionWriter> {
                 var result = JsonHelper.evaluateSpelExpression(record, expression, String.class);
                 return result==null ? "" : result;
             } catch ( Exception e ) {
-                throw new FcliSimpleException(String.format("Error evaluating output expression:\n\tMessage: %s\n\tExpression: %s\n\tRecord: %s", e.getMessage(), config.getOptions(), record.toPrettyString().replace("\n", "\n\t\t")));
+                throw new FcliSimpleException(String.format("Error evaluating output expression:\n\tMessage: %s\n\tExpression: %s\n\tRecord: %s", e.getMessage(), config.getArgs(), record.toPrettyString().replace("\n", "\n\t\t")));
             }
         }
     }
@@ -130,7 +130,7 @@ public class RecordWriterExpr extends AbstractRecordWriter<ExpressionWriter> {
         
         @Override
         protected String formatValidationError(SpelNode node, String msg) {
-            return String.format("Invalid output expression:\n\tMessage: %s\n\tExpression: %s\n\tNode: %s", msg, config.getOptions(), node.toStringAST());
+            return String.format("Invalid output expression:\n\tMessage: %s\n\tExpression: %s\n\tNode: %s", msg, config.getArgs(), node.toStringAST());
         }
         @Override
         protected RuntimeException getValidationException(String msg) {

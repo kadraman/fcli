@@ -19,5 +19,5 @@ import lombok.Data;
 @Data
 public final class OutputFormatConfig {
     private final RecordWriterFactory recordWriterFactory;
-    private final String options;
+    private final String recordWriterArgs;
 }

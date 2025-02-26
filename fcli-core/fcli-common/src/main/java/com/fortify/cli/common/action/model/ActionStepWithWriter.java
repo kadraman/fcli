@@ -55,21 +55,21 @@ public final class ActionStepWithWriter implements IActionElement {
     @JsonProperty(value = "type", required = true) private TemplateExpression type;
     
     @JsonPropertyDescription("""
+        Optional SpEL template expression defining arguments for the given writer type. \
+        In most cases, it's much easier to just pass an already formatted object to \
+        the 'writer.append' step; this 'type-args' instruction is just meant to provide \
+        feature parity with the fcli '--output type=args' command line option. See \
+        fcli documentation for details on supported options for the various writer types.
+        """)
+    @JsonProperty(value = "type-args", required = false) private TemplateExpression typeArgs;
+    
+    @JsonPropertyDescription("""
         Optional SpEL template expression defining the writer style. If specified, \
         the expression should evaluate to a comma-separated list of style elements \
         to be applied to the output. Supported style elements:
         """)
     @JsonPropertyDescriptionAppend(RecordWriterStyle.RecordWriterStyleElement.class)
     @JsonProperty(value = "style", required = false) private TemplateExpression style;
-    
-    @JsonPropertyDescription("""
-        Optional SpEL template expression defining options for the given writer type. \
-        In most cases, it's much easier to just pass an already formatted object to \
-        the 'writer.append' step; this 'options' instruction is just meant to provide \
-        feature parity with the fcli '--output type=options' command line option. See \
-        fcli documentation for details on supported options for the various writer types.
-        """)
-    @JsonProperty(value = "options", required = false) private TemplateExpression options;
     
     @Override
     public void postLoad(Action action) {

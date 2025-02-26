@@ -66,8 +66,8 @@ public abstract class AbstractReportWriter implements IReportWriter {
     }
     
     @Override
-    public IRecordWriter recordWriter(RecordWriterFactory recordWriterFactory, String fileName, boolean singular, String options) {
-        return recordWriters.computeIfAbsent(fileName, f->newRecordWriter(recordWriterFactory, fileName, singular, options));
+    public IRecordWriter recordWriter(RecordWriterFactory recordWriterFactory, String fileName, boolean singular, String recordWriterArgs) {
+        return recordWriters.computeIfAbsent(fileName, f->newRecordWriter(recordWriterFactory, fileName, singular, recordWriterArgs));
     }
 
     @Override @SneakyThrows
@@ -88,11 +88,11 @@ public abstract class AbstractReportWriter implements IReportWriter {
         closeReport();
     }
     
-    private IRecordWriter newRecordWriter(RecordWriterFactory recordWriterFactory, String fileName, boolean singular, String options) {
+    private IRecordWriter newRecordWriter(RecordWriterFactory recordWriterFactory, String fileName, boolean singular, String recordWriterArgs) {
         var outputRecordWriterFactory = OutputRecordWriterFactory.builder()
                 .addActionColumn(false)
                 .messageResolver(messageResolver)
-                .options(options)
+                .recordWriterArgs(recordWriterArgs)
                 .recordWriterFactory(recordWriterFactory)
                 .recordWriterStyle(RecordWriterStyle.apply(RecordWriterStyleElement.pretty))
                 .singular(singular)

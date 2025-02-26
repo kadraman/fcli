@@ -31,7 +31,7 @@ import lombok.Builder;
 @Builder
 public class OutputRecordWriterFactory {
     private final RecordWriterFactory recordWriterFactory;
-    private final String options;
+    private final String recordWriterArgs;
     private final RecordWriterStyle recordWriterStyle;
     private final Supplier<Writer> writerSupplier;
     private final IMessageResolver messageResolver;
@@ -40,7 +40,7 @@ public class OutputRecordWriterFactory {
     
     public IRecordWriter createRecordWriter() {
         var config = RecordWriterConfig.builder()
-            .options(resolveOptions())
+            .args(resolveArgs())
             .style(resolveStyle())
             .writerSupplier(writerSupplier)
             .build();
@@ -52,11 +52,11 @@ public class OutputRecordWriterFactory {
         return newStyle.applyDefaultStyleElements(singular ? RecordWriterStyleElement.single : RecordWriterStyleElement.array);
     }
 
-    private String resolveOptions() {
+    private String resolveArgs() {
         // TODO Always add action column, or only on default options?
-        return addActionColumn(StringUtils.isNotBlank(options) 
-                ? options 
-                : getDefaultOptions());
+        return addActionColumn(StringUtils.isNotBlank(recordWriterArgs) 
+                ? recordWriterArgs 
+                : getDefaultArgs());
     }
     
     private String addActionColumn(String options) {
@@ -66,8 +66,8 @@ public class OutputRecordWriterFactory {
         return options;
     }
 
-    private String getDefaultOptions() {
-        var keySuffix = "output."+recordWriterFactory.toString()+".options";
+    private String getDefaultArgs() {
+        var keySuffix = "output."+recordWriterFactory.toString()+".args";
         var defaultOptions = messageResolver.getMessageString(keySuffix);
         // TODO Only add headers for default options (i.e., apply here), 
         //      or also for user-supplied options (i.e., apply in resolveOptions())?

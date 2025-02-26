@@ -82,7 +82,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
             if ( node==null || node.isNull() ) { return "N/A"; }
             if ( node.isArray() ) { 
                 // TODO Did we handle this in TableRecordWriter in the old framework, or
-                //      was this handled somewhere else?
+                //      was this handled somewhere else? 
                 return JsonHelper.stream((ArrayNode)node)
                         .map(n->n.asText())
                         .collect(Collectors.joining(","));

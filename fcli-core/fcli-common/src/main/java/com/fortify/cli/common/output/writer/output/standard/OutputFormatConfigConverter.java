@@ -25,8 +25,8 @@ public final class OutputFormatConfigConverter implements ITypeConverter<OutputF
     public OutputFormatConfig convert(String value) throws Exception {
         int pos = value.indexOf('=');
         String outputFormatString = pos==-1 ? value : value.substring(0, pos);
-        String options = pos==-1 ? null : value.substring(pos+1);
-        return new OutputFormatConfig(valueOfFormattedString(outputFormatString), options);
+        String args = pos==-1 ? null : value.substring(pos+1);
+        return new OutputFormatConfig(valueOfFormattedString(outputFormatString), args);
     }
     
     public static final String[] formattedValueStrings() {

@@ -64,7 +64,7 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
     protected abstract void closeWithNoData(Writer writer) throws IOException;
     
     protected final Function<ObjectNode, ObjectNode> createStructuredOutputTransformer(boolean flatten, Function<String,String> propertyNameFormatter) {
-        if ( StringUtils.isNotBlank(getConfig().getOptions()) ) {
+        if ( StringUtils.isNotBlank(getConfig().getArgs()) ) {
             return createSelectedFieldsTransformer(); // This already flattens, so no need to flatten again
         } else if ( flatten ) {
             return createFlattenTransformer(propertyNameFormatter);
@@ -77,7 +77,7 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
     }
 
     protected final Function<ObjectNode, ObjectNode> createSelectedFieldsTransformer() {
-        return new SelectedFieldsTransformer(getConfig().getOptions(), false)::transformObjectNode;
+        return new SelectedFieldsTransformer(getConfig().getArgs(), false)::transformObjectNode;
     }
     
     @SneakyThrows

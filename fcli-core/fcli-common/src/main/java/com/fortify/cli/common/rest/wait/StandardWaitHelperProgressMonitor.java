@@ -90,7 +90,7 @@ public class StandardWaitHelperProgressMonitor implements IWaitHelperProgressMon
                 .messageResolver(messageResolver)
                 .addActionColumn(true)
                 .writerSupplier(()->writer)
-                .options(null)
+                .recordWriterArgs(null)
                 .recordWriterFactory(RecordWriterFactory.table)
                 .build();
     }

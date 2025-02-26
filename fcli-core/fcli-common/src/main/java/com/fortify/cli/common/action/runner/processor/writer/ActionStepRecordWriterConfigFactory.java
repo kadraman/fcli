@@ -34,7 +34,7 @@ public class ActionStepRecordWriterConfigFactory {
         return RecordWriterConfig.builder()
                 .writerSupplier(()->createWriter(config))
                 .style(config.getStyle())
-                .options(config.getOptions())
+                .args(config.getRecordWriterArgs())
                 .build();
     }
     
