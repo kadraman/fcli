@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.Writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
@@ -29,7 +28,7 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
     @Getter private final RecordWriterConfig config;
     
     @Override
-    protected YAMLGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
+    protected YAMLGenerator createGenerator(Writer writer) throws IOException {
         YAMLFactory factory = new YAMLFactory();
         var result = (YAMLGenerator)factory.createGenerator(writer);
         result.configure(YAMLGenerator.Feature.MINIMIZE_QUOTES, true)
@@ -49,11 +48,5 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
     @Override
     protected void writeEnd(YAMLGenerator out) throws IOException {
         if ( getConfig().getStyle().isArray() ) { out.writeEndArray(); }
-    }
-    
-    @Override
-    protected void closeWithNoData(Writer writer) {
-        // TODO Write empty object or array, depending on config.getStyle().isArray()?
-        // TODO Handle this in parent class?
     }
 }

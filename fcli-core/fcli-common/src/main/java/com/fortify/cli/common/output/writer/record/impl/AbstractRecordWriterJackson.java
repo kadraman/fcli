@@ -42,14 +42,23 @@ public abstract class AbstractRecordWriterJackson<T extends JsonGenerator> exten
     }
     
     @Override
+    protected void closeWithNoData(Writer writer) throws IOException {
+        var out = createGenerator(writer);
+        writeStart(out);
+        writeEnd(out);
+        writer.flush();
+        out.close();
+    }
+    
+    @Override
     protected T createOut(Writer writer, ObjectNode formattedRecord) throws IOException {
         if ( formattedRecord==null ) { return null; }
-        var result = createGenerator(writer, formattedRecord);
+        var result = createGenerator(writer);
         writeStart(result);
         return result;
     }
 
-    protected abstract T createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException;
+    protected abstract T createGenerator(Writer writer) throws IOException;
     protected abstract void writeStart(T out) throws IOException;
     protected abstract void writeEnd(T out) throws IOException;
 }

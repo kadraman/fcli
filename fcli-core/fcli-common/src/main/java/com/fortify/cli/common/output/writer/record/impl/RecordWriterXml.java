@@ -37,7 +37,7 @@ public class RecordWriterXml extends AbstractRecordWriterJackson<ToXmlGenerator>
     }
     
     @Override
-    protected ToXmlGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
+    protected ToXmlGenerator createGenerator(Writer writer) throws IOException {
         XmlFactory factory = new XmlFactory();
         var result = (ToXmlGenerator)factory.createGenerator(writer)
                 .setCodec(new ObjectMapper());
@@ -56,11 +56,5 @@ public class RecordWriterXml extends AbstractRecordWriterJackson<ToXmlGenerator>
     @Override
     protected void writeEnd(ToXmlGenerator out) throws IOException {
         out.writeEndObject();
-    }
-    
-    @Override
-    protected void closeWithNoData(Writer writer) {
-        // TODO Write empty object or array, depending on config.getStyle().isArray()?
-        // TODO Handle this in parent class?
     }
 }

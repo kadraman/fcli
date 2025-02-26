@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 
 import lombok.Getter;
@@ -31,7 +30,7 @@ public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator>
     @Getter private final RecordWriterConfig config;
     
     @Override
-    protected JsonGenerator createGenerator(Writer writer, ObjectNode formattedRecord) throws IOException {
+    protected JsonGenerator createGenerator(Writer writer) throws IOException {
         PrettyPrinter pp = !config.getStyle().isPretty() ? null : new DefaultPrettyPrinter(); 
         return JsonFactory.builder().
             build().createGenerator(writer)
@@ -47,11 +46,5 @@ public class RecordWriterJson extends AbstractRecordWriterJackson<JsonGenerator>
     @Override
     protected void writeEnd(JsonGenerator out) throws IOException {
         if ( config.getStyle().isArray() ) { out.writeEndArray(); }
-    }
-    
-    @Override
-    protected void closeWithNoData(Writer writer) {
-        // TODO Write empty object or array, depending on config.getStyle().isArray()?
-        // TODO Handle this in parent class?
     }
 }
