@@ -95,7 +95,7 @@ task generateFoDActionAsciiDoc(type: JavaExec) {
 
 // Generate HTML documentation from AsciiDoc prepared by prepareAsciiDocForVersionedHtml
 task asciiDoctorVersionedHtml(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
-    dependsOn(prepareAsciiDocForVersionedHtml, generateSSCActionAsciiDoc, generateFoDActionAsciiDoc)
+    dependsOn(prepareAsciiDocForVersionedHtml, generateGenericActionAsciiDoc, generateSSCActionAsciiDoc, generateFoDActionAsciiDoc)
     forkOptions {
         jvmArgs("--add-opens","java.base/sun.nio.ch=ALL-UNNAMED","--add-opens","java.base/java.io=ALL-UNNAMED")
     }
