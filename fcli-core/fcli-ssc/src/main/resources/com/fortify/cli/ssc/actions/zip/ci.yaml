@@ -19,31 +19,64 @@ config:
   session.from-env.output: show
   
 steps:
+  # Configure module; allows for copying/re-using similar #actionCmd invocations in FoD ci action
+  - var.set:
+      module: ssc
+      
+  # Run ci-vars action to obtain CI data
   - run.fcli:
-      # Run ci-vars action to obtain CI data
       ci-vars: 
-        cmd: ${#actionCmd('CI_VARS', 'ssc', 'ci-vars')}
+        cmd: ${#actionCmd('CI_VARS', module, 'ci-vars')}
         on.success:
           - var.set:
               global.ci.av: ${#env('SSC_APPVERSION')?:global.ci.defaultFortifyRepo}
           - if: ${global.ci.av==null}
             throw: SSC application version must be specified through SSC_APPVERSION environment variable
             
-      # Run setup-appversion action to set up application version
-      setup:
-        if:  ${#skipIf(#env('DO_SETUP')=='false', 'Application version setup as DO_SETUP set to false')}
-        cmd: ${#actionCmd('SETUP', 'ssc', 'setup-appversion')} --av "${global.ci.av}"
-        
-      # Run package action to (optionally) package source code
-      pkg: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')}
-      
-      # Submit ScanCentral SAST scan request
-      sast-request: 
-        cmd: >-
-          ${#fcliCmd('SC_SAST_SCAN', 'fcli sc-sast scan start')} -f "${global.package.output}"
-          --publish-to "${global.ci.av}" --store sc_sast_scan
+  # Configure CI steps to be run
+  # Note that any data produced by the actual steps cannot be referenced here. For example,
+  # as at this point we haven't run the package action yet, we can't add '-f ${global.package.output}'
+  # in sastStart.args; this option will need to be passed explicitly on the sastStart fcli invocation.
+  - var.set:
+      module: ssc           # Allows for copying/re-using similar #actionCmd invocations in FoD ci action
+      # Determine scan types to run
+      sca.skip: true       # TODO - Debricked
+      sca.skipReason: ...  # TODO
+      dast.skip: true      # TODO
+      dast.skipReason: ... # TODO
+      sast.skip: ${#env('DO_SAST_SCAN')=='false' || (#env('DO_SAST_SCAN')!='true' && (!sca.skip || !dast.skip))}
+      sast.skipReason: ... # TODO
+      # Setup config
+      setup.skip: ${#env('DO_SETUP')=='false'}
+      setup.skipReason: 'Application version setup: DO_SETUP is set to false'
+      setup.action: setup-appversion
+      setup.args: --av "${global.ci.av}"
+      # Package config
+      package.skip: ${sast.skip}
+      package.skipReason: 'Packaging: SAST scan is disabled'
+      # SAST scan start config
+      sastStart.skip: ${sast.skip}
+      sastStart.skipReason: ${sast.skipReason}
+      sastStart.cmd: fcli sc-sast scan start
+      sastStart.args: --publish-to "${global.ci.av}" --store sc_sast_scan
+      # SAST scan wait-for config
+      sastWaitFor.skip: ${sastStart.skip}  # TODO Only wait if DO_WAIT==true or any post-scan actions enables
+      sastWaitFor.skipReason: ... #TODO
+      sastWaitFor.cmd: fcli sc-sast scan wait-for
+      sastWaitFor.args: '::sc_sast_scan::'
 
-      # Wait for ScanCentral SAST scan to finish
-      sast-wait-for:
-        cmd: ${#fcliCmd('SC_SAST_PUBLISH', 'fcli sc-sast scan wait-for')} "::sc_sast_scan::"
+  # Run the fcli commands that make up this CI pipeline
+  - run.fcli:
+      setup:
+        if:  ${#skipIf(setup.skip, setup.skipReason)}
+        cmd: ${#actionCmd('SETUP', module, setup.action)} ${setup.args}  
+      package: 
+        if:  ${#skipIf(package.skip, package.skipReason)}
+        cmd: ${#actionCmd('PACKAGE_ACTION', module, 'package')}
+      sastStart: 
+        if:  ${#skipIf(sastStart.skip, sastStart.skipReason)}
+        cmd: ${#fcliCmd('SC_SAST_SCAN', sastStart.cmd)} ${sastStart.args} -f "${global.package.output}"
+      sastWaitFor:
+        if:  ${#skipIf(sastWaitFor.skip, sastWaitFor.skipReason)}
+        cmd: ${#fcliCmd('SC_SAST_PUBLISH', sastWaitFor.cmd)} ${sastWaitFor.args}
       
