@@ -2,7 +2,7 @@
 
 author: Fortify
 usage:
-  header: Run SSC CI pipeline
+  header: (PREVIEW) Run SSC CI pipeline
   description: |
     (Work in progress)
     This action can be used to run a full, standardized CI pipeline that performs the
