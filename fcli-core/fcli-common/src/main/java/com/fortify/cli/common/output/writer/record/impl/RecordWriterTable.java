@@ -55,6 +55,8 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
     @Override
     protected void closeWithNoData(Writer writer) throws IOException {
         writer.write("No data");
+        writer.flush();
+        writer.close();
     }
     
     @Override

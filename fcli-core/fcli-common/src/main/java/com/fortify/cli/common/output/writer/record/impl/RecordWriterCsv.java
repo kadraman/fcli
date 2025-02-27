@@ -50,6 +50,11 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
     }
     
     @Override
+    protected void closeWithNoData(Writer writer) throws IOException {
+        writer.close();
+    }
+    
+    @Override
     protected CsvGenerator createOut(Writer writer, ObjectNode formattedRecord) throws IOException {
         if ( formattedRecord==null ) { return null; }
         CsvSchema.Builder schemaBuilder = CsvSchema.builder();
@@ -64,10 +69,5 @@ public class RecordWriterCsv extends AbstractRecordWriter<CsvGenerator> {
             result.writeStartArray();
         }
         return result;
-    }
-    
-    @Override
-    protected void closeWithNoData(Writer writer) {
-        // Nothing to do
     }
 }

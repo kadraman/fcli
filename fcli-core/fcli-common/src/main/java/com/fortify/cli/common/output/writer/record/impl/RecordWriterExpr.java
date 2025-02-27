@@ -55,8 +55,8 @@ public class RecordWriterExpr extends AbstractRecordWriter<ExpressionWriter> {
     }
     
     @Override
-    protected void closeWithNoData(Writer writer) {
-        // Nothing to do
+    protected void closeWithNoData(Writer writer) throws IOException {
+        writer.close();
     }
     
     @Override

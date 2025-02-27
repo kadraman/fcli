@@ -20,6 +20,7 @@ config:
   
 steps:
   - run.fcli:
+      # Run ci-vars action to obtain CI data
       ci-vars: 
         cmd: ${#actionCmd('CI_VARS', 'ssc', 'ci-vars')}
         on.success:
@@ -27,14 +28,22 @@ steps:
               global.ci.av: ${#env('SSC_APPVERSION')?:global.ci.defaultFortifyRepo}
           - if: ${global.ci.av==null}
             throw: SSC application version must be specified through SSC_APPVERSION environment variable
+            
+      # Run setup-appversion action to set up application version
       setup:
-        cmd: ${#actionCmd('SETUP', 'ssc', 'setup-appversion')} --av "${global.ci.av}"
         if:  ${#skipIf(#env('DO_SETUP')=='false', 'Application version setup as DO_SETUP set to false')}
+        cmd: ${#actionCmd('SETUP', 'ssc', 'setup-appversion')} --av "${global.ci.av}"
+        
+      # Run package action to (optionally) package source code
       pkg: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')}
+      
+      # Submit ScanCentral SAST scan request
       sast-request: 
         cmd: >-
           ${#fcliCmd('SC_SAST_SCAN', 'fcli sc-sast scan start')} -f "${global.package.output}"
           --publish-to "${global.ci.av}" --store sc_sast_scan
+
+      # Wait for ScanCentral SAST scan to finish
       sast-wait-for:
         cmd: ${#fcliCmd('SC_SAST_PUBLISH', 'fcli sc-sast scan wait-for')} "::sc_sast_scan::"
       

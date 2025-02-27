@@ -53,10 +53,8 @@ public abstract class AbstractRecordWriter<T> implements IRecordWriter {
         var writer = getWriter();
         if ( out==null) {
             closeWithNoData(writer);
-            writer.flush();
-            writer.close();
         } else {
-            getWriter().flush();
+            writer.flush();
             close(out); // This should also close the writer
         }
     }
