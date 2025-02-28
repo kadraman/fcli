@@ -37,8 +37,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
 import org.jsoup.safety.Safelist;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -55,7 +53,7 @@ import lombok.NoArgsConstructor;
 
 @Reflectable @NoArgsConstructor
 public class ActionSpelFunctions {
-    private static final Logger LOG = LoggerFactory.getLogger(ActionSpelFunctions.class);
+    //private static final Logger LOG = LoggerFactory.getLogger(ActionSpelFunctions.class);
     private static final String CODE_START = "\n===== CODE START =====\n";
     private static final String CODE_END   = "\n===== CODE END =====\n";
     private static final Pattern CODE_PATTERN = Pattern.compile(String.format("%s(.*?)%s", CODE_START, CODE_END), Pattern.DOTALL);
@@ -374,14 +372,6 @@ public class ActionSpelFunctions {
         var envName = String.format("%s_%s", prefix, suffix).toUpperCase().replace('-', '_');
         var envValue = EnvHelper.env(envName);
         return StringUtils.isNotBlank(envValue) ? envValue : defaultValue; 
-    }
-    
-    public static final boolean skipIf(boolean skip, String skipMessage) {
-        if ( skip ) {
-            LOG.debug("SKIPPED: {}", skipMessage);
-            System.out.println("SKIPPED: "+skipMessage);
-        }
-        return !skip;
     }
     
     public static final ArrayNode properties(ObjectNode o) {
