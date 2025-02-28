@@ -102,15 +102,11 @@ public class FoDAppCreateCommand extends AbstractFoDJsonNodeOutputCommand implem
                 .microserviceAndReleaseNameDescriptor(releaseNameDescriptor)
                 .releaseDescription(releaseDescription)
                 .sdlcStatus(sdlcStatus.getSdlcStatusType())
-                //.owner(unirest, owner)
+                .owner(unirest, owner)
                 .appType(appType.getAppType())
                 .autoAttributes(unirest, appAttrs.getAttributes(), autoRequiredAttrs)
                 .userGroups(unirest, userGroups)
                 .build().validate();
-        if (owner != null && StringUtils.isNotBlank(owner)) {
-            appCreateRequest = appCreateRequest.toBuilder().owner(unirest, owner).build().validate();
-            LOG.debug("Adding ownerId to request: {}", appCreateRequest.toString());
-        }
         msCreated = (microserviceName != null && StringUtils.isNotBlank(microserviceName));
         relCreated = (releaseName != null && StringUtils.isNotBlank(releaseName));
         var app = FoDAppHelper.createApp(unirest, appCreateRequest);

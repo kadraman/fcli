@@ -46,7 +46,7 @@ import lombok.ToString;
 @Reflectable @NoArgsConstructor @AllArgsConstructor
 @Getter
 @ToString
-@Builder(toBuilder = true)
+@Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FoDAppCreateRequest {
     private String applicationName;
