@@ -35,11 +35,13 @@ import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.StringUtils;
 
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * This class manages action variables that can be stored, formatted, and retrieved during action execution.
  * @author Ruud Senden
  */
+@ToString
 public final class ActionRunnerVars {
     private static final Logger LOG = LoggerFactory.getLogger(ActionRunnerVars.class);
     private static final ObjectMapper objectMapper = JsonHelper.getObjectMapper();
