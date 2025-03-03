@@ -29,7 +29,7 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 @Data
 public final class ActionCliOption implements IActionElement, IMapKeyAware<String> {
-    private String key;
+    @JsonIgnore private String key;
     
     @JsonPropertyDescription("""
         Required string: The option names allowed on the command line to specify a value \
