@@ -16,7 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
@@ -73,26 +76,39 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     }
 
     private final boolean isSkipped(ActionStepRunFcliEntry entry) {
-        var skipIf = entry.getSkipIf();
-        if ( skipIf==null ) { return false; }
-        var skipMessageExpression = skipIf.entrySet().stream()
-            .filter(this::isSkipped)
-            .findFirst()
-            .map(Map.Entry::getValue)
-            .orElse(null);
-        if ( skipMessageExpression!=null ) {
-            var skipMessage = vars.eval(skipMessageExpression, String.class);
-            var fullSkipMessage = String.format("SKIPPED: %s: %s", entry.getKey(), skipMessage.trim());
+        var fullSkipMessage = getFullSkipMessage(entry);
+        if ( StringUtils.isBlank(fullSkipMessage) ) { 
+            vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.FALSE);
+            return false; 
+        } else {
             LOG.debug(fullSkipMessage);
             ctx.getStdout().println(fullSkipMessage);
+            vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.TRUE);
             return true;
         }
-        return false;
+    }
+
+    private final String getFullSkipMessage(ActionStepRunFcliEntry entry) {
+        var skipIf = entry.getSkipIf();
+        if ( skipIf!=null ) {
+            var skipMessageExpression = entry.getSkipIf().entrySet().stream()
+                    .filter(this::isSkipped)
+                    .findFirst()
+                    .map(Map.Entry::getValue)
+                    .orElse(null);
+            if ( skipMessageExpression!=null ) {
+                var plainSkipMessage = vars.eval(skipMessageExpression, String.class);
+                return String.format("SKIPPED: %s: %s", entry.getKey(), plainSkipMessage.trim());
+            }
+        }
+        return null;
     }
     
     private final boolean isSkipped(Map.Entry<TemplateExpression, TemplateExpression> entry) {
         return vars.eval(entry.getKey(), Boolean.class);
     }
+    
+    
 
     private void onFcliSuccess(ActionStepRunFcliEntry fcli) {
         if ( fcli.getOnSuccess()!=null ) {
@@ -132,10 +148,10 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     
     private void setFcliVars(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
         var name = fcli.getKey();
-        vars.set(name, recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
-        vars.set(name+"_stdout", fcli.getStdoutOutputType()==OutputType.collect ? "" : result.getOut());
-        vars.set(name+"_stderr", fcli.getStderrOutputType()==OutputType.collect ? "" : result.getErr());
-        vars.set(name+"_exitCode", new IntNode(result.getExitCode()));
+        vars.set(name+".records", recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
+        vars.set(name+".stdout", fcli.getStdoutOutputType()==OutputType.collect ? "" : result.getOut());
+        vars.set(name+".stderr", fcli.getStderrOutputType()==OutputType.collect ? "" : result.getErr());
+        vars.set(name+".exitCode", new IntNode(result.getExitCode()));
     }
 
     private OutputType getFcliOutputTypeOrDefault(OutputType outputType, OutputType _default) {

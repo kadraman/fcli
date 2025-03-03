@@ -34,10 +34,10 @@ steps:
   - check:
       noCritical:
         display-name: No critical issues allowed
-        fail.if:      ${countsByFolder.^[cleanName=='Critical']?.visibleCount>0}
+        fail.if:      ${countsByFolder.records.^[cleanName=='Critical']?.visibleCount>0}
       noNew:
         display-name: No new issues allowed
-        fail.if:      ${countsByNewIssue.^[cleanName=='NEW']?.visibleCount>0}
+        fail.if:      ${countsByNewIssue.records.^[cleanName=='NEW']?.visibleCount>0}
   - run.fcli:
       listIssues:
         cmd: ssc issue ls --av ${av.id}
@@ -48,5 +48,5 @@ steps:
                 noNewCritical:
                   display-name: No new critical issues allowed
                   fail.if:      ${issue.scanStatus=='NEW' && issue.friority=='Critical'}
-                  ifSkipped:   PASS # If no issues
+                  ifSkipped:    PASS # If no issues
       

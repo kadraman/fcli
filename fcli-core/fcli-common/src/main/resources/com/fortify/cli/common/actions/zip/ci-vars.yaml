@@ -22,6 +22,15 @@ steps:
       global.ci.qualifiedRepoName:  # Fully qualified repository name
       global.ci.sourceBranch:       # The current branch being processed/scanned 
       global.ci.commitSHA:          # Commit SHA for current commit
+      # The following are set by default at the end, but may be overridden by individual CI configurations
+      global.fod.prCommentAction:   # FoD PR comment action
+      global.ssc.prCommentAction:   # SSC PR comment action
+      global.fod.sastExportAction:  # FoD SAST export action
+      global.ssc.sastExportAction:  # SSC SAST export action
+      global.fod.dastExportAction:  # FoD DAST export action
+      global.ssc.dastExportAction:  # SSC DAST export action
+      global.fod.scaExportAction:   # FoD SCA (composition analysis) export action
+      global.ssc.scaExportAction:   # SSC SCA (composition analysis) export action
   
   # GitHub
   - if: ${#isNotBlank(#env('GITHUB_REPOSITORY'))}
@@ -55,7 +64,17 @@ steps:
       # Set default Fortify repository name (SSC application version or FoD release),
       # from a similarly named global variable set by one of the sections above, or 
       # <qualifiedRepoName>:<sourceBranch>
-      global.ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}    
+      global.ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}
+      # Set default reporting actions based on ci identifier. Note that FoD/SSC CI actions should check existence of these actions 
+      # TODO Only use default values if not explicitly defined in CI-specific sections above.
+      global.fod.prCommentAction:   ${global.ci.id}-pr-comment
+      global.ssc.prCommentAction:   ${global.ci.id}-pr-comment
+      global.fod.sastExportAction:  ${global.ci.id}-sast-report
+      global.ssc.sastExportAction:  ${global.ci.id}-sast-report
+      global.fod.dastExportAction:  ${global.ci.id}-dast-report
+      global.ssc.dastExportAction:  ${global.ci.id}-dast-report
+      global.fod.scaExportAction:   ${global.ci.id}-debricked-report  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
+      global.ssc.scaExportAction:   ${global.ci.id}-debricked-report  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
   - log.info: "${global.ci.name!=null ? 'Detected '+global.ci.name : 'No CI system detected'}"
   - records.for-each:
       from: ${#properties(global.ci)}

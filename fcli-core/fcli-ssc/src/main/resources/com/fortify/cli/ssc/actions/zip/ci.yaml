@@ -16,7 +16,6 @@ usage:
 config:
   output: immediate
   rest.target.default: ssc
-  session.from-env.output: show
   
 steps:
   # Configure module; allows for copying/re-using similar #actionCmd invocations in FoD ci action
@@ -44,39 +43,70 @@ steps:
       sca.skip: true
       dast.skipReason:  # TODO
       dast.skip: true
-      sast.skipReason: >
-        ${#env('DO_SAST_SCAN')=='false' ? 'DO_SAST_SCAN==false'
-          : #env('DO_SAST_SCAN')!='true' && (!sca.skip || !dast.skip) ? 'DO_SAST_SCAN!=true and other scan type requested'
+      sast.skipReason: > # Enabled by default, unless explicitly disabled or other scan type requested
+        ${#env('DO_SAST_SCAN')=='false' ? 'SAST scan disabled as DO_SAST_SCAN==false'
+          : #env('DO_SAST_SCAN')!='true' && (!sca.skip || !dast.skip) ? 'SAST scan disabled as DO_SAST_SCAN!=true and other scan type requested'
           : null
         }
       sast.skip: ${#isNotBlank(sast.skipReason)}
-      # Setup config
+      # Actions/commands to run
       SETUP.action: setup-appversion
-      SETUP.args: --av "${global.ci.av}"
-      # SAST scan start config
       SAST_SCAN.cmd: fcli sc-sast scan start
-      SAST_SCAN.args: --publish-to "${global.ci.av}" --store sc_sast_scan
-      # SAST scan wait-for config
       SAST_PUBLISH.cmd: fcli sc-sast scan wait-for
-      SAST_PUBLISH.args: '::sc_sast_scan::'
+      PR_COMMENT.action: ${global.ssc.prCommentAction}
+      POLICY_CHECK.action: check-policy
+      JOB_SUMMARY.action: appversion-summary
+      EXPORT_SAST.action: ${global.ssc.sastExportAction}
 
   # Run the fcli commands that make up this CI pipeline
   - run.fcli:
       SETUP:
-        cmd: ${#actionCmd('SETUP', module, SETUP.action)} ${SETUP.args}
+        cmd: ${#actionCmd('SETUP', module, 'setup-appversion')} --av "${global.ci.av}"
         skip.if:
-          ${#env('DO_SETUP')=='false'}: DO_SETUP==false  
+          ${#env('DO_SETUP')=='false'}: DO_SETUP==false # Enabled by default, skipped on request
       PACKAGE: 
         cmd: ${#actionCmd('PACKAGE_ACTION', module, 'package')}
         skip.if:
           ${sast.skip}: ${sast.skipReason}
       SAST_SCAN: 
-        cmd: ${#fcliCmd('SC_SAST_SCAN', SAST_SCAN.cmd)} ${SAST_SCAN.args} -f "${global.package.output}"
+        cmd: ${#fcliCmd('SC_SAST_SCAN', SAST_SCAN.cmd)} --publish-to "${global.ci.av}" --store sc_sast_scan -f "${global.package.output}"
         skip.if:
           ${sast.skip}: ${sast.skipReason}
       SAST_PUBLISH:
-        cmd: ${#fcliCmd('SC_SAST_PUBLISH', SAST_PUBLISH.cmd)} ${SAST_PUBLISH.args}
+        cmd: "${#fcliCmd('SC_SAST_PUBLISH', SAST_PUBLISH.cmd)} ::sc_sast_scan::"
         skip.if:
-          ${sast.skip}: ${sast.skipReason}
-          ${#env('DO_WAIT')=='false'}: DO_WAIT==false
+          ${SAST_SCAN.skipped}: SAST scan was skipped
+          ${#env('DO_WAIT')=='false'}: DO_WAIT==false # Enabled by default, skipped on request
+      POLICY_CHECK:
+        cmd: ${#actionCmd('POLICY_CHECK', module, POLICY_CHECK.action)} --av "${global.ci.av}"
+        skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
+          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
+          # TODO Auto-enable if POLICY_CHECK_ACTION or POLICY_CHECK_EXTRA_OPTS defined
+          ${#env('DO_POLICY_CHECK')!='true'}: DO_POLICY_CHECK!=true # Skipped unless requested, as SSC doesn't provide proper policy check feature'
+        on.success:
+          - var.set:
+              POLICY_CHECK.success: true
+        on.fail:
+          - var.set:
+              POLICY_CHECK.success: false
+          - log.warn: Policy check failed  # TODO Better handling; we need to exectute following steps but still fail or generate pipeline warning at the end
+      JOB_SUMMARY:
+        # TODO Pass status of steps above through args/global vars, to have job summary show
+        #      scan/publish/policy check status 
+        cmd: ${#actionCmd('JOB_SUMMARY', module, JOB_SUMMARY.action)} --av "${global.ci.av}"
+        skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
+          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
+          ${#env('DO_JOB_SUMMARY')=='false'}: DO_JOB_SUMMARY==false # Enabled by default, skipped on request
+      PR_COMMENT:
+        cmd: ${#actionCmd('PR_COMMENT', module, PR_COMMENT.action)} --av "${global.ci.av}"
+        skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
+          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
+          # TODO Auto-enable if POLICY_CHECK_ACTION or POLICY_CHECK_EXTRA_OPTS defined
+          # TODO Check whether current run is for a PR
+          ${#env('DO_PR_COMMENT')!='true'}: DO_PR_COMMENT!=true # Skipped unless requested
+      SAST_EXPORT:
+        cmd: ${#actionCmd('EXPORT', module, EXPORT_SAST.action)} --av "${global.ci.av}"
+        skip.if:
+          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
+          ${#env('DO_SAST_EXPORT')=='false'}: DO_SAST_EXPORT==false # Enabled by default, skipped on request??
       

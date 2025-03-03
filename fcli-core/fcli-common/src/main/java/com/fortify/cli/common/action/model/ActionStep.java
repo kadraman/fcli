@@ -195,11 +195,10 @@ public final class ActionStep extends AbstractActionElementIf {
         exit code that were produced by the fcli command, depending on step configuration. For example, 
         given an fcli invocation identifier named 'x', the following action variables may be set: 
         
-        x: Array of records produced by the fcli invocation if 'records.collect' is set to 'true'
-        x_stdout: Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
-        x_stderr: Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
-        x_exitCode: Exit code of the fcli invocation
-        x_exception: Java Exception instance if fcli invocation threw an exception
+        x.records: Array of records produced by the fcli invocation if 'records.collect' is set to 'true'
+        x.stdout: Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
+        x.stderr: Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
+        x.exitCode: Exit code of the fcli invocation
         """)
     @JsonProperty(value = "run.fcli", required = false) private LinkedHashMap<String, ActionStepRunFcliEntry> runFcli;
     

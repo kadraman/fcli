@@ -16,7 +16,6 @@ usage:
 config:
   output: immediate
   rest.target.default: fod
-  session.from-env.output: show
   
 steps:
   - run.fcli:

@@ -69,11 +69,12 @@ public class SSCAppVersionHelper {
     }
 
     private static final SSCAppVersionDescriptor getOptionalDescriptor(GetRequest request) {
-        JsonNode versions = request.asObject(ObjectNode.class).getBody().get("data");
+        ObjectNode body = request.asObject(ObjectNode.class).getBody();
+        JsonNode versions = body==null ? null : body.get("data");
         if ( versions.size()>1 ) {
             throw new FcliSimpleException("Multiple application versions found");
         }
-        return versions.size()==0 ? null : JsonHelper.treeToValue(versions.get(0), SSCAppVersionDescriptor.class);
+        return versions==null || versions.size()==0 ? null : JsonHelper.treeToValue(versions.get(0), SSCAppVersionDescriptor.class);
     }
     
     public static final JsonNode getAttributes(UnirestInstance unirest, SSCAppVersionDescriptor descriptor) {
