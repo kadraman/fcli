@@ -50,6 +50,6 @@ public final class SimpleExpressionDeserializer extends StdDeserializer<SimpleEx
     public SimpleExpression deserialize(JsonParser jp, DeserializationContext ctxt) 
       throws IOException, JsonProcessingException {
         JsonNode node = jp.getCodec().readTree(jp);
-        return node==null || node.isNull() ? null : new SimpleExpression(parser.parseExpression(node.asText()));
+        return node==null || node.isNull() ? null : new SimpleExpression(node.asText(), parser.parseExpression(node.asText()));
     }
 }

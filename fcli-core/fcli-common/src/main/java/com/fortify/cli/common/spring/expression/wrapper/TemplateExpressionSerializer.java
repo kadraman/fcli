@@ -44,6 +44,6 @@ public final class TemplateExpressionSerializer extends StdSerializer<TemplateEx
 
     @Override
     public void serialize(TemplateExpression value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-        gen.writeString(value.getExpressionString());
+        gen.writeString(value.getOriginalExpressionString());
     }
 }

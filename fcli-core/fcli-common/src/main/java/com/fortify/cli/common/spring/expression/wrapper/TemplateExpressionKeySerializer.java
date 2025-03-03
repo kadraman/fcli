@@ -44,7 +44,7 @@ public final class TemplateExpressionKeySerializer extends JsonSerializer<Templa
     public void serialize(TemplateExpression value, JsonGenerator jgen, SerializerProvider provider) 
         throws IOException, JsonProcessingException
     {
-        jgen.writeFieldName(value==null ? "" : value.getExpressionString());
+        jgen.writeFieldName(value==null ? "" : value.getOriginalExpressionString());
     }
     
     public static final ObjectMapper registerOn(ObjectMapper objectMapper) {

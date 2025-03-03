@@ -27,10 +27,10 @@ public final class SpelHelper {
     private static final TemplateParserContext templateContext = new TemplateParserContext("${","}");
     
     public static final SimpleExpression parseSimpleExpression(String s) {
-        return new SimpleExpression(parser.parseExpression(s));
+        return new SimpleExpression(s, parser.parseExpression(s));
     }
     public static final TemplateExpression parseTemplateExpression(String s) {
-        return new TemplateExpression(parser.parseExpression(s, templateContext));
+        return new TemplateExpression(s, parser.parseExpression(s, templateContext));
     }
     public static final void registerFunctions(SimpleEvaluationContext context, Class<?> clazz) {
         for ( Method m : clazz.getDeclaredMethods() ) {
