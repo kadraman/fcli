@@ -38,12 +38,6 @@ public final class ActionConfig implements IActionElement {
         """)
     @JsonProperty(value = "output", required = false) private ActionConfigOutput output = ActionConfigOutput.delayed;
     
-    @JsonPropertyDescription("""
-        Optional enum value: Whether to 'suppress' (default) or 'show' the output of the session login and \
-        logout commands when a session is created through --session from-env
-        """)
-    @JsonProperty(value = "session.from-env.output", required = false) private ActionConfigSessionFromEnvOutput sessionFromEnvOutput = ActionConfigSessionFromEnvOutput.suppress;
-    
     @Override
     public void postLoad(Action action) {}
     
