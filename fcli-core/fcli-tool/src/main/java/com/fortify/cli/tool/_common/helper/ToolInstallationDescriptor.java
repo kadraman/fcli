@@ -83,13 +83,16 @@ public class ToolInstallationDescriptor {
     
     public static final ToolInstallationDescriptor loadLastModified(String toolName) {
         var installDescriptorsDir = getInstallDescriptorsDirPath(toolName).toFile();
-        ToolInstallationDescriptor result = null;
-        while ( result==null ) { // The load method may delete stale descriptors, in which case we need to look for the next one
-            Optional<File> lastModifiedFile = Arrays.stream(installDescriptorsDir.listFiles(File::isFile))
-                .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
-            result = lastModifiedFile.map(File::toPath).map(ToolInstallationDescriptor::load).orElse(null);
+        var descriptorFiles = installDescriptorsDir.listFiles(File::isFile);
+        if ( descriptorFiles!=null ) {
+            Optional<File> lastModifiedFile = Arrays.stream(descriptorFiles)
+                    .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
+            return lastModifiedFile.map(File::toPath)
+                    .map(ToolInstallationDescriptor::load)
+                    // The load method may delete stale descriptors, in which case we need to look for the next one
+                    .orElseGet(()->loadLastModified(toolName));
         }
-        return result;
+        return null;
     }
     
     public static final void delete(String toolName, ToolDefinitionVersionDescriptor versionDescriptor) {
