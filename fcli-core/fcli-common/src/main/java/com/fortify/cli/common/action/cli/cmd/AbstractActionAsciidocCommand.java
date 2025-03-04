@@ -13,13 +13,17 @@
 package com.fortify.cli.common.action.cli.cmd;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.commons.io.IOUtils;
 
 import com.fortify.cli.common.action.cli.mixin.ActionSourceResolverMixin;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
@@ -99,7 +103,23 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
             
             %s
             
-            """, name, action.getUsage().getHeader(), name, action.getUsage().getDescription(), generateOptionsSection(action)));
+            """, name, action.getUsage().getHeader(), name, processDescription(action.getUsage().getDescription()), generateOptionsSection(action)));
+    }
+    
+    private String processDescription(String description) {
+        var includePattern = Pattern.compile("::include:(\\S+)", Pattern.DOTALL);
+        var sb = new StringBuilder();
+        var matcher = includePattern.matcher(description);
+        while ( matcher.find() ) {
+            matcher.appendReplacement(sb, getClasspathResourceAsString(matcher.group(1)));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    @SneakyThrows
+    private String getClasspathResourceAsString(String path) {
+        return "\n----\n"+IOUtils.toString(this.getClass().getResourceAsStream(path), StandardCharsets.UTF_8)+"\n----\n";
     }
     
     private final String generateOptionsSection(Action action) {

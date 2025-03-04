@@ -96,6 +96,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
         public void close() throws IOException {
             var table = asTable();
             writer.write(table);
+            writer.write('\n');
             writer.flush();
             writer.close();
         }
@@ -110,8 +111,12 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
                             .headerAlign(HorizontalAlign.LEFT)
                             .header(config.getStyle().withHeaders() ? h : null))
                     .toArray(Column[]::new);
-                return AsciiTable.getTable(AsciiTable.NO_BORDERS, columns, rows.toArray(String[][]::new)); 
+                return AsciiTable.getTable(getBorders(), columns, rows.toArray(String[][]::new)); 
             }
+        }
+
+        private Character[] getBorders() {
+            return config.getStyle().isBorder() ? AsciiTable.FANCY_ASCII : AsciiTable.NO_BORDERS;
         }
     }
 }

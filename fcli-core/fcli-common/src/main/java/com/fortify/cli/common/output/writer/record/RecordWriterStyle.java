@@ -78,6 +78,10 @@ public final class RecordWriterStyle {
         return getOrDefault(RecordWriterStyleElementGroup.SINGULAR)==RecordWriterStyleElement.array;
     }
     
+    public final boolean isBorder() {
+        return getOrDefault(RecordWriterStyleElementGroup.BORDER)==RecordWriterStyleElement.border;
+    }
+    
     private final RecordWriterStyleElement getOrDefault(RecordWriterStyleElementGroup group) {
         return styleElementsByGroup.getOrDefault(group, group.defaultStyle());
     }
@@ -87,7 +91,9 @@ public final class RecordWriterStyle {
         header(RecordWriterStyleElementGroup.HEADER), no_header(RecordWriterStyleElementGroup.HEADER),
         pretty(RecordWriterStyleElementGroup.PRETTY), no_pretty(RecordWriterStyleElementGroup.PRETTY),
         flat(RecordWriterStyleElementGroup.FLAT), no_flat(RecordWriterStyleElementGroup.FLAT),
-        array(RecordWriterStyleElementGroup.SINGULAR), single(RecordWriterStyleElementGroup.SINGULAR);
+        array(RecordWriterStyleElementGroup.SINGULAR), single(RecordWriterStyleElementGroup.SINGULAR),
+        border(RecordWriterStyleElementGroup.BORDER), no_border(RecordWriterStyleElementGroup.BORDER)
+        ;
         
         @Getter private final RecordWriterStyleElementGroup group;
         
@@ -105,7 +111,8 @@ public final class RecordWriterStyle {
         HEADER("header"), 
         PRETTY("pretty"), 
         FLAT("no-flat"), 
-        SINGULAR("array");
+        SINGULAR("array"),
+        BORDER("no-border");
         
         private final String defaultStyleElementName;
         

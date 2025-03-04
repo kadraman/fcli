@@ -10,3 +10,12 @@ task zipResources_actions(type: Zip) {
     include '*.yaml'
 }
 apply from: "${sharedGradleScriptsDir}/fcli-module.gradle"
+
+ext.generatedCiEnvVarsDir = "${buildDir}/generated-ci-action-resources"
+task runCiEnvVarsAction(type: JavaExec) {
+    doFirst { mkdir "${generatedCiEnvVarsDir}" }
+    classpath = sourceSets.main.compileClasspath
+    main 'com.fortify.cli.common.action.cli.cmd.RunBuildTimeFcliAction'
+    args "${projectDir}/src/main/resources/com/fortify/cli/generic_action/actions/build-time/ci-envvars.yaml", '-d', "${generatedCiEnvVarsDir}"
+}
+sourceSets.main.output.dir "${generatedCiEnvVarsDir}", builtBy: runCiEnvVarsAction

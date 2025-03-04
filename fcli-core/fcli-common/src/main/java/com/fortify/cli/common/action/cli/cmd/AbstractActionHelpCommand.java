@@ -12,7 +12,11 @@
  *******************************************************************************/
 package com.fortify.cli.common.action.cli.cmd;
 
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
+
+import org.apache.commons.io.IOUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,6 +31,7 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.StringUtils;
 
+import lombok.SneakyThrows;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Unmatched;
 
@@ -54,9 +59,25 @@ public abstract class AbstractActionHelpCommand extends AbstractRunnableCommand 
             "%s"+
             "\nAction options:\n"+
             "%s",
-            metadata.getName(), usage.getHeader(), usage.getDescription(), getMetadata(action), ActionOptionHelper.getSupportedOptionsTable(action));
+            metadata.getName(), usage.getHeader(), processDescription(usage.getDescription()), getMetadata(action), ActionOptionHelper.getSupportedOptionsTable(action));
     }
     
+    private String processDescription(String description) {
+        var includePattern = Pattern.compile("::include:(\\S+)", Pattern.DOTALL);
+        var sb = new StringBuilder();
+        var matcher = includePattern.matcher(description);
+        while ( matcher.find() ) {
+            matcher.appendReplacement(sb, getClasspathResourceAsString(matcher.group(1)));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    @SneakyThrows
+    private String getClasspathResourceAsString(String path) {
+        return IOUtils.toString(this.getClass().getResourceAsStream(path), StandardCharsets.UTF_8);
+    }
+
     private final String getMetadata(Action action) {
         var metadata = action.getMetadata();
         var signatureDescriptor = metadata.getSignatureDescriptor();

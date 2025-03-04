@@ -15,43 +15,16 @@ usage:
       exporting results, ...
     
     Configuration for this fcli action is done through environment variables; the
-    sections below list the environment variables supported by this top-level 'ci'
-    action. Based on provided configuration, this top-level `ci` action will run
-    either `fcli fod action run ci` or `fcli ssc action run ci`; please see the
-    documentation for these product-specific `ci` actions for a list of environment
-    variables supported by them. 
+    sections below list the environment variables supported by this action.
         
     === Fortify on Demand
     
-    ==== FOD_URL
-    URL for the FoD instance to use.
-      
-    ==== FOD_TENANT, FOD_USER, FOD_PASSWORD
-    Authenticate with tenant and user credentials.
-      
-    ==== FOD_CLIENT_ID, FOD_CLIENT_SECRET
-    Authenticate with an FoD API key.
-      
-    ==== FOD_LOGIN_EXTRA_OPTS:
-    Optional extra options to pass to the `fcli fod session login` command.
+    ::include:/ci-envvars-fod.all.txt
     
     === Fortify Software Security Center
+        
+    ::include:/ci-envvars-ssc.all.txt
     
-    ==== SSC_URL
-    URL for the SSC instance to use.
-      
-    ==== SSC_USER, SSC_PASSWORD
-    Authenticate with user credentials.
-      
-    ==== SSC_TOKEN
-    Authenticate with pre-generated SSC token.
-      
-    ==== SC_SAST_TOKEN
-    ScanCentral SAST client-auth-token.
-      
-    ==== SSC_LOGIN_EXTRA_OPTS
-    Optional extra options to pass to the `fcli ssc session login` command 
-
 config:
   output: immediate
   
