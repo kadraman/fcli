@@ -61,12 +61,12 @@ formatters:
       - names: FOD_LOGIN_EXTRA_OPTS
         desc: >-
           Extra login options, for example for disabling SSL checks or changing connection time-outs; see 
-          `fcli fod session login` documentation.
+          'fcli fod session login' documentation.
     ci:
       - names: FOD_RELEASE
         desc: >-
-          Fortify on Demand release to use with this action. This should be specified as `<app-name>:<release-name>`
-          (for non-microservices applications) or `<app-name>:<microservice-name>:<release-name>` (for microservices 
+          Fortify on Demand release to use with this action. This should be specified as '<app-name>:<release-name>'
+          (for non-microservices applications) or '<app-name>:<microservice-name>:<release-name>' (for microservices 
           applications). Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
           Note that you'll need to explicitly configure FOD_RELEASE for microservices applications, as the default
           value lacks a microservice name.
@@ -90,10 +90,10 @@ formatters:
       - names: SSC_LOGIN_EXTRA_OPTS
         desc: >-
             Extra SSC login options, for example for disabling SSL checks or changing connection time-outs; 
-            see `fcli ssc session login` documentation.        
+            see 'fcli ssc session login'' documentation.        
     ci:
       - names: SSC_APPVERSION
         desc: >-
-            Fortify SSC application version to use with this action. This should be specified as `<app-name>:<version-name>`. 
+            Fortify SSC application version to use with this action. This should be specified as '<app-name>:<version-name>'. 
             Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
       
