@@ -17,21 +17,9 @@ import com.fortify.cli.aviator.util.Constants;
 import com.fortify.cli.aviator.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +39,7 @@ public class IssueAuditor {
     private final TagDefinition resultsTag;
 
     private List<Vulnerability> vulnerabilities;
-    private final List<UserPrompt> userPrompts;
+    private List<UserPrompt> userPrompts;
     private final AuditProcessor auditProcessor;
     private final Map<String, AuditIssue> auditIssueMap;
     private final FPRInfo fprInfo;
@@ -78,7 +66,7 @@ public class IssueAuditor {
         this.auditIssueMap = auditIssueMap;
         this.fprInfo = fprInfo;
         this.isTestMode = isTestMode;
-        this.analysisTag = fprInfo.getFilterTemplate().getTagDefinitions().stream().filter(t -> "analysis".equalsIgnoreCase(t.getName())).findFirst().orElse(null);
+        this.analysisTag = fprInfo.getFilterTemplate().getTagDefinitions().stream().filter(t -> "Analysis".equalsIgnoreCase(t.getName())).findFirst().orElse(null);
         this.resultsTag = resolveResultTag("", "", analysisTag);
 
         issuesSentToLLM = new AtomicInteger(0);
@@ -129,8 +117,9 @@ public class IssueAuditor {
         return new TagDefinition(name, id, values, false);
     }
 
-    public void performAudit(Map<String, AuditResponse> auditResponses, String tenantId, String tenantName, String projectId, String url) {
-        logger.progress("Starting audit performance for tenant: %s, project: %s", tenantId, projectId);
+    public void performAudit(Map<String, AuditResponse> auditResponses, String token, String projectName,String projectBuildId, String url) {
+        projectName = StringUtil.isEmpty(projectName) ? projectBuildId : projectName;
+        logger.progress("Starting audit for project: %s", projectName);
 
         aviatorPredictionTag = resolveAviatorPredictionTag();
         aviatorStatusTag = resolveAviatorStatusTag();
@@ -146,9 +135,9 @@ public class IssueAuditor {
         ConcurrentLinkedDeque<UserPrompt> filteredUserPrompts = getIssuesToAudit();
         logger.progress("Filtered issues count: %d", filteredUserPrompts.size());
         try (AviatorGrpcClient client = createClientFromUrl(url)) {
-            CompletableFuture<Map<String, AuditResponse>> future = client.processBatchRequests(filteredUserPrompts, tenantId, tenantName, projectId,"");
+            CompletableFuture<Map<String, AuditResponse>> future = client.processBatchRequests(filteredUserPrompts, projectName, token);
             try {
-                Map<String, AuditResponse> responses = future.get(5, TimeUnit.MINUTES);
+                Map<String, AuditResponse> responses = future.get(500, TimeUnit.MINUTES);
                 responses.forEach((requestId, response) -> {
                     auditResponses.put(response.getIssueId(), response);
                 });
@@ -164,11 +153,14 @@ public class IssueAuditor {
             throw new RuntimeException(e);
         }
 
+        System.out.println(":::::::::::::: result id "+resultsTag.getId());
+        logger.progress(":::::::::::::: result id "+resultsTag.getId());
         fprInfo.setResultsTag(resultsTag.getId());
         logger.progress("Audit completed");
     }
 
     private ConcurrentLinkedDeque<UserPrompt> getIssuesToAudit() {
+        userPrompts = userPrompts.stream().filter(userPrompt -> shouldInclude(userPrompt)).collect(Collectors.toList());
         Map<String, List<UserPrompt>> issuesByCategory = userPrompts.stream().collect(Collectors.groupingBy(UserPrompt::getCategory));
 
         Map<String, Integer> newIssuesInCategoryCapped = new HashMap<>();
@@ -180,7 +172,8 @@ public class IssueAuditor {
             List<UserPrompt> issues = entry.getValue();
             issues.sort(new IssueOrderingComparator());
 
-            int newIssuesCount = (int) issues.stream().filter(this::shouldInclude).count();
+            issues = issues.stream().filter(issue -> shouldInclude(issue)).collect(Collectors.toList());
+            int newIssuesCount = issues.size();
             int cappedCount = Math.min(MAX_PER_CATEGORY, newIssuesCount);
 
             newIssuesInCategoryCapped.put(category, cappedCount);
@@ -204,8 +197,8 @@ public class IssueAuditor {
             }
         }
 
-        double auditFraction = ((double) MAX_TOTAL - (double) auditAllTotal) / (double) auditSomeTotal;
         ConcurrentLinkedDeque<UserPrompt> issuesToAudit = new ConcurrentLinkedDeque<>();
+        double auditFraction = ((double) MAX_TOTAL - (double) auditAllTotal) / (double) auditSomeTotal;
 
         for (Map.Entry<String, List<UserPrompt>> entry : issuesByCategory.entrySet()) {
             String category = entry.getKey();
@@ -214,9 +207,7 @@ public class IssueAuditor {
             int i = 0;
 
             for (UserPrompt issue : issues) {
-                if (!shouldInclude(issue)) {
-                    updateSkippedIssue(issue, "Issue did not meet the filter criteria");
-                } else if (i >= MAX_PER_CATEGORY) {
+                if (i >= MAX_PER_CATEGORY) {
                     updateSkippedIssue(issue, MAX_PER_CATEGORY_EXCEEDED, issues.size(), totalNewIssues);
                 } else if (i > auditAllThreshold && i >= totalLimitIndex) {
                     updateSkippedIssue(issue, MAX_TOTAL_EXCEEDED, issues.size(), totalNewIssues);
@@ -237,28 +228,20 @@ public class IssueAuditor {
             List<UserPrompt> issues = entry.getValue();
 
             if (issues.size() <= MAX_PER_CATEGORY) {
-                for (UserPrompt issue : issues) {
-                    if (shouldInclude(issue)) {
-                        issuesToAudit.add(issue);
-                    }
-                }
+                issuesToAudit.addAll(issues);
             } else {
-                for (int i = 0; i < MAX_PER_CATEGORY; i++) {
-                    UserPrompt issue = issues.get(i);
-                    if (shouldInclude(issue)) {
-                        issuesToAudit.add(issue);
-                    } else {
-                        updateSkippedIssue(issue, "Issue did not meet the filter criteria");
+                for (int i = 0; i < issues.size(); i++) {
+                    if (i < MAX_PER_CATEGORY){
+                        issuesToAudit.add(issues.get(i));
+                    } else{
+                        updateSkippedIssue(issues.get(i), MAX_PER_CATEGORY_EXCEEDED, issues.size(), totalCount);
                     }
-                }
-                for (int i = MAX_PER_CATEGORY; i < issues.size(); i++) {
-                    updateSkippedIssue(issues.get(i), MAX_PER_CATEGORY_EXCEEDED, issues.size(), totalCount);
                 }
             }
         }
-
         return issuesToAudit;
     }
+
 
     private boolean shouldInclude(UserPrompt userPrompt) {
 
@@ -298,12 +281,16 @@ public class IssueAuditor {
         String auditorStatusTag = Constants.AUDITOR_STATUS_TAG_ID;
         Boolean isAuditorStatusPopulated = tags.containsKey(auditorStatusTag) && tags.get(auditorStatusTag).equalsIgnoreCase("Pending Review");
         String aviatorExpectedOutcome = Constants.AVIATOR_EXPECTED_OUTCOME_TAG_ID;
+        String analysisTagS = Constants.ANALYSIS_TAG_ID;
 
         if (auditIssueMap.containsKey(issueId)) {
             if (isAuditorStatusPopulated || tags.containsKey(aviatorExpectedOutcome)) {
                 return true;
             }
             if (tags.containsKey(analysisTag.getId()) && !tags.get(analysisTag.getId()).equalsIgnoreCase("Not Set") && !tags.get(analysisTag.getId()).equalsIgnoreCase(Constants.PENDING_REVIEW) && !StringUtil.isEmpty(tags.get(analysisTag.getId()))) {
+                return true;
+            }
+            if (tags.containsKey(analysisTagS) && !tags.get(analysisTagS).equalsIgnoreCase("Not Set") && !StringUtil.isEmpty(tags.get(analysisTagS))) {
                 return true;
             }
         }
@@ -414,7 +401,7 @@ public class IssueAuditor {
     }
 
     private void handleDefaultCase(List<Vulnerability> vulnerabilities, Set<Vulnerability> resultSet, boolean shouldAdd) {
-        vulnerabilities.stream().forEach(vuln -> {
+        vulnerabilities.forEach(vuln -> {
             if (shouldAdd) {
                 resultSet.add(vuln);
             } else {
@@ -530,18 +517,14 @@ public class IssueAuditor {
 
 
     private boolean checkFieldMatch(Vulnerability vuln, String field, String value) {
-        switch (field.toLowerCase()) {
-            case "audience":
-                return vuln.getAudience() != null && vuln.getAudience().toLowerCase().contains(value.toLowerCase());
-            case "analyzer":
-                return vuln.getAnalyzer() != null && vuln.getAnalyzer().toLowerCase().equalsIgnoreCase(value.toLowerCase());
-            case "category":
-                return vuln.getCategory() != null && vuln.getCategory().toLowerCase().equalsIgnoreCase(value.toLowerCase());
-            case "fortify priority order":
-                return vuln.getPriority() != null && vuln.getPriority().equalsIgnoreCase(value);
-            default:
-                return false;
-        }
+        return switch (field.toLowerCase()) {
+            case "audience" ->
+                    vuln.getAudience() != null && vuln.getAudience().toLowerCase().contains(value.toLowerCase());
+            case "analyzer" -> vuln.getAnalyzer() != null && vuln.getAnalyzer().equalsIgnoreCase(value.toLowerCase());
+            case "category" -> vuln.getCategory() != null && vuln.getCategory().equalsIgnoreCase(value.toLowerCase());
+            case "fortify priority order" -> vuln.getPriority() != null && vuln.getPriority().equalsIgnoreCase(value);
+            default -> false;
+        };
     }
 
     private void updateSkippedIssue(UserPrompt userPrompt, String reason, int... values) {
@@ -566,43 +549,6 @@ public class IssueAuditor {
             template = template.replace("{issues_new_in_category}", String.valueOf(values[0])).replace("{MAX_PER_CATEGORY}", String.valueOf(MAX_PER_CATEGORY)).replace("{issues_new_total}", String.valueOf(values[1])).replace("{MAX_TOTAL}", String.valueOf(MAX_TOTAL));
         }
         return template;
-    }
-
-    private void writeLLMResponseToFile(AuditResponse response, String outputPath) {
-        if (response == null || response.getIssueId() == null || response.getAuditResult() == null) {
-            LOG.warn("Skipping LLM output write, no issue id or response");
-            return;
-        }
-
-        try {
-            Path outputFile = Paths.get(outputPath, response.getIssueId() + "_output.xml");
-            Files.createDirectories(outputFile.getParent());
-            DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
-            Document document = documentBuilder.newDocument();
-            Element root = document.createElement("audit");
-            document.appendChild(root);
-
-            Element value = document.createElement("value");
-            value.setTextContent(response.getAuditResult().tagValue);
-            root.appendChild(value);
-
-            Element comment = document.createElement("comment");
-            comment.setTextContent(response.getAuditResult().comment);
-            root.appendChild(comment);
-
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            DOMSource source = new DOMSource(document);
-            StreamResult result = new StreamResult(outputFile.toFile());
-            transformer.transform(source, result);
-
-            LOG.info("LLM output written to: {}", outputFile);
-        } catch (Exception e) {
-            LOG.error("Error writing LLM output to file for issue: {}", response.getIssueId(), e);
-        }
     }
 
 
