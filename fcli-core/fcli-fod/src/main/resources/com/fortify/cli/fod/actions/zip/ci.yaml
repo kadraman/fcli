@@ -12,6 +12,11 @@ usage:
     - Submit SAST scan request
     - Wait for SAST scan completion
     - Perform post-scan activities, like checking policy outcome, exporting results, ...
+    
+    Configuration for this fcli action is done through environment variables; the
+    table below lists the environment variables supported by this action.
+                
+    ::include:/ci-envvars-fod.ci.txt
 
 config:
   output: immediate

@@ -90,7 +90,7 @@ formatters:
       - names: SSC_LOGIN_EXTRA_OPTS
         desc: >-
             Extra SSC login options, for example for disabling SSL checks or changing connection time-outs; 
-            see 'fcli ssc session login'' documentation.        
+            see 'fcli ssc session login' documentation.        
     ci:
       - names: SSC_APPVERSION
         desc: >-
