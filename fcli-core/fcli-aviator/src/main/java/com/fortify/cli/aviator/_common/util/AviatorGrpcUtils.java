@@ -1,12 +1,13 @@
 package com.fortify.cli.aviator._common.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AviatorGrpcUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AviatorGrpcUtils.class);

@@ -1,5 +1,9 @@
 package com.fortify.cli.aviator.token.cli.cmd;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
 import com.fortify.cli.aviator._common.output.cli.cmd.AbstractAviatorAdminSessionOutputCommand;
@@ -11,14 +15,11 @@ import com.fortify.cli.aviator.grpc.AviatorGrpcClientHelper;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.grpc.token.TokenGenerationResponse;
+
 import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
-
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 @Command(name = OutputHelperMixins.Create.CMD_NAME)
 public class AviatorTokenCreateCommand extends AbstractAviatorAdminSessionOutputCommand {

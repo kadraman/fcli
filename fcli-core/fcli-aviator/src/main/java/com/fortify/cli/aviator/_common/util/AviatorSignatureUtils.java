@@ -1,14 +1,13 @@
 package com.fortify.cli.aviator._common.util;
 
-import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionDescriptor;
-import com.fortify.cli.common.crypto.helper.SignatureHelper;
-
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+
+import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionDescriptor;
+import com.fortify.cli.common.crypto.helper.SignatureHelper;
 
 public class AviatorSignatureUtils {
 
