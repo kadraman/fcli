@@ -106,6 +106,7 @@ public final class SSCArtifactHelper {
             String scanTypesString = "";
             if ( _embed.has("scans") ) {
                 // TODO Can we get rid of unchecked conversion warning?
+                @SuppressWarnings("unchecked")
                 ArrayList<String> scanTypes = JsonHelper.evaluateSpelExpression(_embed, "scans?.![type]", ArrayList.class);
                 scanTypesString = scanTypes.stream().collect(Collectors.joining(", "));   
             }

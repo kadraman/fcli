@@ -108,7 +108,8 @@ public final class DebrickedHelper  {
 				.getBody();
 			// TODO Improve this to properly handle generics
 			// TODO Get rid of appending empty string to id to convert int to string as expected by SpEL
-			List<String> repositoryIds = JsonHelper.evaluateSpelExpression(data, "?[name == '"+repository+"'].![id+'']", ArrayList.class);
+			@SuppressWarnings("unchecked")
+            List<String> repositoryIds = JsonHelper.evaluateSpelExpression(data, "?[name == '"+repository+"'].![id+'']", ArrayList.class);
 			switch ( repositoryIds.size() ) {
 				case 0: throw new FcliSimpleException(String.format("Debricked repository with name %s not found; please use full repository name like <org>/<repo>", repository));
 				case 1: return repositoryIds.get(0);

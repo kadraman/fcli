@@ -16,9 +16,6 @@ import static com.fortify.cli.common.util.DisableTest.TestType.MULTI_OPT_PLURAL_
 
 import java.util.ArrayList;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.cli.util.EnvSuffix;
@@ -47,7 +44,7 @@ import picocli.CommandLine.Spec;
 
 @CommandLine.Command(name = OutputHelperMixins.Create.CMD_NAME)
 public class FoDAppCreateCommand extends AbstractFoDJsonNodeOutputCommand implements IRecordTransformer, IActionCommandResultSupplier {
-    private static final Logger LOG = LoggerFactory.getLogger(FoDAppCreateCommand.class);
+    //private static final Logger LOG = LoggerFactory.getLogger(FoDAppCreateCommand.class);
     @Getter @Mixin private OutputHelperMixins.Create outputHelper;
     @Spec CommandSpec spec;
 
