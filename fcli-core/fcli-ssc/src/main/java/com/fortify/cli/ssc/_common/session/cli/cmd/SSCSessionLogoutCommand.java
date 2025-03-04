@@ -17,6 +17,7 @@ import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLogoutCommand;
 import com.fortify.cli.common.session.cli.mixin.UserCredentialOptions;
 import com.fortify.cli.common.session.helper.FcliSessionLogoutException;
+import com.fortify.cli.ssc._common.rest.cli.mixin.SSCAndScanCentralUnirestInstanceSupplierMixin;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLogoutOptions;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionNameArgGroup;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
@@ -37,6 +38,7 @@ public class SSCSessionLogoutCommand extends AbstractSessionLogoutCommand<SSCAnd
     
     @Override
     protected void logout(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {
+        SSCAndScanCentralUnirestInstanceSupplierMixin.shutdownUnirestInstance(sessionName);
         if ( !logoutOptions.isNoRevokeToken() ) {
             UserCredentialOptions userCredentialOptions = logoutOptions.getUserCredentialOptions();
             try {

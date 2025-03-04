@@ -18,6 +18,7 @@ import com.fortify.cli.common.rest.unirest.config.IUrlConfig;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLoginCommand;
 import com.fortify.cli.fod._common.session.cli.mixin.FoDSessionLoginOptions;
 import com.fortify.cli.fod._common.session.cli.mixin.FoDSessionNameArgGroup;
+import com.fortify.cli.fod._common.session.cli.mixin.FoDUnirestInstanceSupplierMixin;
 import com.fortify.cli.fod._common.session.helper.FoDSessionDescriptor;
 import com.fortify.cli.fod._common.session.helper.FoDSessionHelper;
 import com.fortify.cli.fod._common.session.helper.oauth.FoDOAuthHelper;
@@ -38,6 +39,7 @@ public class FoDSessionLoginCommand extends AbstractSessionLoginCommand<FoDSessi
     
     @Override
     protected void logoutBeforeNewLogin(String sessionName, FoDSessionDescriptor sessionDescriptor) {
+        FoDUnirestInstanceSupplierMixin.shutdownUnirestInstance(sessionName);
         // TODO Can we revoke a previously generated FoD token?
     }
 

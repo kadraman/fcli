@@ -14,6 +14,7 @@ package com.fortify.cli.ssc._common.session.cli.cmd;
 
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionLoginCommand;
+import com.fortify.cli.ssc._common.rest.cli.mixin.SSCAndScanCentralUnirestInstanceSupplierMixin;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCAndScanCentralSessionLoginOptions;
 import com.fortify.cli.ssc._common.session.cli.mixin.SSCSessionNameArgGroup;
 import com.fortify.cli.ssc._common.session.helper.ISSCAndScanCentralCredentialsConfig;
@@ -36,6 +37,7 @@ public class SSCSessionLoginCommand extends AbstractSessionLoginCommand<SSCAndSc
     
     @Override
     protected void logoutBeforeNewLogin(String sessionName, SSCAndScanCentralSessionDescriptor sessionDescriptor) {
+        SSCAndScanCentralUnirestInstanceSupplierMixin.shutdownUnirestInstance(sessionName);
         sessionDescriptor.logout(sessionLoginOptions.getSscAndScanCentralCredentialConfigOptions().getSscUserCredentialsConfig());
     }
     

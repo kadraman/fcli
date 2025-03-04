@@ -46,4 +46,10 @@ public class SSCAndScanCentralUnirestInstanceSupplierMixin extends AbstractSessi
         return GenericUnirestFactory.getUnirestInstance("sc-dast/"+getSessionName(),
                 u->SSCAndScanCentralUnirestHelper.configureScDastControllerUnirestInstance(u, getSessionDescriptor()));
     }
+    
+    public static final void shutdownUnirestInstance(String sessionName) {
+        GenericUnirestFactory.shutdown("ssc/"+sessionName);
+        GenericUnirestFactory.shutdown("sc-sast/"+sessionName);
+        GenericUnirestFactory.shutdown("sc-dast/"+sessionName);
+    }
 }
