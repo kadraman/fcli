@@ -33,6 +33,7 @@ import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.mixin.CommonOptionMixins;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.IOptionDescriptor;
+import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.util.FcliBuildPropertiesHelper;
 import com.fortify.cli.common.util.StringUtils;
 
@@ -119,7 +120,11 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
 
     @SneakyThrows
     private String getClasspathResourceAsString(String path) {
-        return "\n----\n"+IOUtils.toString(this.getClass().getResourceAsStream(path), StandardCharsets.UTF_8)+"\n----\n";
+        var is = this.getClass().getResourceAsStream(path);
+        if ( is==null ) {
+            throw new FcliBugException(String.format("Class path resource %s not found", path));
+        }
+        return String.format("\n----\n%s\n----\n", IOUtils.toString(is, StandardCharsets.UTF_8));
     }
     
     private final String generateOptionsSection(Action action) {

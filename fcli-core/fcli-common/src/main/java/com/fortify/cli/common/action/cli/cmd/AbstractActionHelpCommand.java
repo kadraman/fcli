@@ -28,6 +28,7 @@ import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.PublicKeyDescriptor;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureMetadata;
 import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
+import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.StringUtils;
 
@@ -75,7 +76,11 @@ public abstract class AbstractActionHelpCommand extends AbstractRunnableCommand 
 
     @SneakyThrows
     private String getClasspathResourceAsString(String path) {
-        return IOUtils.toString(this.getClass().getResourceAsStream(path), StandardCharsets.UTF_8);
+        var is = this.getClass().getResourceAsStream(path);
+        if ( is==null ) {
+            throw new FcliBugException(String.format("Class path resource %s not found", path));
+        }
+        return IOUtils.toString(is, StandardCharsets.UTF_8);
     }
 
     private final String getMetadata(Action action) {
