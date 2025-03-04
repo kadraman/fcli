@@ -138,6 +138,8 @@ tasks.register('generateResourceConfig') {
 			.visit {e -> if ( !e.isDirectory() ) {entries << '\n  {"pattern":"'+e.relativePath+'"}'}};
         fileTree(dir: generatedZipResourcesDir)
             .visit {e -> if ( !e.isDirectory() ) {entries << '\n  {"pattern":"'+e.relativePath+'"}'}};
+        fileTree(dir: "${buildDir}/generated-ci-action-resources")
+            .visit {e -> if ( !e.isDirectory() ) {entries << '\n  {"pattern":"'+e.relativePath+'"}'}};
 		if ( entries.size>0 ) {
 			def contents = '{"resources":[' + entries.join(",") + '\n]}';
 			file("${outputDir}/resource-config.json").text = contents;
