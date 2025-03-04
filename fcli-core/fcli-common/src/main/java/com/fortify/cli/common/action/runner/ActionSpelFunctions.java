@@ -44,6 +44,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionSource;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.EnvHelper;
@@ -308,6 +309,47 @@ public class ActionSpelFunctions {
                 extraOpts(envPrefix));
     }
     
+    public static final String fcliCmd(String envPrefix, String cmd) {
+        return String.format("%s %s",
+                cmd,
+                extraOpts(envPrefix));
+    }
+    
+    public static final String actionCmdSkipFromEnvReason(String envPrefix, boolean skipByDefault) {
+        var doEnvName = String.format("DO_%s", envPrefix);
+        var doEnvValue = EnvHelper.env(doEnvName);
+        if ( StringUtils.isNotBlank(doEnvValue) ) {
+            switch (doEnvValue.toLowerCase()) {
+            case "true": return null;
+            case "false": return String.format("%s set to 'false'", doEnvName);
+            default: throw new FcliSimpleException(String.format("%s must be either blank, true, or false; current value: %s", doEnvName, doEnvValue));
+            }
+        }
+        var actionEnvName = String.format("%s_ACTION", envPrefix.replaceAll("_ACTION$", ""));
+        var extraOptsEnvName = String.format("%s_EXTRA_OPTS", envPrefix);
+        if ( StringUtils.isNotBlank(actionEnvName) || StringUtils.isNotBlank(extraOptsEnvName) ) {
+            return null;
+        }
+        return skipByDefault ? String.format("Set %s to 'true' to enable this step", doEnvName) : null;
+    }
+    
+    public static final String fcliCmdSkipFromEnvReason(String envPrefix, boolean skipByDefault) {
+        var doEnvName = String.format("DO_%s", envPrefix);
+        var doEnvValue = EnvHelper.env(doEnvName);
+        if ( StringUtils.isNotBlank(doEnvValue) ) {
+            switch (doEnvValue.toLowerCase()) {
+            case "true": return null;
+            case "false": return String.format("%s set to 'false'", doEnvName);
+            default: throw new FcliSimpleException(String.format("%s must be either blank, true, or false; current value: %s", doEnvName, doEnvValue));
+            }
+        }
+        var extraOptsEnvName = String.format("%s_EXTRA_OPTS", envPrefix);
+        if ( StringUtils.isNotBlank(extraOptsEnvName) ) {
+            return null;
+        }
+        return skipByDefault ? String.format("Set %s to 'true' to enable this step", doEnvName) : null;
+    }
+    
     /**
      * If a custom action has been configured through _ACTION env var, this method returns true.
      * If no custom action has been configured, this method checks whether a built-in action
@@ -319,6 +361,7 @@ public class ActionSpelFunctions {
     }
     
     private static boolean _hasBuiltInAction(String moduleName, String actionName) {
+        if ( StringUtils.isBlank(actionName) ) { return false; }
         return builtinActionNamesByModule
                 .computeIfAbsent(moduleName, ActionSpelFunctions::_getBuiltinActionNames)
                 .contains(actionName);
@@ -328,12 +371,6 @@ public class ActionSpelFunctions {
         return ActionLoaderHelper
                     .streamAsNames(ActionSource.defaultActionSources(moduleName), ActionValidationHandler.IGNORE)
                     .collect(Collectors.toSet());
-    }
-
-    public static final String fcliCmd(String envPrefix, String cmd) {
-        return String.format("%s %s",
-                cmd,
-                extraOpts(envPrefix));
     }
     
     /**
