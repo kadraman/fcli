@@ -113,6 +113,16 @@ cli.options:
     names: --oss
     description: "See `fcli fod sast-scan setup`" 
     type: boolean  
+  technology-stack:      
+    group: sast_setup_opts
+    required: false
+    names: --technology-stack
+    description: "See `fcli fod sast-scan setup`"
+  language-level:    
+    group: sast_setup_opts
+    required: false
+    names: --language-level
+    description: "See `fcli fod sast-scan setup`" 
   
 steps:
   - log.progress: "Creating FoD application & release if non-existing" 
