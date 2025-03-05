@@ -16,7 +16,7 @@ usage:
     Configuration for this fcli action is done through environment variables; the
     table below lists the environment variables supported by this action.
                 
-    ${isAsciiDoc?'====\n':''}${#include('/ci-envvars-fod.ci.txt')}${isAsciiDoc?'\n====':''}
+    ${isAsciiDoc?'----\n':''}${#include('/ci-envvars-fod.ci.txt')}${isAsciiDoc?'\n----':''}
 
 config:
   output: immediate
