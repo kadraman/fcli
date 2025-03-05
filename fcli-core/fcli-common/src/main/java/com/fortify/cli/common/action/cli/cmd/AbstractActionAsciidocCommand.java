@@ -19,13 +19,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 
 import com.fortify.cli.common.action.cli.mixin.ActionSourceResolverMixin;
+import com.fortify.cli.common.action.helper.ActionDescriptionRenderer;
+import com.fortify.cli.common.action.helper.ActionDescriptionRenderer.ActionDescriptionRendererType;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
 import com.fortify.cli.common.action.model.Action;
@@ -42,6 +43,8 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 public abstract class AbstractActionAsciidocCommand extends AbstractRunnableCommand {
+    private static final ActionDescriptionRenderer descriptionRenderer = 
+            ActionDescriptionRenderer.create(ActionDescriptionRendererType.ASCIIDOC);
     @Mixin private ActionSourceResolverMixin.OptionalOption actionSourceResolver;
     @Mixin private CommonOptionMixins.OptionalFile outputFileMixin;
     @Option(names= {"--manpage-dir", "-d"}, required = false, descriptionKey="fcli.action.asciidoc.manpage-dir")
@@ -73,13 +76,13 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
     }
     
     private final String generateHeader() {
-        return replaceVariables("""
-                = Fcli ${type} Actions
+        return replaceVariables(String.format("""
+                = Action Documentation: `%s`
                 
-                This manual page describes built-in fcli ${type} actions that can be run through
-                the `fcli ${typeLower} action run <action-name>` command.
+                This manual page describes built-in fcli actions that can be run through
+                the `%s run <action-name>` command.
                 
-                """);
+                """, getActionCmd(), getActionCmd()));
     }
     
     private final String generateActionSection(Action action) {
@@ -87,7 +90,7 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
         //      ActionParameterHelper or other class for generating this, such that we can also
         //      show synopsis in `fcli * action help` output.
         String name = action.getMetadata().getName();
-        return replaceVariables(String.format("""
+        var result = replaceVariables(String.format("""
             == %s
             
             %s
@@ -100,22 +103,13 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
             
             %s
             
-            === Options
-            
-            %s
-            
-            """, name, action.getUsage().getHeader(), name, processDescription(action.getUsage().getDescription()), generateOptionsSection(action)));
-    }
-    
-    private String processDescription(String description) {
-        var includePattern = Pattern.compile("::include:(\\S+)", Pattern.DOTALL);
-        var sb = new StringBuilder();
-        var matcher = includePattern.matcher(description);
-        while ( matcher.find() ) {
-            matcher.appendReplacement(sb, getClasspathResourceAsString(matcher.group(1)));
+            """
+            , name, action.getUsage().getHeader(), name, descriptionRenderer.render(action.getUsage().getDescription())));
+        var optionsSection = replaceVariables(generateOptionsSection(action));
+        if ( StringUtils.isNotBlank(optionsSection) ) {
+            result += String.format("=== Options\n\n%s\n\n", optionsSection);
         }
-        matcher.appendTail(sb);
-        return sb.toString();
+        return result;
     }
 
     @SneakyThrows
@@ -179,6 +173,6 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
     }
     
     protected abstract String getType();
-    
+    protected abstract String getActionCmd();
     
 }

@@ -22,4 +22,9 @@ public class GenericActionAsciidocCommand extends AbstractActionAsciidocCommand 
     protected final String getType() {
         return "generic_action";
     }
+    
+    @Override
+    protected String getActionCmd() {
+        return "fcli action";
+    }
 }

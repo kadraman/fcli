@@ -13,7 +13,6 @@
 package com.fortify.cli.common.action.cli.cmd;
 
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.io.IOUtils;
@@ -21,6 +20,8 @@ import org.apache.commons.io.IOUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.cli.mixin.ActionResolverMixin;
+import com.fortify.cli.common.action.helper.ActionDescriptionRenderer;
+import com.fortify.cli.common.action.helper.ActionDescriptionRenderer.ActionDescriptionRendererType;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
 import com.fortify.cli.common.action.model.Action;
 import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor.ActionOptionHelper;
@@ -37,6 +38,8 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Unmatched;
 
 public abstract class AbstractActionHelpCommand extends AbstractRunnableCommand {
+    private static final ActionDescriptionRenderer descriptionRenderer = 
+            ActionDescriptionRenderer.create(ActionDescriptionRendererType.PLAINTEXT);
     @Mixin private ActionResolverMixin.RequiredParameter actionResolver;
     @Unmatched private String[] actionArgs; // We explicitly ignore any unknown CLI args, to allow for 
                                             // users to simply switch between run and help commands.
@@ -52,26 +55,18 @@ public abstract class AbstractActionHelpCommand extends AbstractRunnableCommand 
     private final String getActionHelp(Action action) {
         var metadata = action.getMetadata();
         var usage = action.getUsage();
-        return String.format(
+        var result = String.format(
             "\nAction: %s\n"+
             "\n%s\n"+
             "\n%s\n"+
-            "Metadata:\n"+
-            "%s"+
-            "\nAction options:\n"+
-            "%s",
-            metadata.getName(), usage.getHeader(), processDescription(usage.getDescription()), getMetadata(action), ActionOptionHelper.getSupportedOptionsTable(action));
-    }
-    
-    private String processDescription(String description) {
-        var includePattern = Pattern.compile("::include:(\\S+)", Pattern.DOTALL);
-        var sb = new StringBuilder();
-        var matcher = includePattern.matcher(description);
-        while ( matcher.find() ) {
-            matcher.appendReplacement(sb, getClasspathResourceAsString(matcher.group(1)));
+            "Metadata:\n%s"+
+            "\nSynopsis: %s run %s [options]\n",
+            metadata.getName(), usage.getHeader(), descriptionRenderer.render(action.getUsage().getDescription()), getMetadata(action), getActionCmd(), metadata.getName());
+        var supportedOptionsTable = ActionOptionHelper.getSupportedOptionsTable(action);
+        if ( StringUtils.isNotBlank(supportedOptionsTable) ) {
+            result += String.format("\nAction options:\n%s", supportedOptionsTable);
         }
-        matcher.appendTail(sb);
-        return sb.toString();
+        return result;
     }
 
     @SneakyThrows
@@ -135,4 +130,5 @@ public abstract class AbstractActionHelpCommand extends AbstractRunnableCommand 
     }
     
     protected abstract String getType();
+    protected abstract String getActionCmd();
 }

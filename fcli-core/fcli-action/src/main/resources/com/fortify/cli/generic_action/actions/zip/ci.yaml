@@ -19,11 +19,11 @@ usage:
         
     === Fortify on Demand
     
-    ::include:/ci-envvars-fod.all.txt
+    ${isAsciiDoc?'====\n':''}${#include('/ci-envvars-fod.all.txt')}${isAsciiDoc?'\n====':''}
     
     === Fortify Software Security Center
         
-    ::include:/ci-envvars-ssc.all.txt
+    ${isAsciiDoc?'====\n':''}${#include('/ci-envvars-ssc.all.txt')}${isAsciiDoc?'\n====':''}
     
 config:
   output: immediate
