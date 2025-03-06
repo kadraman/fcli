@@ -506,4 +506,104 @@ public class FoDEnums {
         }
     }
 
+    public enum VulnerabilitySeverityType {
+        // use same integer values as FoD uses internally
+        Low(1),
+        Medium(2),
+        High(3),
+        Critical(4),
+        Info(-2),
+        BestPractice(-1);
+
+        private final int _val;
+
+        VulnerabilitySeverityType(int val) {
+            this._val = val;
+        }
+
+        public int getValue() {
+            return this._val;
+        }
+
+        public String toString() {
+            switch (this._val) {
+                case 1:
+                    return "Low";
+                case 2:
+                    return "Medium";
+                case 3:
+                    return "High";
+                case 4:
+                    return "Critical";
+                case -1:
+                    return "Best Practice";
+                case -2:
+                    return "Info";
+                default:
+                    return "Low";
+            }
+        }
+
+        public static VulnerabilitySeverityType fromInt(int val) {
+            switch (val) {
+                case 1:
+                    return Low;
+                case 2:
+                    return Medium;
+                case 3:
+                    return High;
+                case 4:
+                    return Critical;    
+                case -1:
+                    return BestPractice;
+                case -2:
+                    return Info;
+                default:
+                    return Info;
+            }
+        }
+    }
+
+    public enum DeveloperStatusType {
+        // no internal integer id representation
+        Open("Open"),
+        InRemediation("In Remediation"),
+        Remediated("Remediated"),
+        WillNotFix("Will Not Fix"),
+        ThirdPartyComponent("Third Party Component");
+
+        public final String value;
+
+        DeveloperStatusType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
+
+    public enum AuditorStatusType {
+        // no internal integer id representation
+        PendingReview("Pending Review"),
+        RemediationRequired("Remediation Required"),
+        RemediationDeferred("Remediation Deferred"),
+        RiskMitigated("Risk Mitigated"),
+        // the following are used by Aviator and should not be set by a user
+        //Suspicious("Suspicious"),
+        //ProposedNotAnIssue("Proposed Not an Issue"),
+        RiskAccepted("Risk Accepted"),
+        NotAnIssue("Not an Issues");
+
+        public final String value;
+
+        AuditorStatusType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
+
 }
