@@ -31,6 +31,16 @@ public final class ActionConfig implements IActionElement {
     @JsonProperty(value = "rest.target.default", required = false) private String restTargetDefault;
     
     @JsonPropertyDescription("""
+        Optional boolean: Default value for 'status.check' in 'run.fcli' instructions.    
+    """)
+    @JsonProperty(value = "run.fcli.status.check.default", required = false) private Boolean runFcliStatusCheckDefault;
+    
+    @JsonPropertyDescription("""
+        Optional boolean: Default value for 'status.log' in 'run.fcli' instructions.    
+    """)
+    @JsonProperty(value = "run.fcli.status.log.default", required = false) private Boolean runFcliStatusLogDefault;
+    
+    @JsonPropertyDescription("""
         Optional enum value: If set to 'delayed' (default), all output to stdout/stderr except for progress \
         messages will be delayed until the end of action execution. If set to 'immediate', output will be \
         written immediately and progress writer will be configured to 'simple' mode (unless '--progress=none' \

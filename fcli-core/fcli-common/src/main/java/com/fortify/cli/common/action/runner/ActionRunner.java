@@ -101,8 +101,10 @@ public class ActionRunner {
     private static final void printCheckResult(ActionRunnerContext ctx, CheckStatus status, ActionStepCheckEntry checkStep) {
         if ( status!=CheckStatus.HIDE ) {
             // Even when flushing, output may appear in incorrect order if some 
-            // check statuses are written to stdout and others to stderr.
-            //var out = status==CheckStatus.PASS?stdout:stderr;
+            // check statuses are written to stdout and others to stderr, so we
+            // print everything to stdout. This also makes it easier to collect
+            // the output in ci-style actions.
+            //var out = status==CheckStatus.PASS?System.out:System.err;
             System.out.println(String.format("%s: %s", status, checkStep.getDisplayName()));
             //out.flush();
         }

@@ -4,7 +4,6 @@ author: Fortify
 usage:
   header: (PREVIEW) Run SSC CI pipeline
   description: |
-    (Work in progress)
     This action can be used to run a full, standardized CI pipeline that performs the
     following activities:
     - Create & configure SSC application version if needed
@@ -21,6 +20,8 @@ usage:
 config:
   output: immediate
   rest.target.default: ssc
+  run.fcli.status.log.default: true    # By default, we log all exit statuses
+  run.fcli.status.check.default: false # By default, we want to continue on fcli failures
   
 steps:
   # Configure module; allows for copying/re-using similar #actionCmd invocations in FoD ci action
@@ -31,6 +32,7 @@ steps:
   - run.fcli:
       ci-vars: 
         cmd: ${#actionCmd('CI_VARS', module, 'ci-vars')}
+        status.check: true
         on.success:
           - var.set:
               global.ci.av: ${#env('SSC_APPVERSION')?:global.ci.defaultFortifyRepo}
@@ -58,64 +60,90 @@ steps:
       SETUP.action: setup-appversion
       SETUP.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('SETUP', false)} # Not skipped by default
       SAST_SCAN.cmd: fcli sc-sast scan start
-      SAST_PUBLISH.cmd: fcli sc-sast scan wait-for
+      SAST_SCAN.skipFromEnvReason: ${sast.skipReason}
+      SAST_WAIT.cmd: fcli sc-sast scan wait-for
+      SAST_WAIT.skipFromEnvReason: ${#fcliCmdSkipFromEnvReason('SAST_WAIT', false)} # Not skipped by default
       PR_COMMENT.action: ${global.ssc.prCommentAction}
       PR_COMMENT.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('PR_COMMENT', true)} # Skipped by default
       POLICY_CHECK.action: check-policy
       POLICY_CHECK.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('POLICY_CHECK', true)} # Skipped by default
       JOB_SUMMARY.action: appversion-summary
       JOB_SUMMARY.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('JOB_SUMMARY', false)} # Not skipped by default
-      EXPORT_SAST.action: ${global.ssc.sastExportAction}
-      EXPORT_SAST.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('EXPORT_SAST', false)} # Not skipped by default
+      SAST_EXPORT.action: ${global.ssc.sastExportAction}
+      SAST_EXPORT.skipFromEnvReason: ${#actionCmdSkipFromEnvReason('SAST_EXPORT', false)} # Not skipped by default
       
 
   # Run the fcli commands that make up this CI pipeline
   - run.fcli:
       SETUP:
         cmd: ${#actionCmd('SETUP', module, 'setup-appversion')} --av "${global.ci.av}"
+        status.check: true
         skip.if:
           ${SETUP.skipFromEnvReason!=null}: ${SETUP.skipFromEnvReason}
+          
       PACKAGE: 
         cmd: ${#actionCmd('PACKAGE_ACTION', module, 'package')}
         skip.if:
           ${sast.skip}: ${sast.skipReason}
+          
       SAST_SCAN: 
-        cmd: ${#fcliCmd('SC_SAST_SCAN', SAST_SCAN.cmd)} --publish-to "${global.ci.av}" --store sc_sast_scan -f "${global.package.output}"
+        cmd: ${#fcliCmd('SAST_SCAN', SAST_SCAN.cmd)} --publish-to "${global.ci.av}" --store sc_sast_scan -f "${global.package.output}"
         skip.if:
-          ${sast.skip}: ${sast.skipReason}
-      SAST_PUBLISH:
-        cmd: "${#fcliCmd('SC_SAST_PUBLISH', SAST_PUBLISH.cmd)} ::sc_sast_scan::"
+          ${SAST_SCAN.skipFromEnvReason!=null}: ${SAST_SCAN.skipFromEnvReason}
+          ${PACKAGE.failed}: Packaging failed
+          
+      SAST_WAIT:
+        cmd: "${#fcliCmd('SAST_WAIT', SAST_WAIT.cmd)} ::sc_sast_scan::"
         skip.if:
+          ${SAST_WAIT.skipFromEnvReason!=null}: ${SAST_WAIT.skipFromEnvReason}
           ${SAST_SCAN.skipped}: SAST scan was skipped
-          ${#env('DO_WAIT')=='false'}: DO_WAIT==false # Enabled by default, skipped on request
+          ${SAST_SCAN.failed}: SAST scan failed
+          
       POLICY_CHECK:
         cmd: ${#actionCmd('POLICY_CHECK', module, POLICY_CHECK.action)} --av "${global.ci.av}"
+        stdout: collect
         skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
-          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
           ${POLICY_CHECK.skipFromEnvReason!=null}: ${POLICY_CHECK.skipFromEnvReason}
-        on.success:
-          - var.set:
-              POLICY_CHECK.success: true
-        on.fail:
-          - var.set:
-              POLICY_CHECK.success: false
-          - log.warn: Policy check failed  # TODO Better handling; we need to exectute following steps but still fail or generate pipeline warning at the end
+          ${SAST_WAIT.skipped}: SAST scan publishing was skipped
+          ${SAST_WAIT.failed}: SAST scan publishing failed
+          
       JOB_SUMMARY:
-        # TODO Pass status of steps above through args/global vars, to have job summary show
-        #      scan/publish/policy check status 
         cmd: ${#actionCmd('JOB_SUMMARY', module, JOB_SUMMARY.action)} --av "${global.ci.av}"
+        stdout: collect
         skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
-          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
           ${JOB_SUMMARY.skipFromEnvReason!=null}: ${JOB_SUMMARY.skipFromEnvReason}
+          ${SAST_WAIT.skipped}: SAST scan publishing was skipped
+          ${SAST_WAIT.failed}: SAST scan publishing failed
+          
       PR_COMMENT:
         cmd: ${#actionCmd('PR_COMMENT', module, PR_COMMENT.action)} --av "${global.ci.av}"
         skip.if: # TODO When SCA/DAST scan have been implemented, test their publish skip status as well
-          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
           ${PR_COMMENT.skipFromEnvReason!=null}: ${PR_COMMENT.skipFromEnvReason}
+          ${SAST_WAIT.skipped}: SAST scan publishing was skipped
+          ${SAST_WAIT.failed}: SAST scan publishing failed
           # TODO Check whether current run is for a PR
+          
       SAST_EXPORT:
-        cmd: ${#actionCmd('EXPORT', module, EXPORT_SAST.action)} --av "${global.ci.av}"
+        cmd: ${#actionCmd('EXPORT', module, SAST_EXPORT.action)} --av "${global.ci.av}"
         skip.if:
-          ${SAST_PUBLISH.skipped}: SAST scan publishing was skipped
           ${SAST_EXPORT.skipFromEnvReason!=null}: ${SAST_EXPORT.skipFromEnvReason}
+          ${SAST_WAIT.skipped}: SAST scan publishing was skipped
+          ${SAST_WAIT.failed}: SAST scan publishing failed
+  - out.write:
+      stdout: {fmt: summary}
+  # TODO Generate exit code if any of the above failed
+   
+# TODO Only show policy status if not skipped? Or just show SKIPPED if skipped?
+# TODO Add info on what scans were run, and their status
+formatters:
+  summary: |
+  
+  
+    Fcli Security Policy status:
+    
+    ${POLICY_CHECK.stdout}
+    
+    Application version summary:
+        
+    ${JOB_SUMMARY.stdout}
       

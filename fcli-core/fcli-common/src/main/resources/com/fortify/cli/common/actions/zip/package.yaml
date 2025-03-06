@@ -11,6 +11,7 @@ usage:
 
 config:
   output: immediate
+  run.fcli.status.log.default: true    # By default, we log all exit statuses
   
 cli.options:
   scClientVersion:
@@ -71,7 +72,7 @@ steps:
       global.package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
   - if: ${#isBlank(cli.usePackage)}
     run.fcli:
-      update-tool-defs: fcli tool definitions update ${cli.toolDefinitions?:""}
-      install-sc-client: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
-      run-sc-client: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
+      UPDATE_TOOL_DEFINITIONS: fcli tool definitions update ${cli.toolDefinitions?:""}
+      INSTALL_SC_CLIENT: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
+      RUN_SC_CLIENT: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
       

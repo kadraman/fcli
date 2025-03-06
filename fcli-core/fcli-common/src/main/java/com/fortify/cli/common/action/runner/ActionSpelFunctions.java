@@ -325,9 +325,9 @@ public class ActionSpelFunctions {
             default: throw new FcliSimpleException(String.format("%s must be either blank, true, or false; current value: %s", doEnvName, doEnvValue));
             }
         }
-        var actionEnvName = String.format("%s_ACTION", envPrefix.replaceAll("_ACTION$", ""));
-        var extraOptsEnvName = String.format("%s_EXTRA_OPTS", envPrefix);
-        if ( StringUtils.isNotBlank(actionEnvName) || StringUtils.isNotBlank(extraOptsEnvName) ) {
+        var actionEnvValue = EnvHelper.env(String.format("%s_ACTION", envPrefix.replaceAll("_ACTION$", "")));
+        var extraOptsEnvValue = EnvHelper.env(String.format("%s_EXTRA_OPTS", envPrefix));
+        if ( StringUtils.isNotBlank(actionEnvValue) || StringUtils.isNotBlank(extraOptsEnvValue) ) {
             return null;
         }
         return skipByDefault ? String.format("Set %s to 'true' to enable this step", doEnvName) : null;
@@ -343,8 +343,8 @@ public class ActionSpelFunctions {
             default: throw new FcliSimpleException(String.format("%s must be either blank, true, or false; current value: %s", doEnvName, doEnvValue));
             }
         }
-        var extraOptsEnvName = String.format("%s_EXTRA_OPTS", envPrefix);
-        if ( StringUtils.isNotBlank(extraOptsEnvName) ) {
+        var extraOptsEnvValue = EnvHelper.env(String.format("%s_EXTRA_OPTS", envPrefix));
+        if ( StringUtils.isNotBlank(extraOptsEnvValue) ) {
             return null;
         }
         return skipByDefault ? String.format("Set %s to 'true' to enable this step", doEnvName) : null;

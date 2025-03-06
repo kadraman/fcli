@@ -11,9 +11,9 @@
  * without notice.
  */
 package com.fortify.cli.common.action.runner.processor;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
@@ -21,10 +21,11 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.ActionStepRunFcliEntry;
 import com.fortify.cli.common.action.model.ActionStepRunFcliEntry.ActionStepFcliForEachDescriptor;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
@@ -51,11 +52,12 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     @Override
     protected final void process(String name, ActionStepRunFcliEntry entry) {
         if ( isSkipped(entry) ) { return; }
+        logStatus(entry, "START");
         var cmd = vars.eval(entry.getCmd(), String.class);
         ctx.getProgressWriter().writeProgress("Executing fcli %s", cmd.replaceAll("^fcli ", ""));
         var recordConsumer = createFcliRecordConsumer(entry);
-        var stdoutOutputType = getFcliOutputTypeOrDefault(entry.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
-        var stderrOutputType = getFcliOutputTypeOrDefault(entry.getStderrOutputType(), OutputType.show );
+        var stdoutOutputType = getOutputTypeOrDefault(entry.getStdoutOutputType(), recordConsumer==null ? OutputType.show : OutputType.suppress );
+        var stderrOutputType = getOutputTypeOrDefault(entry.getStderrOutputType(), OutputType.show );
         var cmdExecutor = FcliCommandExecutorFactory.builder()
                 .cmd(cmd)
                 .progressOptionValueIfNotPresent(ctx.getConfig().getProgressWriterFactory().getType().name())
@@ -64,7 +66,7 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
                 .stderr(ctx.getStderr())
                 .stdoutOutputType(stdoutOutputType)
                 .stderrOutputType(stderrOutputType)
-                .onResult(r->setFcliVars(entry, recordConsumer, r))
+                .onResult(r->onFcliResult(entry, recordConsumer, r))
                 .onSuccess(r->onFcliSuccess(entry))
                 .onException(e->onFcliException(entry, e))
                 .onFail(r->onFcliFail(entry, recordConsumer, r))
@@ -76,30 +78,34 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     }
 
     private final boolean isSkipped(ActionStepRunFcliEntry entry) {
-        var fullSkipMessage = getFullSkipMessage(entry);
-        if ( StringUtils.isBlank(fullSkipMessage) ) { 
+        var plainSkipMessage = getSkipMessage(entry);
+        if ( StringUtils.isBlank(plainSkipMessage) ) { 
             vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.FALSE);
+            vars.set(String.format("%s.skipReason", entry.getKey()), NullNode.instance);
+            // status is set by setFcliVars after execution
             return false; 
         } else {
-            LOG.debug(fullSkipMessage);
+            plainSkipMessage = plainSkipMessage.trim();
+            var fullSkipMessage = String.format("SKIPPED: %s: %s", entry.getKey(), plainSkipMessage);
+            LOG.info(fullSkipMessage);
             ctx.getStdout().println(fullSkipMessage);
             vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.TRUE);
+            vars.set(String.format("%s.skipReason", entry.getKey()), new TextNode(plainSkipMessage));
+            vars.set(String.format("%s.status", entry.getKey()), new TextNode("SKIPPED"));
             return true;
         }
     }
 
-    private final String getFullSkipMessage(ActionStepRunFcliEntry entry) {
+    private final String getSkipMessage(ActionStepRunFcliEntry entry) {
         var skipIf = entry.getSkipIf();
         if ( skipIf!=null ) {
-            var skipMessageExpression = entry.getSkipIf().entrySet().stream()
+            return entry.getSkipIf().entrySet().stream()
                     .filter(this::isSkipped)
                     .findFirst()
                     .map(Map.Entry::getValue)
+                    .filter(Objects::nonNull)
+                    .map(t->vars.eval(t, String.class))
                     .orElse(null);
-            if ( skipMessageExpression!=null ) {
-                var plainSkipMessage = vars.eval(skipMessageExpression, String.class);
-                return String.format("SKIPPED: %s: %s", entry.getKey(), plainSkipMessage.trim());
-            }
         }
         return null;
     }
@@ -108,8 +114,6 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         return vars.eval(entry.getKey(), Boolean.class);
     }
     
-    
-
     private void onFcliSuccess(ActionStepRunFcliEntry fcli) {
         if ( fcli.getOnSuccess()!=null ) {
             processSteps(fcli.getOnSuccess());
@@ -117,13 +121,17 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     }
 
     private void onFcliFail(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
-        setFcliVars(fcli, recordConsumer, result);
-        ArrayList<ActionStep> onFail = fcli.getOnFail();
-        if ( onFail==null ) {
+        var onFail = fcli.getOnFail();
+        if ( onFail!=null ) {
+            processSteps(onFail);
+        }
+        var statusCheckFromConfig = ctx.getConfig().getAction().getConfig().getRunFcliStatusCheckDefault();
+        var statusCheck = fcli.getStatusCheck();
+        statusCheck = statusCheck==null ? statusCheckFromConfig : statusCheck;
+        boolean statusCheckPrimitive = statusCheck==null ? onFail==null : statusCheck;
+        if ( statusCheckPrimitive ) {
             throw new FcliActionStepException(String.format("'%s' returned non-zero exit code %s", 
                     getFcliCmdWithoutOpts(fcli), result.getExitCode()));
-        } else {
-            processSteps(onFail);
         }
     }
 
@@ -146,16 +154,49 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         //}
     }
     
-    private void setFcliVars(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
-        var name = fcli.getKey();
-        vars.set(name+".records", recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
-        vars.set(name+".stdout", fcli.getStdoutOutputType()==OutputType.collect ? "" : result.getOut());
-        vars.set(name+".stderr", fcli.getStderrOutputType()==OutputType.collect ? "" : result.getErr());
-        vars.set(name+".exitCode", new IntNode(result.getExitCode()));
+    private void onFcliResult(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
+        setResultVars(fcli, recordConsumer, result);
+        logStatus(fcli, result);
     }
 
-    private OutputType getFcliOutputTypeOrDefault(OutputType outputType, OutputType _default) {
-        return outputType==null ? _default : outputType;
+    private void setResultVars(ActionStepRunFcliEntry fcli, FcliRecordConsumer recordConsumer, Result result) {
+        var name = fcli.getKey();
+        vars.set(name+".records", recordConsumer!=null ? recordConsumer.getRecords() : JsonHelper.getObjectMapper().createArrayNode());
+        vars.set(name+".stdout", result.getOut());
+        vars.set(name+".stderr", result.getErr());
+        vars.set(name+".exitCode", new IntNode(result.getExitCode()));
+        vars.set(name+".status", getStatusString(result));
+        vars.set(name+".success", BooleanNode.valueOf(result.getExitCode()==0));
+        vars.set(name+".failed", BooleanNode.valueOf(result.getExitCode()!=0));
+    }
+    
+    private void logStatus(ActionStepRunFcliEntry fcli, Result result) {
+        logStatus(fcli, getStatusString(result));
+    }
+    
+    private void logStatus(ActionStepRunFcliEntry fcli, String status) {
+        var msg = String.format("%s: %s", status, fcli.getKey());
+        LOG.info(msg);
+        boolean statusLogPrimitive = isLogStatus(fcli);
+        if ( statusLogPrimitive ) {
+            ctx.getStdout().println(msg);
+        }
+    }
+
+    private boolean isLogStatus(ActionStepRunFcliEntry fcli) {
+        var statusLogFromConfig = ctx.getConfig().getAction().getConfig().getRunFcliStatusLogDefault();
+        var statusLog = fcli.getStatusLog();
+        statusLog = statusLog==null ? statusLogFromConfig : statusLog;
+        boolean statusLogPrimitive = statusLog==null ? false : statusLog;
+        return statusLogPrimitive;
+    }
+    
+    private String getStatusString(Result result) {
+        return result.getExitCode()==0 ? "SUCCESS" : "FAILED";
+    }
+
+    private OutputType getOutputTypeOrDefault(OutputType outputType, OutputType _default) {
+        return outputType!=null ? outputType : _default;
     }
 
     private final FcliRecordConsumer createFcliRecordConsumer(ActionStepRunFcliEntry fcli) {

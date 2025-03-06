@@ -91,7 +91,7 @@ public final class FcliCommandExecutorFactory {
             try {
                 result = OutputHelper.builder()
                         .stderr(stderr).stderrType(stderrOutputType)
-                        .stdout(stdout).stdoutType(stderrOutputType)
+                        .stdout(stdout).stdoutType(stdoutOutputType)
                         .build().call(()->_execute());
             } catch ( Throwable t ) {
                 if ( t instanceof ExecutionException ) {

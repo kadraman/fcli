@@ -199,6 +199,9 @@ public final class ActionStep extends AbstractActionElementIf {
         x.stdout: Output produced on stdout by the fcli invocation if 'stdout' is set to 'collect'
         x.stderr: Output produced on stderr by the fcli invocation if 'stderr' is set to 'collect'
         x.exitCode: Exit code of the fcli invocation
+        x.skipped: Boolean value indicating whether execution was skipped due to skip.if configuration
+        x.skipReason: Reason why execution was skipped; will be null if x.skipped==true
+        x.status: Set to either SKIPPED (x.skipped==true), SUCCESS (x.exitCode==0), or FAILED (x.exitCode!=0)
         """)
     @JsonProperty(value = "run.fcli", required = false) private LinkedHashMap<String, ActionStepRunFcliEntry> runFcli;
     
