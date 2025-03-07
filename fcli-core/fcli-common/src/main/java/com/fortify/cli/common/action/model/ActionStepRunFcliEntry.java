@@ -13,7 +13,6 @@
 package com.fortify.cli.common.action.model;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -48,12 +47,12 @@ public final class ActionStepRunFcliEntry extends AbstractActionElementIf implem
     }
     
     @JsonPropertyDescription("""
-        Optional map of SpEL template expression: Define conditions under which
-        this fcli invocation should be skipped. Map keys should evaluate to either
-        'true' (fcli invocation will be skipped) or 'false', map values define the
-        skip reason message.
+        Optional list of SpEL template expression: List entries define optional \
+        skip reasons; if any of the given expressions evaluates to a non-blank \
+        string, this fcli invocation will be skipped and the (first) non-blank \
+        skip reason will be logged.
         """)
-    @JsonProperty(value = "skip.if", required = false) private LinkedHashMap<TemplateExpression,TemplateExpression> skipIf;
+    @JsonProperty(value = "skip.if-reason", required = false) private ArrayList<TemplateExpression> skipIfReason;
     
     @JsonPropertyDescription("""
         Required SpEL template expression: The fcli command to run. This can be \

@@ -12,7 +12,6 @@
  */
 package com.fortify.cli.common.action.runner.processor;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -34,7 +33,6 @@ import com.fortify.cli.common.action.runner.ActionRunnerVars;
 import com.fortify.cli.common.action.runner.FcliActionStepException;
 import com.fortify.cli.common.cli.util.FcliCommandExecutorFactory;
 import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 import com.fortify.cli.common.util.OutputHelper.OutputType;
 import com.fortify.cli.common.util.OutputHelper.Result;
 
@@ -82,36 +80,33 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         if ( StringUtils.isBlank(plainSkipMessage) ) { 
             vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.FALSE);
             vars.set(String.format("%s.skipReason", entry.getKey()), NullNode.instance);
-            // status is set by setFcliVars after execution
+            // status & dependencySkipReason are set by setFcliVars after execution
             return false; 
         } else {
             plainSkipMessage = plainSkipMessage.trim();
             var fullSkipMessage = String.format("SKIPPED: %s: %s", entry.getKey(), plainSkipMessage);
+            var dependencySkipReason = String.format("%s was skipped", entry.getKey());
             LOG.info(fullSkipMessage);
             ctx.getStdout().println(fullSkipMessage);
             vars.set(String.format("%s.skipped", entry.getKey()), BooleanNode.TRUE);
             vars.set(String.format("%s.skipReason", entry.getKey()), new TextNode(plainSkipMessage));
             vars.set(String.format("%s.status", entry.getKey()), new TextNode("SKIPPED"));
+            vars.set(String.format("%s.dependencySkipReason", entry.getKey()), new TextNode(dependencySkipReason));
             return true;
         }
     }
 
     private final String getSkipMessage(ActionStepRunFcliEntry entry) {
-        var skipIf = entry.getSkipIf();
-        if ( skipIf!=null ) {
-            return entry.getSkipIf().entrySet().stream()
-                    .filter(this::isSkipped)
-                    .findFirst()
-                    .map(Map.Entry::getValue)
+        var skipIfReason = entry.getSkipIfReason();
+        if ( skipIfReason!=null ) {
+            return skipIfReason.stream()
                     .filter(Objects::nonNull)
                     .map(t->vars.eval(t, String.class))
+                    .filter(Objects::nonNull)
+                    .findFirst()
                     .orElse(null);
         }
         return null;
-    }
-    
-    private final boolean isSkipped(Map.Entry<TemplateExpression, TemplateExpression> entry) {
-        return vars.eval(entry.getKey(), Boolean.class);
     }
     
     private void onFcliSuccess(ActionStepRunFcliEntry fcli) {
@@ -168,6 +163,7 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
         vars.set(name+".status", getStatusString(result));
         vars.set(name+".success", BooleanNode.valueOf(result.getExitCode()==0));
         vars.set(name+".failed", BooleanNode.valueOf(result.getExitCode()!=0));
+        vars.set(name+".dependencySkipReason", result.getExitCode()==0 ? NullNode.instance : new TextNode(String.format("%s failed", name)));
     }
     
     private void logStatus(ActionStepRunFcliEntry fcli, Result result) {
