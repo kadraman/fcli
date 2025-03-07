@@ -127,7 +127,7 @@ task generateZipResources(dependsOn: tasks.matching { Task task -> task.name.sta
 sourceSets.main.output.dir generatedZipResourcesDir, builtBy: generateZipResources
 
 ext.generatedActionOutputResourcesDir = "${buildDir}/generated-action-output-resources"
-task buildTimeActions(dependsOn: tasks.matching { Task task -> task.name.startsWith("builtTimeAction_")})
+task buildTimeActions(dependsOn: tasks.matching { Task task -> task.name.startsWith("buildTimeAction_")})
 sourceSets.main.output.dir generatedActionOutputResourcesDir, builtBy: buildTimeActions
     
 // Generate resource-config.json
