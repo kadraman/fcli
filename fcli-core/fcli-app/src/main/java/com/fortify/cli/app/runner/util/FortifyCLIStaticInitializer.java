@@ -14,6 +14,7 @@ package com.fortify.cli.app.runner.util;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,8 +30,8 @@ import com.fortify.cli.common.i18n.helper.LanguageHelper;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.fod._common.scan.helper.FoDScanStatus;
 import com.fortify.cli.sc_dast.scan.helper.SCDastScanStatus;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobArtifactState;
-import com.fortify.cli.sc_sast.scan.helper.SCSastControllerScanJobState;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobArtifactState;
+import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobState;
 import com.fortify.cli.ssc.artifact.helper.SSCArtifactStatus;
 import com.fortify.cli.tool._common.helper.ToolUninstaller;
 
@@ -72,10 +73,10 @@ public final class FortifyCLIStaticInitializer {
     }
     
     private void initializeSCSastProperties() {
-        System.setProperty("fcli.sc-sast.scan.jobStates", getValueNamesString(SCSastControllerScanJobState.values()));
-        System.setProperty("fcli.sc-sast.scan.jobStates.complete", getValueNamesString(SCSastControllerScanJobState.getDefaultCompleteStates()));
-        System.setProperty("fcli.sc-sast.scan.jobArtifactStates", getValueNamesString(SCSastControllerScanJobArtifactState.values()));
-        System.setProperty("fcli.sc-sast.scan.jobArtifactStates.complete", getValueNamesString(SCSastControllerScanJobArtifactState.getDefaultCompleteStates()));
+        System.setProperty("fcli.sc-sast.scan.jobStates", getValueNamesString(SCSastScanJobState.values()));
+        System.setProperty("fcli.sc-sast.scan.jobStates.complete", getValueNamesString(SCSastScanJobState.getDefaultCompleteStates()));
+        System.setProperty("fcli.sc-sast.scan.jobArtifactStates", getValueNamesString(SCSastScanJobArtifactState.values()));
+        System.setProperty("fcli.sc-sast.scan.jobArtifactStates.complete", getValueNamesString(SCSastScanJobArtifactState.getDefaultCompleteStates()));
     }
     
     private void initializeSSCProperties() {
@@ -88,22 +89,64 @@ public final class FortifyCLIStaticInitializer {
     }
     
     private void initializeTrustStore() {
+        String trustStorePropertyKey = "javax.net.ssl.trustStore";
+        String trustStoreTypePropertyKey = "javax.net.ssl.trustStoreType";
+        String trustStorePasswordPropertyKey = "javax.net.ssl.trustStorePassword";
+
         // First clear existing configuration
-        System.clearProperty("javax.net.ssl.trustStore");
-        System.clearProperty("avax.net.ssl.trustStorePassword");
+        System.clearProperty(trustStorePropertyKey);
+        System.clearProperty(trustStoreTypePropertyKey);
+        System.clearProperty(trustStorePasswordPropertyKey);
+        
         TrustStoreConfigDescriptor descriptor = TrustStoreConfigHelper.getTrustStoreConfig();
-        if ( descriptor!=null && StringUtils.isNotBlank(descriptor.getPath()) ) {
-            Path absolutePath = Path.of(descriptor.getPath()).toAbsolutePath();
-            if ( !Files.exists(absolutePath) ) {
-                log.warn("WARN: Trust store cannot be found: "+absolutePath);
+        if (descriptor != null && StringUtils.isNotBlank(descriptor.getPath())) {
+            initializeTrustStoreFromConfig(descriptor, trustStorePropertyKey, trustStoreTypePropertyKey,
+                    trustStorePasswordPropertyKey);
+        } else {
+            initializeTrustStoreFromEnv(trustStorePropertyKey, trustStoreTypePropertyKey,
+                    trustStorePasswordPropertyKey);
+        }
+        log.debug("INFO: Trust store file: " + System.getProperty(trustStorePropertyKey, "NONE"));
+    }
+
+    private void initializeTrustStoreFromEnv(String trustStorePropertyKey, String trustStoreTypePropertyKey,
+            String trustStorePasswordPropertyKey) {
+        String trustStorePath = System.getenv("FCLI_TRUSTSTORE");
+        if (null != trustStorePath && Files.exists(Path.of(trustStorePath))) {
+            System.setProperty(trustStorePropertyKey, trustStorePath);
+            
+            String trustStoreType = "jks";
+            if (null != System.getenv("FCLI_TRUSTSTORE_TYPE")) {
+                trustStoreType = System.getenv("FCLI_TRUSTSTORE_TYPE");
+            } else {
+                String fileName = Paths.get(trustStorePath).getFileName().toString();
+                String fileExtension = StringUtils.substringAfterLast(fileName, ".");
+                if (fileExtension.equals("jks") || fileExtension.equals("p12") || fileExtension.equals("pfx")) {
+                    trustStoreType = fileExtension;
+                }
             }
-            System.setProperty("javax.net.ssl.trustStore", descriptor.getPath());
-            if ( StringUtils.isNotBlank(descriptor.getType()) ) {
-                System.setProperty("javax.net.ssl.trustStoreType", descriptor.getType());
+            System.setProperty(trustStoreTypePropertyKey, trustStoreType);
+
+            String trustStorePwd = "changeit";
+            if (null != System.getenv("FCLI_TRUSTSTORE_PWD")) {
+                trustStorePwd = System.getenv("FCLI_TRUSTSTORE_PWD");
             }
-            if ( StringUtils.isNotBlank(descriptor.getPassword()) ) {
-                System.setProperty("javax.net.ssl.trustStorePassword", descriptor.getPassword());
-            }
+            System.setProperty(trustStorePasswordPropertyKey, trustStorePwd);
+        }
+    }
+
+    private void initializeTrustStoreFromConfig(TrustStoreConfigDescriptor descriptor, String trustStorePropertyKey,
+            String trustStoreTypePropertyKey, String trustStorePasswordPropertyKey) {
+        Path absolutePath = Path.of(descriptor.getPath()).toAbsolutePath();
+        if (!Files.exists(absolutePath)) {
+            log.warn("WARN: Trust store cannot be found: " + absolutePath);
+        }
+        System.setProperty(trustStorePropertyKey, descriptor.getPath());
+        if (StringUtils.isNotBlank(descriptor.getType())) {
+            System.setProperty(trustStoreTypePropertyKey, descriptor.getType());
+        }
+        if (StringUtils.isNotBlank(descriptor.getPassword())) {
+            System.setProperty(trustStorePasswordPropertyKey, descriptor.getPassword());
         }
     }
     

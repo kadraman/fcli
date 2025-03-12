@@ -2,8 +2,7 @@
 
 == Introduction
 
-The fcli utility can be used to interact with various Fortify products, like Fortify on Demand (FoD), Software Security Center (SSC), ScanCentral SAST and ScanCentral DAST. This document describes installation and general usage of fcli. For a full listing of fcli commands and corresponding command line options, please see the
-man-pages as listed in the link:#_manual_pages[Manual Pages] section.
+The fcli utility can be used to interact with various Fortify products, like Fortify on Demand (FoD), Software Security Center (SSC), ScanCentral SAST and ScanCentral DAST. This document describes installation and general usage of fcli. For a full listing of fcli commands and corresponding command line options, please see the man-pages as listed in the link:#_manual_pages[Manual Pages] section.
 
 Some of the fcli highlights:
 
@@ -41,6 +40,11 @@ Some commands and options are either hidden or marked as `PREVIEW` or `LEGACY`; 
 * Commands for configuring and running FoD DAST & MAST scans will change significantly, based on upcoming FoD API changes & improvements
 
 Hidden commands are not listed in fcli help output and not included in the link:#_manual_pages[Manual Pages]. If needed, you can view the list of hidden commands using the `+fcli util all-commands list -q hidden+` command.
+
+== Migration from v2.x
+
+Upgrading from fcli v2.x to fcli v3.x may require you to update your workflows and, if applicable, updating any
+custom fcli actions. Please see the link:../migration-v2.x-v3.x.html[migration guide] for details.
 
 == Release Assets
 
@@ -199,24 +203,66 @@ location in the fcli data folder.
 
 === -o | --output
 
-Available on virtually all (leaf) commands that output data, this option can be used to specify the output format. Fcli supports a wide variety of output formats, like `+table+`, `+csv+`, `+json+`, `+xml+`, and `+tree+` formats, allowing for both human-readable output or output suitable for automations. The `+csv-plain+` and `+table-plain+` output formats produce CSV or table output without headers. The `+*-flat+`
-output formats produce a flattened view of the output data, potentially making it easier to process that data without having to navigate through an object tree. For a full list of output formats supported by your fcli
-version, please refer to the help output or link:#_manual_pages[Manual Pages].
+Available on virtually all (leaf) commands that output data, this option can be used to specify the output format. Fcli supports a wide variety of output formats, like `+table+`, `+csv+`, `+json+`, `+xml+`, and `+yaml+`, allowing for both human-readable output or output suitable for automations. The style for each of these output formats can be controlled through the `+--style+` option, for example for controlling whether table or CSV output should include headers or not; see next section for details.
 
-Most output formats allow for specifying the JSON properties to be included in the output, for example `+-o csv=id,name+`. If no JSON properties are specified, most output formats will output all available
-JSON properties, except for table output, which usually outputs a predefined set of JSON properties.
+The output formats listed above optionally allow for specifying the JSON properties to be included in the output, for example `+-o csv=id,name+`. Optionally, properties can also be renamed, which for example may be used to define CSV or table header names, like `+-o "csv=id:Application Id,name:Application Name"`. If no JSON properties are specified, most output formats will output all available JSON properties, except for table output, which usually outputs a predefined set of JSON properties.
 
-There are two output formats that are somewhat special:
+Apart from the output formats listed above, fcli also supports the special `+expr+` output format that can be used for a variety of purposes, for example for generating output in a human-readable format, or for generating a list of commands to be run at a later stage. This output format takes a template expression as input, for example `+-o 'expr=Text with {expression1} or {expression2}\n'+`. In most cases, expressions will be simple JSON property references, i.e., `+{property.subProperty}+`.
 
-* `+-o 'expr=Text with {expression1} or {expression2}\n'+` +
- Formats the output data based on the given template expression, which is a combination of (optional) plain text and SpEL expressions; see link:#_option_expressions[Option Expressions] for details. In most cases, expressions will be simple property references, i.e., `+{property.subProperty}+`. This can be used for a variety of purposes, for example generating output in a human-readable format, or for generating a list of commands to be run at a later stage. Note that by default, no newline character will be inserted after evaluating the given expression. If necessary, the expression should explicitly include `+\n+` to output a newline character. Also note that depending on your shell, the `+expr+` option must be properly quoted. For most shells, the `+expr=...+` value should be enclosed in single or double quotes. To demonstrate the power of this output format, following are two examples of how `+-o expr+` can be used to generate a script that purges all application versions matching certain criteria:
-** `+fcli ssc appversion list -q 'createdBy=="admin"' -o 'expr=fcli ssc appversion purge-artifacts --older-than 30d {id}\n'+`
-** `+for id in $(fcli ssc appversion list -q 'createdBy=="admin"' -o 'expr={id} '); do echo "fcli ssc appversion purge-artifacts –older-than 30d ${id}'"; done+`
-* `+-o json-properties+` +
- List all JSON properties returned by the current command, which can be used on options that take JSON properties as input, like output expressions (`+-o expr={prop}+`), properties to include in the output (`+-o table=prop1,prop2+`), queries (`+-q 'prop1=="value1"'+`), and fcli variables (`+--store var:prop1,prop2+` & `+::var::prop1}+`). Two important notes about this output format:
-** The command will be executed as specified, so be careful when using this output option on any command
-that changes state (delete/update/create/…). In most cases, the `+get+` or `+list+` operations will return a similar set of properties, so you can use those commands to view available properties.
-** On some commands, the list of available JSON properties may vary depending on command line options. For example, when a query returns no records, then `+-o json-properties+` will not output any properties. Likewise, a command may provide options for including additional data for each record; the corresponding JSON properties will only be shown if `+-o json-properties+` is used in combination with these options that load additional data.
+Following are two examples of how `+-o expr+` can be used to generate a script that purges all application versions matching certain criteria:
+
+* `+fcli ssc appversion list -q 'createdBy=="admin"' -o 'expr=fcli ssc appversion purge-artifacts --older-than 30d {id}\n'+`
+* `+for id in $(fcli ssc appversion list -q 'createdBy=="admin"' -o 'expr={id} '); do echo "fcli ssc appversion purge-artifacts –older-than 30d ${id}'"; done+`  
+
+Note that all output (for all records being processed) will be appended on a single line, unless the expression explicitly includes `+\n+` to output a newline character; notice the `+\n+` in the first example above to print each generated fcli command on a separate line, and the trailing space in the second example to list all id's on a single line but separated by a space. Also note that depending on your shell, the `+expr+` option must be properly quoted. For most shells, the `+expr=...+` value should be enclosed in single or double quotes. 
+
+=== --style
+
+The `--style=<style element>[,<style element>...]` option can be used to control the output style for most of the output formats listed above, for example to control whether CSV or table headers should be included or not, or whether JSON or YAML output should be flattened. Note that the `--style` option will be ignored for the `expr` output format, and similarly, any style elements that are not applicable for the output format specified in the `-o` option will be ignored. Multiple style elements can be specified by separating them with comma's.
+
+Some examples:
+
+* Output a table with border and no headers: `-o table --style no-header,border`
+* Output non-pretty flattened JSON: `-o json --style no-pretty,flat`
+
+A full list of style elements that can be applied to the output is available in fcli help output or manual pages; the following table lists the most commonly used style elements:
+
+[cols="1,2,3"]
+|===
+|Style&nbsp;Element|Applies&nbsp;To|Description
+
+|`+header+` +
+`+no-header+`
+|`+csv+` +
+`+table+`
+|By default, these output formats include headers; use the `no-header` style element to output table or CSV without headers.
+
+|`+border+` +
+`+md-border+` +
+`+no-border+`
+|`+table+`
+|By default, tables are printed without borders; use `border` to output a table with borders, or `md-border` to output a table with Markdown borders. Note that `md-border` is only meant for outputting simple, short property values. The output will not be a valid Markdown table if any of the output properties contains pipe or newline characters, or if contents are too long to be printed on a single line.
+
+|`+pretty+` +
+`+no-pretty+`
+| `+json+` +
+`+yaml+` +
+`+xml+`
+|By default, these output formats are pretty-printed; use the `no-pretty` style element to output condensed, non-pretty output.
+
+|`+flat+` +
+`+no-flat+`
+| `+json+` +
+`+yaml+` +
+`+xml+`
+|By default, these output formats will keep nested objects and arrays as returned by (for example) the server; use the `flat` style element to flatten any nested structures into top-level properties.
+
+|`+array+` +
+`+single+`
+| `+json+` +
+`+yaml+`
+|Whether the output will be represented as an array or single object depends on the fcli command being run, for example `list` commands will output arrays, and `get` commands will output a single object. For commands that output a single object, you can use the `array` style element to output a single-element array instead of a single object. Using `single` on commands that output multiple records is not supported; this may lead to exceptions or unparsable output.
+|===
 
 === --output-to-file
 
@@ -379,6 +425,25 @@ To keep session state between fcli invocations, fcli stores session data like UR
 
 The sections below describe various environment variables that can be used to control fcli behavior. This includes environment variables for overriding some of the default directories used by fcli to store data, and for setting default values for command-line options.
 
+=== Proxy Settings
+
+Fcli allows for configuring proxy settings through the `fcli config proxy` commands, supporting a variety of configuration options. In many cases, for example when running fcli in CI/CD pipelines, it's more convenient to configure a single proxy server to be used by all fcli commands through environment variables. For this purpose, fcli supports the following environment variables in either upper or lower (but not mixed) case:
+
+* `HTTP_PROXY`: Proxy to use for plain HTTP requests
+* `HTTPS_PROXY`: Proxy to use for HTTPS requests
+* `ALL_PROXY`: Proxy to use for all types of requests
+* `NO_PROXY`: Don't use a proxy server for the hosts listed in this environment variable
+
+Proxy servers can be specified as either `<host>:<port>` or as a URL. Note that proxy settings configured through `fcli config proxy` take precedence over proxy settings configured through environment variables.
+
+=== Trust Store Settings
+
+Fcli allows for configuring trust store settings through the `fcli config truststore` commands, supporting a variety of configuration options. In many cases, for example when running fcli in CI/CD pipelines, it's more convenient to configure the trust store to be used through environment variables. For this purpose, fcli supports the following environment variables:
+
+* `FCLI_TRUSTSTORE`: Absolute path to the trust store file to use
+* `FCLI_TRUSTSTORE_TYPE`: Type of the trust store, usually JKS, which is the default type if not specified
+* `FCLI_TRUSTSTORE_PWD`: Trust store password
+
 === Fcli User Home Folder
 
 By default, fcli will use the home directory of the current user for various operations, like storing fcli state and configuration (see next section) or for tool installations (see `fcli tool` manual pages). These locations can be individually overridden through environment variables or command-line options, but in some cases you may want to just specify an alternative 'user home directory' to have all fcli operations use this alternative directory by default, instead of having to override multiple individual directories.
@@ -501,8 +566,9 @@ Fci comes with various built-in actions, currently focused on providing the foll
 
 Documentation for built-in actions can be found here:
 
-* link:fod-actions.html[FoD built-in actions documentation]
-* link:ssc-actions.html[SSC built-in actions documentation]
+* link:generic-actions.html[Documentation for `fcli action` built-in actions]
+* link:fod-actions.html[Documentation for `fcli fod action` built-in actions]
+* link:ssc-actions.html[Documentation for `fcli ssc action` built-in actions]
 
 Future fcli versions may introduce new built-in actions, enhance existing built-in actions, or provide enhanced action syntax, for example to allow for running pipeline-style actions that run a set of commands to package source code, submit a scan request, wait for scan completion, and perform post-scan activities like data export or policy checks.
 
@@ -515,9 +581,19 @@ Action support is centralized into the `action` entity of the various product mo
 
 === Custom Actions
 
-Apart from built-in actions, users can also develop and run custom actions, which could be customized versions of built-in actions or completely new actions. Note that the ability to run custom actions is currently considered PREVIEW functionality; as fcli actions are a new functionality, we are collecting user feedback regarding action syntax, which could potentially result in breaking action syntax changes across minor fcli releases (although we'll try to avoid this as much as possible). 
+Apart from built-in actions, users can also develop and run custom actions, which could be customized versions of built-in actions or completely new actions. The following sections provide more information on custom action usage and development.
 
-As such, custom actions that run fine on the current fcli version may fail to run on any other fcli version. Fcli does perform action version checks based on action schema version (see below), but supported schema versions may change between minor or patch releases of fcli. Once we are comfortable with moving custom actions out of PREVIEW status, breaking schema/action syntax changes will be allowed only on major fcli releases, for example when moving from fcli 2.x to fcli 3.x.
+==== Compatibility
+
+Custom actions must specify a schema version, which is used to check compatibility between current fcli version and the provided custom action. Some examples:
+
+* Actions developed for fcli 2.x will fail to run on fcli 3.x (see link:../migration-v2.x-v3.x.html[migration guide])
+* Actions developed for fcli 3.0.0 can be run on any future fcli 3.x version, but may fail to run on future fcli 4.x versions
+* Actions developed for a later fcli 3.x version may fail to run on earlier fcli 3.x versions
+
+Note that the action schema is versioned independently of fcli. For example, fcli 2.x supports v1.x schema versions, and fcli 3.x supports v2.x schema versions. A future fcli 4.x version may support either v2.x or v3.x schema versions, depending on whether any breaking schema changes are being introduced for fcli 4.x.
+
+==== Loading custom actions
 
 Custom actions can be loaded from various sources, like a local or remote YAML file, optionally embedded in a zip-file that contains multiple actions. Each of the fcli commands listed in the previous section also support custom actions:
 
@@ -527,11 +603,9 @@ Custom actions can be loaded from various sources, like a local or remote YAML f
 
 To allow for easy access, custom actions can also be imported into fcli using the `fcli * action import` command, which allows for importing either a single action YAML file or all action YAML files from a local or remote zip-file. Once imported, these actions can be accessed in the same way as built-in actions. Note that imported custom actions will override built-in actions if they have the same name. You can use the `fcli * action reset` command to remove all previously imported custom actions.
 
-=== Custom Action Development
+==== Custom Action Development
 
-There are several resources available to help you developing custom actions. To start with, you can use the `fcli * action get <action>` command to view the contents of any built-in action as a basis for developing your own custom actions. Fcli provides a built-in `+__sample__+` action that explains various concepts and lists many of the supported action YAML elements together with a description. To view the sample action, use the `+fcli ssc action get __sample__+` or `+fcli fod action get __sample__+` command.
-
-Fcli also provides an action schema, which allows YAML editors and IDEs to provide code completion, documentation and validation for fcli action YAML documents. You may need to install a plugin to enable proper YAML editing and schema support. Following are some commonly used IDE plugins that are known to work with one of the schema associations listed below:
+There are several resources available to help you developing custom actions. To start with, you can use the `fcli * action get <action>` command to view the contents of any built-in action as a basis for developing your own custom actions. Fcli also provides an action schema, which allows YAML editors and IDEs to provide code completion, documentation and validation for fcli action YAML documents. You may need to install a plugin to enable proper YAML editing and schema support. Following are some commonly used IDE plugins that are known to work with one of the schema associations listed below:
 
 * Visual Studio Code: link:https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml[Red Hat YAML plugin]
 * Eclipse: link:https://marketplace.eclipse.org/content/wild-web-developer-html-css-javascript-typescript-nodejs-angular-json-yaml-kubernetes-xml[Wild Web Developer]

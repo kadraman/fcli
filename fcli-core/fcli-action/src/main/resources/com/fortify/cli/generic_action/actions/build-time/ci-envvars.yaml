@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
+
+author: Fortify
+usage:
+  header: Generate CI env vars documentation
+  description: |
+    TODO
+
+config:
+  output: immediate
+  
+cli.options:
+  outputDir:
+    names: "-d"
+    description: Required output directory
+  
+steps:
+  - var.set:
+      fod: {fmt: fod}
+      ssc: {fmt: ssc}
+  - records.for-each:
+      from: ${{'fod.all', 'fod.ci', 'ssc.all', 'ssc.ci'}} 
+      record.var-name: type
+      do:
+      - with:
+          writers:
+            table:
+              to: ${cli.outputDir}/ci-envvars-${type}.txt
+              type: table
+              type-args: names:Environment variable,desc:Description
+              style: border
+          do:
+          - if: ${type.endsWith('.all')}
+            records.for-each:
+              from: ${type.startsWith('fod')?fod.session:ssc.session}
+              record.var-name: envVar 
+              do:
+              - writer.append:
+                  table: ${envVar}
+          - records.for-each:
+                from: ${type.startsWith('fod')?fod.ci:ssc.ci}
+                record.var-name: envVar 
+                do:
+                  - writer.append:
+                      table: ${envVar}
+      
+formatters:
+  fod:
+    session:
+      - names: FOD_URL
+        desc: >-  
+          Fortify on Demand URL, for example https://ams.fortify.com. This must be rendered by the CI/CD system
+          as plain text, not as a masked secret/variable.
+      - names: FOD_CLIENT_ID\nFOD_CLIENT_SECRET
+        desc: >-
+          Required when authenticating with an API key: Fortify on Demand Client ID (API key) and Secret (API secret).
+      - names: FOD_TENANT\nFOD_USER\nFOD_PASSWORD
+        desc: >-
+          Required when authenticating with user credentials: Fortify on Demand tenant, user and password. It is
+          recommended to use a Personal Access Token instead of an actual user password.
+      - names: FOD_LOGIN_EXTRA_OPTS
+        desc: >-
+          Extra login options, for example for disabling SSL checks or changing connection time-outs; see 
+          'fcli fod session login' documentation.
+    ci:
+      - names: FOD_RELEASE
+        desc: >-
+          Fortify on Demand release to use with this action. This should be specified as '<app-name>:<release-name>'
+          (for non-microservices applications) or '<app-name>:<microservice-name>:<release-name>' (for microservices 
+          applications). Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
+          Note that you'll need to explicitly configure FOD_RELEASE for microservices applications, as the default
+          value lacks a microservice name.
+  ssc:
+    session:
+      - names: SSC_URL
+        desc: >-
+            Software Security Center (SSC) URL, for example https://ssc.customer.fortifyhosted.net/. This must be 
+            rendered by the CI/CD system as plain text, not as a masked secret/variable.
+      - names: SSC_TOKEN
+        desc: >-
+            Required when authenticating with an SSC token (recommended). Most actions should work fine with a CIToken.
+      - names: SSC_USER\nSSC_PASSWORD
+        desc: >-
+            Required when authenticating with SSC user credentials.
+      - names: SC_SAST_TOKEN
+        desc: >-
+            ScanCentral SAST Client Authentication Token for authenticating with ScanCentral SAST Controller. This 
+            environment variable is required when running a ScanCentral SAST scan.
+      # TODO Add DEBRICKED_TOKEN once implemented
+      - names: SSC_LOGIN_EXTRA_OPTS
+        desc: >-
+            Extra SSC login options, for example for disabling SSL checks or changing connection time-outs; 
+            see 'fcli ssc session login' documentation.        
+    ci:
+      - names: SSC_APPVERSION
+        desc: >-
+            Fortify SSC application version to use with this action. This should be specified as '<app-name>:<version-name>'. 
+            Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
+      
