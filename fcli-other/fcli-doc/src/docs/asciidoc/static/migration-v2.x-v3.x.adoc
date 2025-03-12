@@ -4,7 +4,11 @@ Upgrading from fcli v2.x to v3.x may require some changes to existing fcli comma
 
 == `FCLI_DEFAULT_*` environment variables
 
-If you were previously using `FCLI_DEFAULT_*` environment variables, the environment variable names may need to be updated to reflect the updated fcli command structure and option names. As an example, with fcli 2.x, the environment variable `FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN` environment variable would define a default value for all `--client-auth-token` options within the `sc-sast` module, effectively specifying a default value for the `--client-auth-token` option on the `fcli sc-sast session login` command. Given that the `fcli sc-sast session` commands have been removed in fcli 3.x, and the `--client-auth-token` option now needs to be specified on the `fcli ssc session login` command, the environment variable name will need to be changed from `FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN` to `FCLI_DEFAULT_SSC_CLIENT_AUTH_TOKEN`.
+If you were previously using `FCLI_DEFAULT_*` environment variables, the environment variable names may need to be updated to reflect the updated fcli command structure and option names. 
+
+As an example, with fcli 2.x, the environment variable `FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN` environment variable would define a default value for all `--client-auth-token` options within the `sc-sast` module, effectively specifying a default value for the `--client-auth-token` option on the `fcli sc-sast session login` command. Given that the `fcli sc-sast session` commands have been removed in fcli 3.x, and the `--client-auth-token` option now needs to be specified on the `fcli ssc session login` command, the environment variable name will need to be changed from `FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN` to `FCLI_DEFAULT_SSC_CLIENT_AUTH_TOKEN`.
+
+Another example is the `FCLI_DEFAULT_SSC_CI_TOKEN` environment variable; as the `fcli ssc session login` command now only supports a `--token` option and no longer a `--ci-token` option, this environment variable will need to be renamed to `FCLI_DEFAULT_SSC_TOKEN`.
 
 == `--output` option
 
