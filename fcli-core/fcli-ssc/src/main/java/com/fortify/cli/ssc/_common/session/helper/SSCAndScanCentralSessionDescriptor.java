@@ -197,6 +197,8 @@ public class SSCAndScanCentralSessionDescriptor extends AbstractSessionDescripto
             apiUrl = JsonHelper.evaluateSpelExpression(sscConfigProperties, "^[name=='edast.server.url']?.value", String.class);
             if ( StringUtils.isBlank(apiUrl) ) {
                 disabledReason = "URL not configured";
+            } else {
+                apiUrl = apiUrl.replaceAll("/api/?$", ""); // Normalize URL, removing /api(/) suffix
             }
         }
         if ( StringUtils.isNotBlank(disabledReason) ) {
