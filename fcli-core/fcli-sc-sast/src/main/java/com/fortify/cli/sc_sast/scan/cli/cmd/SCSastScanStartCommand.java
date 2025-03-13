@@ -64,7 +64,6 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
     @Mixin private CommonOptionMixins.RequiredFile scanPayloadFileMixin;
     @Option(names = {SENSOR_VERSION_OPT_LONG, SENSOR_VERSION_OPT_SHORT}) private String sensorVersion;
     @Option(names = {"--notify"}) private String email; // TODO Add email address validation
-    @Option(names = {"--ssc-ci-token", "-t"}) private String ciToken;
 	@Option(names = {"--sargs", "--scan-args"}) private String scanArguments = "";
 	@Option(names = {"--no-replace"}) private Boolean noReplace;
 	@Option(names = {"--scan-timeout"}) private Integer scanTimeout;
@@ -140,23 +139,21 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
     private String getUploadToken() {
         String uploadToken = null;
         if ( !publishToAppVersionMixin.hasAppVersion() ) {
-            if ( !StringUtils.isBlank(this.ciToken) ) {
-                throw new FcliSimpleException("Option --ssc-ci-token may only be specified if --publish-to has been specified");
+            if ( !StringUtils.isBlank(publishToAppVersionMixin.publishToken) ) {
+                throw new FcliSimpleException("Option --publish-token may only be specified if --publish-to has been specified");
             }
         } else {
-        	if ( !StringUtils.isBlank(this.ciToken) ) {
+        	if ( !StringUtils.isBlank(publishToAppVersionMixin.publishToken) ) {
         		// Convert token to application token, in case it was provided as a REST token
-        		uploadToken = SSCTokenConverter.toApplicationToken(this.ciToken);
-        	} else if ( StringUtils.isBlank(uploadToken) ) {
+        		uploadToken = SSCTokenConverter.toApplicationToken(publishToAppVersionMixin.publishToken);
+        	} else {
                 char[] tokenFromSession = getUnirestInstanceSupplier().getSessionDescriptor().getActiveSSCToken();
                 uploadToken = tokenFromSession==null ? null : SSCTokenConverter.toApplicationToken(String.valueOf(tokenFromSession));
             }
-            if ( StringUtils.isBlank(uploadToken) ) { throw new FcliBugException("No SSC token provided, and no token available from session"); }
+            if ( StringUtils.isBlank(uploadToken) ) { throw new FcliBugException("No publish token provided, and no token available from session"); }
         }
         return uploadToken;
     }
-    
-    
     
     private final MultipartBody updateBody(MultipartBody body, String field, String value) {
         return StringUtils.isBlank(value) ? body : body.field(field, value, "text/plain");
@@ -197,6 +194,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
         @Getter private String appVersionNameOrId;
         @Option(names = {"--publish-as"}, required = false)
         @Getter private String fprFileName = "";
+        @Option(names = {"--publish-token"}) private String publishToken;
         public final boolean hasAppVersion() { return StringUtils.isNotBlank(appVersionNameOrId); }
     }
     
