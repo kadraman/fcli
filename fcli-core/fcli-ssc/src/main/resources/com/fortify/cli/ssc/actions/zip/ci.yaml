@@ -15,7 +15,7 @@ usage:
     Configuration for this fcli action is done through environment variables; the
     table below lists the environment variables supported by this action.
     
-    ${isAsciiDoc?'----\n':''}${#include('/ci-envvars-ssc.ci.txt')}${isAsciiDoc?'\n----':''}
+    ${#include('/ci-envvars-ssc.ci'+(isAsciiDoc?'.adoc':'.txt'))}
 
 config:
   output: immediate
