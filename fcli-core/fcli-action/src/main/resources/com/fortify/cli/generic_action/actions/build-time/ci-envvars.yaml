@@ -78,8 +78,8 @@ formatters:
     |===
     
   asciiDocCell: |
-    |${envVar.realNode.names.replaceAll('\n', ' +\\n')}
-    |${envVar.realNode.desc.replaceAll('\n', ' +\\n')}
+    |${(envVar.realNode==null?envVar:envVar.realNode).names.replaceAll('\n', ' +\\n')}
+    |${(envVar.realNode==null?envVar:envVar.realNode).desc.replaceAll('\n', ' +\\n')}
     
   fodDefinitions:
     commonEnvVarProperties:
