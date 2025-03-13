@@ -22,6 +22,12 @@ steps:
       from: ${{'fod.all', 'fod.ci', 'ssc.all', 'ssc.ci'}} 
       record.var-name: type
       do:
+      - var.set:
+          includeSessionEnvVars: ${type.endsWith('.all')}
+          sessionEnvVars: ${type.startsWith('fod')?fod.session:ssc.session}
+          ciEnvVars: ${type.startsWith('fod')?fod.ci:ssc.ci}
+          commonEnvVarProperties: ${type.startsWith('fod')?fod.commonEnvVarProperties:ssc.commonEnvVarProperties}
+          common: {fmt: common}
       - with:
           writers:
             table:
@@ -30,22 +36,32 @@ steps:
               type-args: names:Environment variable,desc:Description
               style: border
           do:
-          - if: ${type.endsWith('.all')}
+            # Append FoD/SSC-specific session env vars if these need to be included
+          - if: ${includeSessionEnvVars}
             records.for-each:
-              from: ${type.startsWith('fod')?fod.session:ssc.session}
+              from: ${sessionEnvVars}
               record.var-name: envVar 
               do:
               - writer.append:
                   table: ${envVar}
+            # Append other ci env vars. We may need to split ciEnvVars and commonEnvVars
+            # to allow for intermingling SSC/FoD-specific and common env vars to build
+            # a table in logical order.
           - records.for-each:
-                from: ${type.startsWith('fod')?fod.ci:ssc.ci}
-                record.var-name: envVar 
-                do:
-                  - writer.append:
-                      table: ${envVar}
+              from: ${{ciEnvVars, common.ci}} 
+              record.var-name: envVars
+              do:
+              - records.for-each:
+                  from: ${envVars}
+                  record.var-name: envVar 
+                  do:
+                    - writer.append:
+                        table: ${envVar.realNode} # TODO This should be fixed in action framework
       
 formatters:
   fod:
+    commonEnvVarProperties:
+      setupAction: setup-release 
     session:
       - names: FOD_URL
         desc: >-  
@@ -71,6 +87,8 @@ formatters:
           Note that you'll need to explicitly configure FOD_RELEASE for microservices applications, as the default
           value lacks a microservice name.
   ssc:
+    commonEnvVarProperties:
+      setupAction: setup-release 
     session:
       - names: SSC_URL
         desc: >-
@@ -96,4 +114,25 @@ formatters:
         desc: >-
             Fortify SSC application version to use with this action. This should be specified as '<app-name>:<version-name>'. 
             Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
+  common:
+    ci:
+      - names: PACKAGE_ACTION\nPACKAGE_ACTION_EXTRA_OPTS
+        desc: >- 
+          By default, the fcli 'package' action is used to (optionally) package the source code to be scanned; see next
+          entry for information on how to configure the packaging process. If the standard fcli 'package' action doesn't
+          meet your needs, for example if you want to perform a local translation using Fortify Static Code Analyzer,
+          you can use PACKAGE_ACTION to use a custom action for packaging, optionally providing extra options to this
+          custom action through the PACKAGE_ACTION_EXTRA_OPTS environment variable. Note that any custom action must
+          set the global.package.output action variable, pointing to the package or MBS file to be scanned.
+      - names: USE_PACKAGE\nPACKAGE_EXTRA_OPTS\nSC_CLIENT_VERSION\nSOURCE_DIR\nDO_PACKAGE_DEBUG\nTOOL_DEFINITIONS
+        desc: >-
+          These environment variables define packaging behavior. If USE_PACKAGE is specified, packaging will be skipped
+          and the given package or MBS file (which must already exist) will be used. To pass additional options to the
+          'scancentral package' command like '-bt' or '-bf', use PACKAGE_EXTRA_OPTS.\nBy default:\n
+          - Latest available ScanCentral Client version will be used for packaging; use SC_CLIENT_VERSION
+          to specify a different version.\n
+          - Current working directory will be packaged; use SOURCE_DIR to package a different directory.\n
+          - Debug logging for Scancentral Client is disabled; set DO_PACKAGE_DEBUG to true to enable debug logging.\n
+          - Tool definitions to identify available ScanCentral Client versions will be downloaded from the default
+          location; use TOOL_DEFINITIONS to use customized tool definitions.\n
       

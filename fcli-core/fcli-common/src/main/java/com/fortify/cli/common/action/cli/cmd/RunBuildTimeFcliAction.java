@@ -31,18 +31,25 @@ import com.fortify.cli.common.progress.helper.ProgressWriterType;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.layout.TTLLLayout;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.encoder.LayoutWrappingEncoder;
 
 // TODO Do we want to load actions from built-in action sources, or define a separate source for build-time actions? 
 public class RunBuildTimeFcliAction {
     public static void main(String[] args) {
-        if ( args.length<1 ) {
-            throw new RuntimeException("Usage: RunBuildTimeFcliAction <action-path> [action args]");
+        if ( args.length<2 ) {
+            throw new RuntimeException("Usage: RunBuildTimeFcliAction <log file> <action-path> [action args]");
         }
-        var actionPath = args[0];
-        var actionArgs = args.length==1 ? new String[]{} : Arrays.copyOfRange(args, 1, args.length);
+        var logFile = args[0];
+        var actionPath = args[1];
+        var actionArgs = args.length==2 ? new String[]{} : Arrays.copyOfRange(args, 2, args.length);
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger rootLogger = loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        rootLogger.setLevel(Level.OFF);
+        rootLogger.detachAndStopAllAppenders();
+        rootLogger.setLevel(Level.TRACE);
+        configureLogFile(rootLogger, logFile);
         var action = ActionLoaderHelper.load(
             ActionSource.externalActionSources(null),
             actionPath,
@@ -53,6 +60,23 @@ public class RunBuildTimeFcliAction {
                 .onValidationErrors(RunBuildTimeFcliAction::onValidationErrors)
                 .build();
         new ActionRunner(config).run(actionArgs);
+    }
+    
+    private static final void configureLogFile(Logger rootLogger, String logFile) {
+        LoggerContext loggerContext = rootLogger.getLoggerContext();
+        FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
+        fileAppender.setFile(logFile);
+        fileAppender.setAppend(false);
+        LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<ILoggingEvent>();
+        encoder.setContext(loggerContext);
+        TTLLLayout layout = new TTLLLayout();
+        layout.setContext(loggerContext);
+        layout.start();
+        encoder.setLayout(layout);
+        fileAppender.setEncoder(encoder);
+        fileAppender.setContext(loggerContext);
+        fileAppender.start();
+        rootLogger.addAppender(fileAppender);
     }
     
     private static final RuntimeException onValidationErrors(OptionsParseResult optionsParseResult) {

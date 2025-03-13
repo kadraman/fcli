@@ -16,5 +16,5 @@ task buildTimeAction_ci_envvars(type: JavaExec) {
     doFirst { mkdir "${generatedActionOutputResourcesDir}" }
     classpath = sourceSets.main.compileClasspath
     main 'com.fortify.cli.common.action.cli.cmd.RunBuildTimeFcliAction'
-    args "${projectDir}/src/main/resources/com/fortify/cli/generic_action/actions/build-time/ci-envvars.yaml", '-d', "${generatedActionOutputResourcesDir}"
+    args "${buildDir}/ci-envvars.log", "${projectDir}/src/main/resources/com/fortify/cli/generic_action/actions/build-time/ci-envvars.yaml", '-d', "${generatedActionOutputResourcesDir}"
 }
