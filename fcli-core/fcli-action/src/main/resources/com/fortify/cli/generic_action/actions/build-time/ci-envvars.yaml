@@ -47,6 +47,8 @@ steps:
               do:
               - writer.append:
                   tableWriter: ${envVar}
+              - var.set:
+                  asciiDocCells..: {fmt: asciiDocCell}
             # Append other ci env vars. We may need to split ciEnvVars and commonEnvVars
             # to allow for intermingling SSC/FoD-specific and common env vars to build
             # a table in logical order.
