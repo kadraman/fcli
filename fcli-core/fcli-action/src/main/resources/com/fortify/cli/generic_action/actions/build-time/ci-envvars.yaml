@@ -22,6 +22,8 @@ steps:
       from: ${{'fod.all', 'fod.ci', 'ssc.all', 'ssc.ci'}} 
       record.var-name: type
       do:
+      - var.rm:
+          - asciiDocCells
       - var.set:
           includeSessionEnvVars: ${type.endsWith('.all')}
           definitions: ${type.startsWith('fod')?fodDefinitions:sscDefinitions}
@@ -58,17 +60,24 @@ steps:
                   do:
                     - writer.append:
                         tableWriter: ${envVar.realNode} # TODO This should be fixed in action framework
-      # For now, we just write the same table for both text & Asciidoc outputs;
-      # later we can generate a proper AsciiDoc table.
+                    - var.set:
+                        asciiDocCells..: {fmt: asciiDocCell}
       - out.write:
           ${cli.outputDir}/ci-envvars-${type}.txt: ${table}
-          ${cli.outputDir}/ci-envvars-${type}.adoc: {fmt: adoc}
+          ${cli.outputDir}/ci-envvars-${type}.adoc: {fmt: asciiDocTable}
           
 formatters:
-  adoc: |
-    ----
-    ${table}
-    ----
+  asciiDocTable: |
+    [cols="1,1"]
+    |===
+    |Environment Variable|Description 
+    
+    ${#join("", asciiDocCells)}
+    |===
+    
+  asciiDocCell: |
+    |${envVar.realNode.names.replaceAll('\n', ' +\\n')}
+    |${envVar.realNode.desc.replaceAll('\n', ' +\\n')}
     
   fodDefinitions:
     commonEnvVarProperties:
