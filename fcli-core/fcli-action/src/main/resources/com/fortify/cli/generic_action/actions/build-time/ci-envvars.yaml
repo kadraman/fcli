@@ -86,7 +86,7 @@ formatters:
     session:
       - names: FOD_URL
         desc: >-  
-          Fortify on Demand URL, for example https://ams.fortify.com. This must be rendered by the CI/CD system
+          Fortify on Demand URL, for example `https://ams.fortify.com`. This must be rendered by the CI/CD system
           as plain text, not as a masked secret/variable.
       - names: FOD_CLIENT_ID\nFOD_CLIENT_SECRET
         desc: >-
@@ -98,42 +98,64 @@ formatters:
       - names: FOD_LOGIN_EXTRA_OPTS
         desc: >-
           Extra login options, for example for disabling SSL checks or changing connection time-outs; see 
-          'fcli fod session login' documentation.
+          `fcli fod session login` documentation.
     preScan:
       - names: FOD_RELEASE
         desc: >-
-          Fortify on Demand release to use with this action. This should be specified as '<app-name>:<release-name>'
-          (for non-microservices applications) or '<app-name>:<microservice-name>:<release-name>' (for microservices 
-          applications). Default value is based on repository and branch name, for example myOrg/myRepo:myBranch.
-          Note that you'll need to explicitly configure FOD_RELEASE for microservices applications, as the default
+          Fortify on Demand release to use with this action. This should be specified as `<app-name>:<release-name>`
+          (for non-microservices applications) or `<app-name>:<microservice-name>:<release-name>` (for microservices 
+          applications). Default value is based on repository and branch name, for example `myOrg/myRepo:myBranch`.
+          Note that you'll need to explicitly configure `FOD_RELEASE` for microservices applications, as the default
           value lacks a microservice name.
       - names: DO_SETUP\nSETUP_ACTION\nSETUP_EXTRA_OPTS
         desc: >-
-          If DO_SETUP is set to true (implied if any of the other two SETUP_* environment variables are set),
-          the application and/or release will be created if they do not yet exist, and static scan settings
-          will be configured if not configured already, using the fcli-provided setup-release action, or, if
-          specified, the custom fcli action specified through SETUP_ACTION. Extra options for the fcli action
-          can be passed through the SETUP_EXTRA_OPTS environment variable. Depending on your Git workflow, it
-          is recommended to have each newly created release copy state from the release representing your
-          default branch by passing the --copy-from option through SETUP_EXTRA_OPTS. To allow this action to
-          create new applications, depending on FoD version, you may (also) need to provide the
-          --app-owner <user> option through SETUP_EXTRA_OPTS when authenticating with client credentials.
+          If `DO_SETUP` is set not set to `false`, the application and/or release will be created if they do not
+          yet exist, and static scan settings will be configured if not configured already, using the
+          fcli-provided `setup-release` action, or, if specified, the custom fcli action specified through
+          `SETUP_ACTION`. Extra options for the fcli action can be passed through the `SETUP_EXTRA_OPTS`
+          environment variable.\n\nDepending on your Git workflow, it is recommended to copy state from the
+          release representing your default branch by passing the `--copy-from` option through
+          `SETUP_EXTRA_OPTS`. To allow this action to create new applications, depending on FoD version,
+          you may (also) need to provide the `--app-owner <user id or name>` option through `SETUP_EXTRA_OPTS`.
     scan:
       - names: DO_SAST_SCAN\nSAST_SCAN_EXTRA_OPTS\nDO_SAST_WAIT
         desc: >-
           For now, this fcli action only supports running a SAST scan, which is enabled by default. The
-          SAST_SCAN_EXTRA_OPTS environment variable can be used to pass extra options to the 'fcli fod sast-scan start'
-          command. By default, this action will wait until the scan has been completed, unless DO_SAST_WAIT
-          is set to 'false', in which case post-scan tasks will be skipped.
+          `SAST_SCAN_EXTRA_OPTS` environment variable can be used to pass extra options to the `fcli fod sast-scan start`
+          command. By default, this action will wait until the scan has been completed, unless `DO_SAST_WAIT`
+          is set to `false`; note that post-scan tasks will be skipped in this case.
     postScan:
-      - names: DO_POLICY_CHECK\nCHECK_POLICY_ACTION\nCHECK_POLICY_EXTRA_OPTS
-        desc: TODO
       - names: DO_RELEASE_SUMMARY\nRELEASE_SUMMARY_ACTION\nRELEASE_SUMMARY_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          If `DO_RELEASE_SUMMARY` is not set to `false`, a release summary will be generated using the
+          fcli-provided `release-summary` action or, if specified, the custom fcli action specified through
+          `RELEASE_SUMMARY_ACTION`. Extra options for the fcli action can be specified through the
+          `RELEASE_SUMMARY_EXTRA_OPTS` environment variable, which may include fcli options to allow
+          unsigned custom actions to be used.
+      - names: DO_CHECK_POLICY\nCHECK_POLICY_ACTION\nCHECK_POLICY_EXTRA_OPTS
+        desc: >-
+          If `DO_CHECK_POLICY` is set to true (implied if any of the other two `CHECK_POLICY_*` variables
+          are set), a policy check will be run after scan completion using the fcli-provided
+          `check-policy` action or, if specified, the custom fcli action specified through
+          `CHECK_POLICY_ACTION`. Extra options for a custom fcli action can be passed through the
+          `CHECK_POLICY_EXTRA_OPTS` environment variable, which may include fcli options to allow
+          unsigned custom actions to be used.
       - names: DO_PR_COMMENT\nPR_COMMENT_ACTION\nPR_COMMENT_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          (PREVIEW) If `DO_PR_COMMENT` is set to true (implied if any of the other two `PR_COMMENT_*` variables
+          are set), a Pull Request or Merge Request comment will be generated using an fcli-provided action
+          matching the current CI system like `github-pr-comment` or, if specified, the custom fcli action
+          specified through `PR_COMMENT_ACTION`. Extra options for the fcli action can be specified through
+          the `PR_COMMENT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned
+          custom actions to be used.
       - names: DO_SAST_EXPORT\nSAST_EXPORT_ACTION\nSAST_EXPORT_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          If `DO_SAST_EXPORT` is not set to `false` and a SAST scan was completed, the SAST vulnerability
+          data will be exported into a CI-specific format using an fcli-provided action matching the current
+          CI system like `github-sast-report` or `gitlab-sast-report`, or, if specified, the custom fcli action
+          specified through `SAST_EXPORT_ACTION`. Extra options for the fcli action can be specified through the
+          `SAST_EXPORT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned custom
+          actions to be used.
           
   sscDefinitions:
     session:
@@ -178,14 +200,37 @@ formatters:
             command. By default, this action will wait until the scan has been completed, unless DO_SAST_WAIT
             is set to 'false', in which case post-scan tasks will be skipped.
     postScan:
-      - names: DO_POLICY_CHECK\nCHECK_POLICY_ACTION\nCHECK_POLICY_EXTRA_OPTS
-        desc: TODO
       - names: DO_APPVERSION_SUMMARY\nAPPVERSION_SUMMARY_ACTION\nAPPVERSION_SUMMARY_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          If `DO_APPVERSION_SUMMARY` is not set to `false`, an application version summary will be generated using the
+          fcli-provided `appversion-summary` action or, if specified, the custom fcli action specified through
+          `APPVERSION_SUMMARY_ACTION`. Extra options for the fcli action can be specified through the
+          `APPVERSION_SUMMARY_EXTRA_OPTS` environment variable, which may include fcli options to allow
+          unsigned custom actions to be used.
+      - names: DO_CHECK_POLICY\nCHECK_POLICY_ACTION\nCHECK_POLICY_EXTRA_OPTS
+        desc: >-
+          If `DO_CHECK_POLICY` is set to true (implied if any of the other two `CHECK_POLICY_*` variables
+          are set), a policy check will be run after scan completion using the fcli-provided
+          `check-policy` action or, if specified, the custom fcli action specified through
+          `CHECK_POLICY_ACTION`. Extra options for a custom fcli action can be passed through the
+          `CHECK_POLICY_EXTRA_OPTS` environment variable, which may include fcli options to allow
+          unsigned custom actions to be used.
       - names: DO_PR_COMMENT\nPR_COMMENT_ACTION\nPR_COMMENT_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          (PREVIEW) If `DO_PR_COMMENT` is set to true (implied if any of the other two `PR_COMMENT_*` variables
+          are set), a Pull Request or Merge Request comment will be generated using an fcli-provided action
+          matching the current CI system like `github-pr-comment` or, if specified, the custom fcli action
+          specified through `PR_COMMENT_ACTION`. Extra options for the fcli action can be specified through
+          the `PR_COMMENT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned
+          custom actions to be used.
       - names: DO_SAST_EXPORT\nSAST_EXPORT_ACTION\nSAST_EXPORT_EXTRA_OPTS
-        desc: TODO
+        desc: >-
+          If `DO_SAST_EXPORT` is not set to `false` and a SAST scan was completed, the SAST vulnerability
+          data will be exported into a CI-specific format using an fcli-provided action matching the current
+          CI system like `github-sast-report` or `gitlab-sast-report`, or, if specified, the custom fcli action
+          specified through `SAST_EXPORT_ACTION`. Extra options for the fcli action can be specified through the
+          `SAST_EXPORT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned custom
+          actions to be used.
                   
   commonDefinitions:
     package:

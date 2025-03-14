@@ -99,11 +99,11 @@ steps:
         on.success:
           - var.set: { postScan.skipReason: } # Reset postScan.skipReason to allow post-scan tasks to run
              
-      POLICY_CHECK:
-        cmd: ${#actionCmd('POLICY_CHECK', 'ssc', 'check-policy')} --av "${global.ci.av}"
+      CHECK_POLICY:
+        cmd: ${#actionCmd('CHECK_POLICY', 'ssc', 'check-policy')} --av "${global.ci.av}"
         stdout: collect
         skip.if-reason:
-          - ${#actionCmdSkipFromEnvReason('POLICY_CHECK', true)} # Skip unless DO_POLICY_CHECK==true or POLICY_CHECK_ACTION/EXTRA_OPTS defined
+          - ${#actionCmdSkipFromEnvReason('CHECK_POLICY', true)} # Skip unless DO_CHECK_POLICY==true or CHECK_POLICY_ACTION/EXTRA_OPTS defined
           - ${postScan.skipReason}                               # Skip if no scans were run
           
       APPVERSION_SUMMARY:
