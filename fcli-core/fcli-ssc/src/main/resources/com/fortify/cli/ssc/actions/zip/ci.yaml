@@ -6,11 +6,12 @@ usage:
   description: |
     This action can be used to run a full, standardized CI pipeline that performs the
     following activities:
-    - Create & configure SSC application version if needed
-    - Package source code
-    - Submit SAST scan request
-    - Wait for SAST scan completion
-    - Perform post-scan activities, like checking policy outcome, exporting results, ...
+        
+    * Create & configure SSC application version if needed
+    * Package source code
+    * Submit SAST scan request
+    * Wait for SAST scan completion
+    * Perform post-scan activities, like checking policy outcome, exporting results, ...
     
     Configuration for this fcli action is done through environment variables; the
     table below lists the environment variables supported by this action.

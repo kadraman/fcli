@@ -6,13 +6,13 @@ usage:
   description: |
     This action can be used to run a full, standardized CI pipeline that performs the
     following activities:
-    - Create & configure SSC application version / FoD release if needed
-    - Install ScanCentral Client for packaging
-    - Package source code using ScanCentral Client
-    - Submit SAST scan request
-    - Wait for SAST scan completion
-    - Perform post-scan activities, like checking security policy outcome, 
-      exporting results, ...
+    
+    * Create & configure SSC application version / FoD release if needed
+    * Install ScanCentral Client for packaging
+    * Package source code using ScanCentral Client
+    * Submit SAST scan request
+    * Wait for SAST scan completion
+    * Perform post-scan activities, like checking security policy outcome, exporting results, ...
     
     Configuration for this fcli action is done through environment variables; the
     sections below list the environment variables supported by this action.
