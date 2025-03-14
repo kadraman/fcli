@@ -154,7 +154,7 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
                 // See https://github.com/fortify/fcli/issues/622 for example. The backticks need to
                 // go into the link text (as otherwise link:... would be rendered literally), so we
                 // need to include the full text between the backticks in the link text.
-                contents = contents.replaceAll("(?<!\\[)(`"+pattern+".*`)", replacement);
+                contents = contents.replaceAll("(?<!\\[)(`"+pattern+"[^`]*`)", replacement);
             }
         }
         return contents;
