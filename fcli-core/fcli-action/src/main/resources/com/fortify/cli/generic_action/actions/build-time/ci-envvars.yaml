@@ -25,6 +25,8 @@ steps:
       - var.rm:
           - asciiDocCells
       - var.set:
+          module: ${#substringBefore(type, '.')}
+          asciiDocActionUrl: ${module}-actions.html
           includeSessionEnvVars: ${type.endsWith('.all')}
           definitions: ${type.startsWith('fod')?fodDefinitions:sscDefinitions}
           sessionEnvVars: ${definitions.session}
@@ -34,9 +36,8 @@ steps:
       - with:
           writers:
             tableWriter:
-              to: var:table
+              to: var:textTable
               type: table
-              type-args: names:Environment variable,desc:Description
               style: border
           do:
             # Append FoD/SSC-specific session env vars if these need to be included
@@ -46,7 +47,7 @@ steps:
               record.var-name: envVar 
               do:
               - writer.append:
-                  tableWriter: ${envVar}
+                  tableWriter: {fmt: textCell}
               - var.set:
                   asciiDocCells..: {fmt: asciiDocCell}
             # Append other ci env vars. We may need to split ciEnvVars and commonEnvVars
@@ -61,14 +62,23 @@ steps:
                   record.var-name: envVar 
                   do:
                     - writer.append:
-                        tableWriter: ${envVar.realNode} # TODO This should be fixed in action framework
+                        tableWriter: {fmt: textCell}
                     - var.set:
                         asciiDocCells..: {fmt: asciiDocCell}
       - out.write:
-          ${cli.outputDir}/ci-envvars-${type}.txt: ${table}
+          ${cli.outputDir}/ci-envvars-${type}.txt: {fmt: textTable}
           ${cli.outputDir}/ci-envvars-${type}.adoc: {fmt: asciiDocTable}
           
 formatters:
+  # TODO realNode references should ideally be fixed in action framework
+  textTable: |
+    ${textTable}
+    
+    * Any fcli action references in this table refer to actions in the `fcli ${module}` module; please see
+      `fcli ${module} action help <action-name>` for more information.
+  textCell:
+    Environment Variable: ${(envVar.realNode==null?envVar:envVar.realNode).names}
+    Description: ${(envVar.realNode==null?envVar:envVar.realNode).desc.replaceAll('actionRef:([\w-_]+)(#[\w-_]+)', '`$1`')}
   asciiDocTable: |
     [%autowidth]
     |===
@@ -76,10 +86,9 @@ formatters:
     
     ${#join("", asciiDocCells)}
     |===
-    
   asciiDocCell: |
     |${(envVar.realNode==null?envVar:envVar.realNode).names.replaceAll('\n', ' +\\n')}
-    |${(envVar.realNode==null?envVar:envVar.realNode).desc.replaceAll('\n', ' +\\n')}
+    |${(envVar.realNode==null?envVar:envVar.realNode).desc.replaceAll('\n', ' +\\n').replaceAll('actionRef:([\w-_]+)(#[\w-_]+)', 'link:'+asciiDocActionUrl+'$2[$1]')}
     
   fodDefinitions:
     commonEnvVarProperties:
@@ -111,7 +120,7 @@ formatters:
         desc: >-
           If `DO_SETUP` is set not set to `false`, the application and/or release will be created if they do not
           yet exist, and static scan settings will be configured if not configured already, using the
-          fcli-provided `setup-release` action, or, if specified, the custom fcli action specified through
+          fcli-provided actionRef:setup-release#_setup_release action, or, if specified, the custom fcli action specified through
           `SETUP_ACTION`. Extra options for the fcli action can be passed through the `SETUP_EXTRA_OPTS`
           environment variable.\n\nDepending on your Git workflow, it is recommended to copy state from the
           release representing your default branch by passing the `--copy-from` option through
@@ -128,7 +137,7 @@ formatters:
       - names: DO_RELEASE_SUMMARY\nRELEASE_SUMMARY_ACTION\nRELEASE_SUMMARY_EXTRA_OPTS
         desc: >-
           If `DO_RELEASE_SUMMARY` is not set to `false`, a release summary will be generated using the
-          fcli-provided `release-summary` action or, if specified, the custom fcli action specified through
+          fcli-provided actionRef:release-summary#_release_summary action or, if specified, the custom fcli action specified through
           `RELEASE_SUMMARY_ACTION`. Extra options for the fcli action can be specified through the
           `RELEASE_SUMMARY_EXTRA_OPTS` environment variable, which may include fcli options to allow
           unsigned custom actions to be used.
@@ -136,7 +145,7 @@ formatters:
         desc: >-
           If `DO_CHECK_POLICY` is set to true (implied if any of the other two `CHECK_POLICY_*` variables
           are set), a policy check will be run after scan completion using the fcli-provided
-          `check-policy` action or, if specified, the custom fcli action specified through
+          actionRef:check-policy#_check_policy action or, if specified, the custom fcli action specified through
           `CHECK_POLICY_ACTION`. Extra options for a custom fcli action can be passed through the
           `CHECK_POLICY_EXTRA_OPTS` environment variable, which may include fcli options to allow
           unsigned custom actions to be used.
@@ -144,7 +153,7 @@ formatters:
         desc: >-
           (PREVIEW) If `DO_PR_COMMENT` is set to true (implied if any of the other two `PR_COMMENT_*` variables
           are set), a Pull Request or Merge Request comment will be generated using an fcli-provided action
-          matching the current CI system like `github-pr-comment` or, if specified, the custom fcli action
+          matching the current CI system like actionRef:github-pr-comment#_github_pr_comment or, if specified, the custom fcli action
           specified through `PR_COMMENT_ACTION`. Extra options for the fcli action can be specified through
           the `PR_COMMENT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned
           custom actions to be used.
@@ -152,7 +161,7 @@ formatters:
         desc: >-
           If `DO_SAST_EXPORT` is not set to `false` and a SAST scan was completed, the SAST vulnerability
           data will be exported into a CI-specific format using an fcli-provided action matching the current
-          CI system like `github-sast-report` or `gitlab-sast-report`, or, if specified, the custom fcli action
+          CI system like actionRef:github-sast-report#_github_sast_report or actionRef:gitlab-sast-report#_gitlab_sast_report, or, if specified, the custom fcli action
           specified through `SAST_EXPORT_ACTION`. Extra options for the fcli action can be specified through the
           `SAST_EXPORT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned custom
           actions to be used.
@@ -186,7 +195,7 @@ formatters:
       - names: DO_SETUP\nSETUP_ACTION\nSETUP_EXTRA_OPTS
         desc: >-
           If `DO_SETUP` is set not set to `false`, the application and/or version will be created if they do not yet
-          exist using the fcli-provided `setup-appversion` action, or, if specified, the custom fcli action specified
+          exist using the fcli-provided actionRef:setup-appversion#_setup_appversion action, or, if specified, the custom fcli action specified
           through `SETUP_ACTION`. Extra options for the fcli action can be passed through the `SETUP_EXTRA_OPTS` 
           environment variable.\n\nDepending on your Git workflow, it is recommended to copy state from the
           application version representing your default branch by passing the `--copy-from` option through
@@ -202,7 +211,7 @@ formatters:
       - names: DO_APPVERSION_SUMMARY\nAPPVERSION_SUMMARY_ACTION\nAPPVERSION_SUMMARY_EXTRA_OPTS
         desc: >-
           If `DO_APPVERSION_SUMMARY` is not set to `false`, an application version summary will be generated using the
-          fcli-provided `appversion-summary` action or, if specified, the custom fcli action specified through
+          fcli-provided actionRef:appversion-summary#_appversion_summary action or, if specified, the custom fcli action specified through
           `APPVERSION_SUMMARY_ACTION`. Extra options for the fcli action can be specified through the
           `APPVERSION_SUMMARY_EXTRA_OPTS` environment variable, which may include fcli options to allow
           unsigned custom actions to be used.
@@ -210,7 +219,7 @@ formatters:
         desc: >-
           If `DO_CHECK_POLICY` is set to true (implied if any of the other two `CHECK_POLICY_*` variables
           are set), a policy check will be run after scan completion using the fcli-provided
-          `check-policy` action or, if specified, the custom fcli action specified through
+          actionRef:check-policy#_check_policy action or, if specified, the custom fcli action specified through
           `CHECK_POLICY_ACTION`. Extra options for a custom fcli action can be passed through the
           `CHECK_POLICY_EXTRA_OPTS` environment variable, which may include fcli options to allow
           unsigned custom actions to be used.
@@ -218,7 +227,7 @@ formatters:
         desc: >-
           (PREVIEW) If `DO_PR_COMMENT` is set to true (implied if any of the other two `PR_COMMENT_*` variables
           are set), a Pull Request or Merge Request comment will be generated using an fcli-provided action
-          matching the current CI system like `github-pr-comment` or, if specified, the custom fcli action
+          matching the current CI system like actionRef:github-pr-comment#_github_pr_comment or, if specified, the custom fcli action
           specified through `PR_COMMENT_ACTION`. Extra options for the fcli action can be specified through
           the `PR_COMMENT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned
           custom actions to be used.
@@ -226,7 +235,7 @@ formatters:
         desc: >-
           If `DO_SAST_EXPORT` is not set to `false` and a SAST scan was completed, the SAST vulnerability
           data will be exported into a CI-specific format using an fcli-provided action matching the current
-          CI system like `github-sast-report` or `gitlab-sast-report`, or, if specified, the custom fcli action
+          CI system like actionRef:github-sast-report#_github_sast_report or actionRef:gitlab-sast-report#_gitlab_sast_report, or, if specified, the custom fcli action
           specified through `SAST_EXPORT_ACTION`. Extra options for the fcli action can be specified through the
           `SAST_EXPORT_EXTRA_OPTS` environment variable, which may include fcli options to allow unsigned custom
           actions to be used.
@@ -235,9 +244,9 @@ formatters:
     package:
       - names: PACKAGE_ACTION\nPACKAGE_ACTION_EXTRA_OPTS
         desc: >- 
-          By default, when running a SAST scan, the fcli `package` action is used to (optionally) package the source code
-          to be scanned; see next entry for information on how to configure the default `package` action. If the standard
-          fcli `package` action doesn't meet your needs, for example if you want to perform a local translation using
+          By default, when running a SAST scan, the fcli actionRef:package#_package action is used to (optionally) package the source code
+          to be scanned; see next entry for information on how to configure the default actionRef:package#_package action. If the standard
+          fcli actionRef:package#_package action doesn't meet your needs, for example if you want to perform a local translation using
           Fortify Static Code Analyzer, you can use `PACKAGE_ACTION` to use a custom action for packaging, optionally
           providing extra options to this custom action through the `PACKAGE_ACTION_EXTRA_OPTS` environment variable.
           Note that any custom action must set the `global.package.output` action variable, pointing to the package or
