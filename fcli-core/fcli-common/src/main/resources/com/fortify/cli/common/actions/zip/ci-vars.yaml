@@ -2,7 +2,7 @@
 
 author: Fortify
 usage:
-  header: Collect CI-specific data
+  header: (PREVIEW) Collect CI-specific data
   description: |
     This action collects data used by the SSC & FoD 'ci' actions, based on CI-specific 
     data like CI-specific environment variables. Data is collected in a CI-agnostic

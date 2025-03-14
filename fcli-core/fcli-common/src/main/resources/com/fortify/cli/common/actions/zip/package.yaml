@@ -2,7 +2,7 @@
 
 author: Fortify
 usage:
-  header: Package source code
+  header: (PREVIEW) Package source code
   description: |
     This action can be used to package source code using ScanCentral Client. It will 
     take care of installing the specified ScanCentral Client version, followed by
