@@ -103,7 +103,7 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
             return skipIfReason.stream()
                     .filter(Objects::nonNull)
                     .map(t->vars.eval(t, String.class))
-                    .filter(Objects::nonNull)
+                    .filter(StringUtils::isNotBlank)
                     .findFirst()
                     .orElse(null);
         }
