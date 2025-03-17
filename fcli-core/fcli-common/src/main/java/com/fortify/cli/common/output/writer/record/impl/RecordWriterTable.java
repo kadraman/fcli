@@ -109,7 +109,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
                     .map(h->new Column()
                             .dataAlign(HorizontalAlign.LEFT)
                             .headerAlign(HorizontalAlign.LEFT)
-                            .header(config.getStyle().withHeaders() ? h : null))
+                            .header(config.getStyle().withHeaders() ? formatHeader(h) : null))
                     .toArray(Column[]::new);
                 var result = AsciiTable.getTable(getBorders(), columns, rows.toArray(String[][]::new));
                 if ( config.getStyle().isMarkdownBorder() ) {
@@ -117,6 +117,10 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
                 }
                 return result;
             }
+        }
+
+        private String formatHeader(String header) {
+            return header.startsWith("_.") ? "" : header;
         }
 
         private Character[] getBorders() {

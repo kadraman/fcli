@@ -86,17 +86,25 @@ public class OutputRecordWriterFactory {
     }
     
     private String addHeader(String option) {
-        if ( option.contains("=") ) { return option; } // Already contains header
+        if ( option.contains(":") ) { return option; } // Already contains header
         var keySuffix = "output."+recordWriterFactory.toString()+".header."+option;
+        var header = resolveHeader(option, keySuffix);
+        return String.format("%s:%s", option, header);
+    }
+
+    private String resolveHeader(String option, String keySuffix) {
         var header = messageResolver.getMessageString(keySuffix);
-        if ( StringUtils.isBlank(header) ) {
+        if ( header==null ) {
             // For now, this method is only invoked for default options read from the resource
             // bundle, and resource bundles currently only contain default options for table
             // output, so we can unconditionally format as a human-readable string. However,
             // if any of the above changes, we may need to apply this formatting only for table
             // output for example.
             header = PropertyPathFormatter.humanReadable(option.replaceAll("String$", ""));
+        } else if ( StringUtils.isBlank(header) ) {
+            // For table outputs, we use a prefix to indicate a blank header
+            header = "_."+option;
         }
-        return String.format("%s:%s", option, header);
+        return header;
     }
 }
