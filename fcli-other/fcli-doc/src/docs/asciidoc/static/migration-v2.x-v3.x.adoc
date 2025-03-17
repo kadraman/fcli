@@ -65,42 +65,74 @@ However, any custom actions developed for fcli v2.x will not run on fcli v3.x (a
 
 If, despite the preview warning, the updated fcli action yaml syntax poses major issues for your business, please discuss this with your OpenText Fortify representative to investigate options for assistance on migrating your fcli v2.x custom actions to fcli v3.x. Based on customer feedback, we may also investigate feasibility of providing an automated migration tool. Note though that even if we choose to do so, automatically migrated actions may still require manual review and changes to cater for any migration tasks that cannot be automated.
 
-To assist you with updating your fcli v2.x custom actions to allow them to run on fcli v3.x, the following sections provide an overview of fcli v2.x action instructions and their fcli v3.x equivalents.
+To assist you with updating your fcli v2.x custom actions to allow them to run on fcli v3.x, the following table provides a summary of fcli v2.x action instructions and their fcli v3.x equivalents. Please note that the syntax for many of these instructions have changed, for example now taking a map instead of a list, with map keys defining identifiers. Please see the schema definition or the various built-in fcli actions for details and examples on new syntax. It is recommended to use IDE-provided schema-based code assistance when updating your custom actions.
 
-TODO Add sections for each of the changed instructions in alphabetical order, with each section providing a summary of changes and examples of old/new syntax.
+[%autowidth,frame=all,grid=all,halign=left,valign=top,cols="<.<1,<.<1,<.<4"]
+|===
+|*fcli 2.x*
+|*fcli 3.x*
+|Notes
 
-=== `defaults:requestTarget`
+|`addRequestTargets`
+|`steps:rest.target`
+|Now takes map instead of list, moved to `steps` to allow for more flexibility
 
-TODO (now `config:rest.target.default`)
+|`defaults:requestTarget`
+|`config:rest.target.default`
+|Moved to new `config` instruction
 
-=== `parameters`
+|`parameters`
+|`cli.options`
+|Now takes map instead of list, some property changes
 
-Summary of changes:
+|`steps:append`
+|`steps:var.set`
+|Use variable name with trailing `..` to append values to a variable
 
-- `parameters` renamed to `cli.options`
-- `cli.options` takes a map, with option names as keys, and option definitions as values
-- `cliAliases` property renamed to `alias`, now supporting only single alias
-- `defaultValue` property renamed to `default`
+|`steps:check`
+|`steps:check`
+|Properties have been renamed for better consistency
 
-TODO; examples of old and new syntax
+|`steps:debug`
+|`steps:log.debug`
+|Renamed for better consistency
 
-=== `steps:append`
+|`steps:fcli`
+|`steps:run.fcli`
+|Now takes map instead of list, some property changes
 
-Summary of changes:
+|`steps:forEach`
+|`steps:records.for-each`
+|Renamed, some property changes
 
-- `steps:append` functionality merged into new `var.set` & `var.fmt` instructions
+|`steps:progress`
+|`steps:log.progress`
+|Renamed for better consistency
 
-TODO; examples of old and new syntax
+|`steps:requests`
+|`steps:rest.call`
+|Now takes map instead of list, many properties have been renamed for better consistency
 
-=== `steps:...`
+|`steps:set`
+|`steps:var.set`
+|Now takes map instead of list, new syntax for variable names to allow for composite & array-style variables
 
-TODO; list all other step changes
+|`steps:unset`
+|`steps:var.rm`
+|Renamed for better consistency
 
-=== `valueTemplates`
+|`steps:warn`
+|`steps:log.warn`
+|Renamed for better consistency
 
-Summary of changes:
+|`steps:write`
+|`steps:out.write`
+|Now takes map instead of list, with new syntax for map values
 
-- `valueTemplates` renamed to `formatters`
-- `formatters` takes a map, with formatter names as keys, and formatter definitions as values
+|`valueTemplates`
+|`formatters`
+|Renamed for better consistency
 
-TODO; examples of old and new syntax
+|===
+
+
