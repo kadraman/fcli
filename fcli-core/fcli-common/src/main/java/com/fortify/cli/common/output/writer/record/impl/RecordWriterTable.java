@@ -128,7 +128,7 @@ public class RecordWriterTable extends AbstractRecordWriter<TableWriter> {
             if ( style.isMarkdownBorder() ) {
                 return "    ||||-|||||               ".chars().mapToObj(c -> (char)c).toArray(Character[]::new);
             } else if ( style.isBorder() ) {
-                return AsciiTable.FANCY_ASCII;
+                return AsciiTable.BASIC_ASCII;
             } else {
                 return AsciiTable.NO_BORDERS;
             }
