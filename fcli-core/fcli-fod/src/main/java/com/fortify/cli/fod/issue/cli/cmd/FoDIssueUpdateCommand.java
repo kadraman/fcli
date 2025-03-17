@@ -55,7 +55,7 @@
      protected VulnerabilitySeverityType severity;
      @Option(names = {"--comment"}, required = false)
      protected String comment;
-     @Option(names = {"--ids"}, required = true, split=",")
+     @Option(names = {"--vuln-ids"}, required = true, split=",")
      protected ArrayList<String> vulnIds;
  
      private long errorCount = 0;
