@@ -703,7 +703,13 @@ If you encounter any of these issues, please submit a bug report as described in
 
 === Submitting a Bug Report
 
-After confirming that an issue cannot be resolved based on the information above, and is not caused by user error, please consider submitting a bug report on the https://github.com/fortify/fcli/issues[fcli issue tracker]. Before doing so, please verify that there is not already a bug report open for the issue that you are experiencing; in that case, feel free to leave a comment on the existing bug report to confirm the issue and/or provide additional details.
+After confirming that an issue cannot be resolved based on the information above, and is not caused by user error, please consider submitting a bug report. Before doing so, please verify that there is not already a bug report open for the issue that you are experiencing on the https://github.com/fortify/fcli/issues[fcli issue tracker on GitHub]. If an issue already exists, please consider posting a comment on the existing bug report to confirm the issue and/or provide additional details.
+
+If needed, you can submit a bug report through any of the following channels:
+
+* https://github.com/fortify/fcli/issues[fcli issue tracker on GitHub]; if you have a GitHub account, this is likely the easiest approach, and allows for all fcli contributors to review & comment on your bug report. Please note though that any information posted here is publicly accessible.
+* Through your OpenText Fortify Customer Success Manager or Technical Account Manager
+* Through the regular Fortify Support channels
 
 When opening a bug report, please include the following information:
 

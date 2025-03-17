@@ -2,6 +2,14 @@
 
 Upgrading from fcli v2.x to v3.x may require some changes to existing fcli command invocations, as some commands, options, or accepted option values have changed. This document describes those changes for each of the affected fcli modules. Note that this document only describes breaking changes, it doesn't describe any new functionality. Please see the fcli change log for an overview of new features.
 
+== Configuration & state data
+
+Configuration and state data for fcli 2.x was stored in `<user home>/.fortify/fcli/config` and `<user home>/.fortify/fcli/state` by default. As there have been some incompatible changes to the contents of some of these files, fcli 3.x uses `<user home>/.fortify/fcli/v3/config` and `<user home>/.fortify/fcli/v3/state` by default instead. This means that fcli 3.x will not be aware of any configuration or state data generated through fcli 2.x, like proxy or trust store configuration, sessions, or tool installations. 
+
+This allows for running fcli 2.x and 3.x side by side without any conflicts, but also means that you'll need to run `fcli config` commands again for fcli 3.x, use the `session login` commands to recreate any sessions, and/or re-do tool installations to make fcli 3.x aware of these installations.
+
+You may attempt to copy fcli 2.x configuration and state data to the fcli 3.x configuration and state directories to make fcli 3.x aware of this data; this will likely work for configuration data like proxy & trust store settings and tool installation state, but is not officially supported. You shouldn't copy SSC session state from fcli 2.x to the fcli 3.x state directory, as this is known to cause errors.
+
 == `FCLI_DEFAULT_*` environment variables
 
 If you were previously using `FCLI_DEFAULT_*` environment variables, the environment variable names may need to be updated to reflect the updated fcli command structure and option names. 
