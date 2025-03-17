@@ -205,7 +205,7 @@ location in the fcli data folder.
 
 Available on virtually all (leaf) commands that output data, this option can be used to specify the output format. Fcli supports a wide variety of output formats, like `+table+`, `+csv+`, `+json+`, `+xml+`, and `+yaml+`, allowing for both human-readable output or output suitable for automations. The style for each of these output formats can be controlled through the `+--style+` option, for example for controlling whether table or CSV output should include headers or not; see next section for details.
 
-The output formats listed above optionally allow for specifying the JSON properties to be included in the output, for example `+-o csv=id,name+`. Optionally, properties can also be renamed, which for example may be used to define CSV or table header names, like `+-o "csv=id:Application Id,name:Application Name"`. If no JSON properties are specified, most output formats will output all available JSON properties, except for table output, which usually outputs a predefined set of JSON properties.
+The output formats listed above optionally allow for specifying the JSON properties to be included in the output, for example `+-o csv=id,name+`. Optionally, properties can also be renamed, which for example may be used to define CSV or table header names, like `+-o "csv=id:Application Id,name:Application Name"+`. If no JSON properties are specified, most output formats will output all available JSON properties, except for table output, which usually outputs a predefined set of JSON properties.
 
 Apart from the output formats listed above, fcli also supports the special `+expr+` output format that can be used for a variety of purposes, for example for generating output in a human-readable format, or for generating a list of commands to be run at a later stage. This output format takes a template expression as input, for example `+-o 'expr=Text with {expression1} or {expression2}\n'+`. In most cases, expressions will be simple JSON property references, i.e., `+{property.subProperty}+`.
 
@@ -218,7 +218,7 @@ Note that all output (for all records being processed) will be appended on a sin
 
 === --style
 
-The `--style=<style element>[,<style element>...]` option can be used to control the output style for most of the output formats listed above, for example to control whether CSV or table headers should be included or not, or whether JSON or YAML output should be flattened. Note that the `--style` option will be ignored for the `expr` output format, and similarly, any style elements that are not applicable for the output format specified in the `-o` option will be ignored. Multiple style elements can be specified by separating them with comma's.
+The `--style=<style element>[,<style element>...]` option can be used to control the output style for most of the output formats listed above, for example to control whether CSV or table headers should be included or not, or whether JSON or YAML output should be flattened. Note that the `--style` option will be ignored for the `expr` output format, and similarly, any style elements that are not applicable for the output format specified in the `-o` option will be ignored. Multiple style elements can be specified by separating them by comma's.
 
 Some examples:
 
@@ -334,10 +334,6 @@ All commands that automatically generate server-side queries also provide a dedi
 ** `prop1=='value'` (simple equals expressions)
 ** `prop1=='value' && prop2=='val2'` (and-expression containing simple equals expressions)
 
-=== --session
-
-Available on virtually all commands that interact with a target system, this option allows for specifying a session name. For more details, see the link:#_session_management[Session Management] section.
-
 === Option Expressions
 
 Various fcli options take either plain expressions, like link:++#-q--query++[-q | --query], or template expressions (plain text combined with expressions embedded between curly braces), like link:++#-o--output++[-o | –output expr=...]. These expressions use Spring Expression Language (SpEL); general information on syntax, supported operators and more can be found in the link:https://docs.spring.io/spring-framework/docs/6.0.x/reference/html/core.html#expressions[SpEL Documentation].
@@ -402,20 +398,22 @@ fcli ssc session logout --user <user> --password <password>
 
 For interactive use, you can choose to keep the session open until it expires (expiration period depends on target system and login method). For pipeline use or other automation scenarios, it is highly recommended to issue a `+session logout+` command when no further interaction with the target system is required, to allow for any client-side and server-side cleanup to be performed.
 
-For example, upon logging in to SSC with user credentials, fcli will generate a `+UnifiedLoginToken+`, which will be invalidated when the `+ssc session logout+` is being run. If you have many (frequently executed) pipelines that interact with SSC, and you don’t run the `+ssc session logout+` command when the pipeline finishes, you risk exhausting SSC’s limit on active tokens. In addition, the `+logout+` commands will perform client-side cleanup, like removing session details like URL and authentication tokens from the client system.
+For example, upon logging in to SSC with user credentials, fcli will generate a `+AutomationToken+`, which will be invalidated when the `+ssc session logout+` is being run. If you have many (frequently executed) pipelines that interact with SSC, and you don’t run the `+ssc session logout+` command when the pipeline finishes, you risk exhausting SSC’s limit on active tokens. In addition, the `+logout+` commands will perform client-side cleanup, like removing session details like URL and authentication tokens from the client system.
 
-For product modules that support it, like SSC or ScanCentral DAST, it is also highly recommended to use token-based authentication rather than username/password-based authentication when incorporating fcli into pipelines or other automation tasks. This will avoid creation of a temporary token as described above, but also allows for better access control based on token permissions. Similarly, for systems that support Personal Access tokens, like FoD, it is highly recommended to utilize a Personal Access Token rather than user password.
+For product modules that support it, like SSC, it is also highly recommended to use token-based authentication rather than username/password-based authentication when incorporating fcli into pipelines or other automation tasks. This will avoid creation of a temporary token as described above, but also allows for better access control based on token permissions. Similarly, for systems that support Personal Access tokens, like FoD, it is highly recommended to utilize a Personal Access Token rather than user password.
 
-Note however that depending on (personal access) token permissions, not all fcli functionality may be available. In particular, even the least restrictive SSC `+CIToken+` may not provide access to all endpoints covered by fcli. If you need access to functionality not covered by `+CIToken+`, you may need to define a custom token definition, but this can only be done on self-hosted SSC environments, not on Fortify Hosted. If all else fails, you may need to revert to username/password-based authentication to utilize the short-lived  `+UnifiedLoginToken+`.
+Note however that depending on (personal access) token permissions, not all fcli functionality may be available. For example, the commonly used SSC `+CIToken+` may not provide access to all endpoints covered by fcli. To allow fcli to access all SSC endpoints, you may want to use an `+AutomationToken+`, but please note its security implications as documented by SSC. Alternatively, for self-hosted SSC environments, you can also consider defining custom token definitions, but this functionality is not available on Fortify Hosted.
 
 === Named Sessions
 
-Fcli supports named sessions, allowing you to have multiple open sessions for a single product. When issuing a `+session login+` command, you can optionally provide a session name as in `+fcli ssc session login mySession ...+`, and then use that session in other commands using the `+--session mySession+` command line option. If no session name is specified, a session named `+default+` will be created/used. Named sessions allow for a variety of use cases, for example:
+Fcli supports named sessions, allowing you to have multiple open sessions for a single product. When issuing a `+session login+` command, you can optionally provide a session name as in `+fcli ssc session login --ssc-session mySession ...+`, and then use that session in other commands using the `+--ssc-session mySession+` command line option. If no session name is specified, a session named `+default+` will be created/used. Named sessions allow for a variety of use cases, for example:
 
 * Run fcli commands against multiple instances of the same product, like DEV and PROD instances or an on-premise instance and a Fortify Hosted instance, without having to continuously login and logout from one instance to switch to another instance
 * Run fcli commands against a single instance of a product, but with alternating credentials, for example with one session providing admin rights and another session providing limited user rights
 * Run one session with username/password credentials to allow access to all fcli functionality (based on user permissions), and another session with token-based authentication with access to only a subset of fcli functionality
 * Run multiple pipelines or automation scripts simultaneously, each with their own session name, to reduce chances of these pipelines and scripts affecting each other (see link:#_fcli_data_folder[Fcli Data Folder] though for a potentially better solution for this scenario)
+
+Each session-based product module provides a corresponding `--<module>-session` command line option on both the corresponding `fcli <module> session` commands, and all commands that utilize sessions to connect to a remote system.
 
 === Session Storage
 
@@ -450,7 +448,7 @@ By default, fcli will use the home directory of the current user for various ope
 
 For this purpose, fcli will check for an environment variable named `+FCLI_USER_HOME+`; if defined, the value of this environment variable will be used instead of the actual user home directory for any fcli command that reads or writes data from/to the user home directory. 
 
-Of course, even if this environment variable is set, you can still override individual directories through the applicable environment variables or command-line options. For example, if you set both `+FCLI_USER_HOME+` and `+FCLI_CONFIG_DIR+` (but not any of the other environment variables listed in the next section), then fcli configuration data will be stored in the directory specified through `+FCLI_CONFIG_DIR+`, whereas fcli state data will be stored in `+<FCLI_USER_HOME>/.fortify/fcli/state+`.
+Of course, even if this environment variable is set, you can still override individual directories through the applicable environment variables or command-line options. For example, if you set both `+FCLI_USER_HOME+` and `+FCLI_CONFIG_DIR+` (but not any of the other environment variables listed in the next section), then fcli configuration data will be stored in the directory specified through `+FCLI_CONFIG_DIR+`, whereas fcli state data will be stored in the default directory under `+<FCLI_USER_HOME>+`.
 
 === Fcli Data Storage
 
@@ -463,11 +461,11 @@ The locations of these files can be controlled through the following environment
 * `+FCLI_CONFIG_DIR+`: Location of fcli configuration data like proxy and trust store settings. +
   Default: `+<FCLI_DATA_DIR>/config+`
 * `+FCLI_DATA_DIR+`: Default base directory for the two directories listed above. +
-  Default: `+<FORTIFY_DATA_DIR>/fcli+`
+  Default: `+<FORTIFY_DATA_DIR>/fcli/v3+`
 * `+FORTIFY_DATA_DIR+`: Default base directory for the directories listed above. +
   Default: `+<user home directory>/.fortify+`
 
-If none of these environment variables have been set, then state data will be stored in `+<user home directory>/.fortify/fcli/state+`, and configuration data will be stored in `+<user home directory>/.fortify/fcli/config+`.
+If none of these environment variables have been set, then state data will be stored in `+<user home directory>/.fortify/fcli/v3/state+`, and configuration data will be stored in `+<user home directory>/.fortify/fcli/v3/config+`.
 
 Note: earlier versions of fcli used different environment variable names, but this was causing issues (see link:https://github.com/fortify/fcli/issues/248[Issue 248]). If you are using an older fcli version, please refer to the corresponding documentation. When upgrading fcli from an older version, you may need to adjust the environment variable names.
 
@@ -493,7 +491,7 @@ Fcli walks the command tree to find an environment variable that matches a parti
 Environment variable lookups are based on the following rules:
 
 * Command aliases are not taken into account when looking for environment variables; suppose we have a `+delete+` command with alias `+rm+`, you will need to use `+FCLI_DEFAULT_..._DELETE_...+` and not `+FCLI_DEFAULT_..._RM_...+`
-* For options, fcli will use the longest option name when looking for environment variables; suppose we have an option with names `+-a+`, `+--ab+` and `+--abc+`, you will need to use `+FCLI_DEFAULT_..._ABC+` and not  `+FCLI_DEFAULT_..._AB+` or `+FCLI_DEFAULT_..._A+`
+* For options, fcli will use the longest option name when looking for environment variables; suppose we have an option with names `+-a+`, `+--ab+` and `+--abc+`, you will need to use `+FCLI_DEFAULT_..._ABC+` and not `+FCLI_DEFAULT_..._AB+` or `+FCLI_DEFAULT_..._A+`
 * For positional parameters, the environment variable name will be based on the parameter label, converted to `SNAKE_CASE` with all special characters replaced by an underscore. For example, `<attributeDefinitionId>` will become `ATTRIBUTE_DEFINITION_ID`, and `HOST:PORT` will become `HOST_PORT`.
 
 Although powerful, these environment variables for providing default option and parameter values should be used with some care to avoid unexpected results:
@@ -506,8 +504,6 @@ Despite #2 above, in some cases it may be useful to use less specific environmen
 * This variable value will be used as a default value for all `+--url+` options in the SSC module
 * This variable value will be used as a default value for all `+--ssc-url+` options in other product modules
 
-This means that defining a single `+FCLI_DEFAULT_SSC_URL+` environment variable, together with for example `+FCLI_DEFAULT_SSC_USER+` and `+FCLI_DEFAULT_SSC_PASSWORD+` environment variables, allows for applying these default values to all of the `+fcli ssc session login+`, `+fcli sc-sast session login+`, `+fcli sc-dast session login+`, and corresponding `+logout+` commands.
-
 Note that as described in the link:#_env_prefix[–env-prefix] section, you can override the `+FCLI_DEFAULT+` prefix. For example, with `+--env-prefix MYPREFIX+`, fcli will look for `+MYPREFIX_*+` environment variables instead of `+FCLI_DEFAULT_*+` environment variables.
 
 == Fcli Variables
@@ -516,7 +512,7 @@ Fcli allows for storing fcli output data in fcli variables for use by subsequent
 
 Variables can be stored using the `+--store myVarName[:prop1,prop2]+` option on data output commands. If property names are specified, then only these property names will be stored. If no property names are provided, all available JSON properties will be stored.
 
-Variables can be referenced in subsequent fcli commands using the `::myVarName::prop` syntax anywhere on the command line; such occurrences will be substituted with the value of the given property name.
+Variables can be referenced in subsequent fcli commands using the `::myVarName::prop` syntax anywhere on the command line; such occurrences will be substituted with the value of the given property name. Note that such variable references will only be resolved when appearing as a separate command line argument. For example, `--my-opt ::myVarName::prop` will pass the contents of the `prop` property of `myVarName` as the value for `--my-opt`, but `--my-opt=::myVarName::prop` will pass the literal text `::myVarName::prop` as the value for `--my-opt`.
 
 Many (but not all) fcli commands will also store an entity-specific default property name when using the `+--store+` option. Whether a default property name has been stored can be seen in the output of the `+fcli util variable list+` command. If a default property name was stored, the `::myVarName::` syntax can be used to reference the value of the default property name, thereby avoiding the need to manually specify the appropriate property name.
 
@@ -530,10 +526,10 @@ fcli ssc artifact upload myScan.fpr --appversion ::myVersion::
 fcli ssc appversion create myApp:1.0 --auto-required --skip-if-exists --store myVersion:id,name
 fcli ssc artifact upload myScan.fpr --appversion ::myVersion::id
 
-fcli sc-sast scan start -p package.zip -v 22.2 --appversion test:1.0 --store x
+fcli sc-sast scan start -f package.zip --publish-to test:1.0 --store x
 fcli sc-sast scan wait-for ::x::
 
-fcli sc-sast scan start -p package.zip -v 22.2 --appversion test:1.0 --store x
+fcli sc-sast scan start -f package.zip --publish-to test:1.0 --store x
 fcli sc-sast scan wait-for ::x::jobToken
 ----
 
@@ -549,7 +545,7 @@ fcli util variable contents myVersions -o json -q createdBy=admin --output-to-fi
 fcli util variable contents myVersions -o 'expr={id}\n' --output-to-file myVersionIds.txt
 ----
 
-Note: variable-related syntax and behavior was changed in fcli version 2.0.0. If you are using an older fcli version, please refer to the documentation for that version. When upgrading from 1.x.x to 2.x.x, you may need to update your fcli invocations to match the new syntax. See link:https://github.com/fortify/fcli/issues/160[Issue 160] for information on why syntax and behavior was changed.
+Note: variable-related syntax and behavior was changed in fcli version 2.0.0. If you are using an older fcli version, please refer to the documentation for that version. When upgrading from 1.x.x to 2.x.x or 3.x.x, you may need to update your fcli invocations to match the new syntax. See link:https://github.com/fortify/fcli/issues/160[Issue 160] for information on why syntax and behavior was changed.
 
 == Actions
 
@@ -559,6 +555,7 @@ Fcli actions are a powerful feature that allows for rich integration and automat
 
 Fci comes with various built-in actions, currently focused on providing the following functionality:
 
+* Running a full scan pipeline initiated from various CI/CD systems.
 * Vulnerability export to various third-party formats like SARIF or GitHub, GitLab, BitBucket, and SonarQube reports, as a replacement for link:https://github.com/fortify/FortifyVulnerabilityExporter[FortifyVulnerabilityExporter].
 * Generating GitHub Pull Request comments, listing (re-)introduced and removed vulnerabilities.
 * Generating application version/release summaries in Markdown format, for example for use as pipeline summaries.
@@ -572,12 +569,14 @@ Documentation for built-in actions can be found here:
 
 Future fcli versions may introduce new built-in actions, enhance existing built-in actions, or provide enhanced action syntax, for example to allow for running pipeline-style actions that run a set of commands to package source code, submit a scan request, wait for scan completion, and perform post-scan activities like data export or policy checks.
 
-Action support is centralized into the `action` entity of the various product modules. For now, fcli supports `fcli fod action *` and `fcli ssc action *` commands. Based on user feedback, we may consider adding action support on other modules like `sc-sast` or `sc-dast` as well. The following commands may be used to manage and run built-in actions:
+Fcli provides product-agnostic or cross-product actions through the `fcli action *` commands, and FoD & SSC-specific actions through respectively `fcli fod action *` and `fcli ssc action *` commands. Based on user feedback, we may consider adding action support on other modules like `sc-sast` or `sc-dast` as well. The following commands may be used to manage and run built-in actions:
 
 * `fcli * action list`: List available built-in actions (and imported custom actions, see next section).
 * `fcli * action help <action>`: Display action usage information like description and list of action-specific command-line options.
 * `fcli * action get <action>`: Display action YAML contents.
 * `fcli * action run <action>`: Run a given action.
+
+Note that `fcli * action run <action> -h` will just output the usage help for the `run` command, not for the specified action. You'll need to use the `fcli * action help <action>` command to see action usage help.
 
 === Custom Actions
 
@@ -645,7 +644,7 @@ Fcli is commonly used in CI/CD pipelines to perform all sorts of Fortify-related
 
 *Publishing*
 
-Fcli actions can be loaded from any URL, but for CI/CD integration you could consider hosting fcli actions in a shared source code repository like `https://some-scm.our.org/repositories/shared-ci-tools/fcli/actions`. This allows for easy sharing and maintainance of fcli actions that are used across many CI/CD pipelines. This even allows for automatically signing those action using CI/CD pipelines on this shared repository.
+Fcli actions can be loaded from any URL, but for CI/CD integration you could consider hosting custom fcli actions in a shared source code repository like `https://some-scm.our.org/repositories/shared-ci-tools/fcli/actions`. This allows for easy sharing and maintenance of fcli actions that are used across many CI/CD pipelines. This even allows for automatically signing those action using CI/CD pipelines on this shared repository.
 
 *Public & private key management*
 
@@ -668,7 +667,7 @@ Given that actions can define and process arbitrary parameters, it may be tempti
 
 However, from a CI/CD perspective, this means that every pipeline must properly set these action parameters. Pipeline authors may copy existing pipelines or use pipeline templates to have these action parameters set to predefined values, but what if those parameters need to updated globally? Potentially, this means that you'd need to update thousands of pipelines to adjust action parameters. 
 
-This is exactly the reason why we don't provide a highly configurable `check-policy` action, but instead just provide an example that can be customized according to organization requirements. Instead of passing fine-grained pass/fail criteria as action parameters, those criteria are hard-coded into the action. If there is a need to apply different criteria for different types of applications, for example based on business risk, multiple approaches are possible:
+This is exactly the reason why we don't provide highly configurable `check-policy` actions, but instead just provide a default implementation that can be customized according to organization requirements. Instead of passing fine-grained pass/fail criteria as action parameters, those criteria are hard-coded into the action. If there is a need to apply different criteria for different types of applications, for example based on business risk, multiple approaches are possible:
 
 * Use SSC/FoD application version/release attributes like `Business Risk` or other characteristics to identify what criteria to apply. This is the preferred approach, to allow the criteria to be applied to automatically match the centrally maintained attributes/characteristics.
 * Have the action take one or more parameters that identify what criteria to apply. This could be a policy name, or a functional identifier like `--business-risk`.
