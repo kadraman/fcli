@@ -315,6 +315,15 @@ public class ActionSpelFunctions {
                 extraOpts(envPrefix));
     }
     
+    public static final String actionCmdSkipNoActionReason(String envPrefix, String moduleName, String actionName) {
+        var actionEnvValue = EnvHelper.env(String.format("%s_ACTION", envPrefix.replaceAll("_ACTION$", "")));
+        if ( StringUtils.isBlank(actionEnvValue) ) {
+            if ( StringUtils.isBlank(actionName) ) { return "No built-in action available"; }
+            if ( !_hasBuiltInAction(moduleName, actionName) ) { return String.format("Built-in %s action %s doesn't exist", moduleName, actionName); }
+        }
+        return null;
+    }
+    
     public static final String actionCmdSkipFromEnvReason(String envPrefix, boolean skipByDefault) {
         var doEnvName = String.format("DO_%s", envPrefix);
         var doEnvValue = EnvHelper.env(doEnvName);
@@ -358,6 +367,10 @@ public class ActionSpelFunctions {
     public static final boolean hasAction(String envPrefix, String moduleName, String actionName) {
         var envValue = _envOrDefault(envPrefix.replaceAll("_ACTION$", ""), "ACTION", null);
         return StringUtils.isNotBlank(envValue) ? true : _hasBuiltInAction(moduleName, actionName);
+    }
+    
+    public static final String actionOrNull(String moduleName, String actionName) {
+        return _hasBuiltInAction(moduleName, actionName) ? actionName : null;
     }
     
     private static boolean _hasBuiltInAction(String moduleName, String actionName) {

@@ -67,14 +67,14 @@ steps:
       global.ci.defaultFortifyRepo:  ${global.ci.av?:#joinOrNull(':', global.ci.qualifiedRepoName, global.ci.sourceBranch)}
       # Set default reporting actions based on ci identifier. Note that FoD/SSC CI actions should check existence of these actions 
       # TODO Only use default values if not explicitly defined in CI-specific sections above.
-      global.fod.prCommentAction:   ${global.ci.id}-pr-comment
-      global.ssc.prCommentAction:   ${global.ci.id}-pr-comment
-      global.fod.sastExportAction:  ${global.ci.id}-sast-report
-      global.ssc.sastExportAction:  ${global.ci.id}-sast-report
-      global.fod.dastExportAction:  ${global.ci.id}-dast-report
-      global.ssc.dastExportAction:  ${global.ci.id}-dast-report
-      global.fod.scaExportAction:   ${global.ci.id}-debricked-report  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
-      global.ssc.scaExportAction:   ${global.ci.id}-debricked-report  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
+      global.ci.fod_prCommentAction:   ${#actionOrNull('fod',#joinOrNull('-', global.ci.id, 'pr-comment'))}
+      global.ci.ssc_prCommentAction:   ${#actionOrNull('ssc',#joinOrNull('-', global.ci.id, 'pr-comment'))}
+      global.ci.fod_sastExportAction:  ${#actionOrNull('fod',#joinOrNull('-', global.ci.id, 'sast-report'))}
+      global.ci.ssc_sastExportAction:  ${#actionOrNull('ssc',#joinOrNull('-', global.ci.id, 'sast-report'))}
+      global.ci.fod_dastExportAction:  ${#actionOrNull('fod',#joinOrNull('-', global.ci.id, 'dast-report'))}
+      global.ci.ssc_dastExportAction:  ${#actionOrNull('ssc',#joinOrNull('-', global.ci.id, 'dast-report'))}
+      global.ci.fod_scaExportAction:   ${#actionOrNull('fod',#joinOrNull('-', global.ci.id, 'debricked-report'))}  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
+      global.ci.ssc_scaExportAction:   ${#actionOrNull('ssc',#joinOrNull('-', global.ci.id, 'debricked-report'))}  # TODO 'debricked' or more generic 'sca' or 'composition (analysis)'
   - log.info: "${global.ci.name!=null ? 'Detected '+global.ci.name : 'No CI system detected'}"
   - records.for-each:
       from: ${#properties(global.ci)}
