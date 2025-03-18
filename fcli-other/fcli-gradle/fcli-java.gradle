@@ -66,7 +66,6 @@ dependencies {
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
 	
 	// Output formatting
-	implementation('hu.webarticum:tree-printer')
 	implementation('com.github.freva:ascii-table')
 	
 	// Encryption library
