@@ -1,5 +1,83 @@
 # Changelog
 
+## [3.0.0](https://github.com/fortify/fcli/compare/v2.12.2...v3.0.0) (2025-03-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* `fcli`:`--output` option: Removed some output formats, partially replaced by new `--style` option
+* `fcli fod`: Renamed `--session` option to `--fod-session`
+* `fcli * action`: Significant changes to fcli action yaml syntax; custom actions developed for fcli 2.x will not run on fcli 3.x, and vice versa
+* `fcli sc-dast session`: All SC-DAST session commands have been removed; please use `fcli ssc session` commands instead
+* `fcli sc-dast`: Renamed `--session` option to `--ssc-session`
+* `fcli sc-sast session`: All SC-SAST session commands have been removed; please use `fcli ssc session` commands instead
+* `fcli sc-sast`: Renamed `--session` option to `--ssc-session`
+* `fcli sc-sast scan start`: Local files referenced in `--sargs` must now be preceded with `@`, not `file:`. This is a shorter, more common convention for referencing files.
+* `fcli sc-sast scan start`: Renamed `--ssc-ci-token` option to `--publish-token` to better describe the purpose
+* `fcli sc-sast scan start`: Remove `-p / --package-file` option; replaced by `-f / --file`
+* `fcli sc-sast scan start`: Remove `-m / --mbs-file` option; replaced by `-f / --file`
+* `fcli ssc session`: Now manages combined SSC/SC-SAST/SC-DAST sessions, allowing a single session to be used for invoking all SSC/SC-SAST/SC-DAST commands
+* `fcli ssc`: Renamed `--session` option to `--ssc-session`
+* `fcli ssc session login`: Removed `--ci-token` option; please use `--token` option instead
+* `fcli ssc appversion create`: Removed deprecated `AnalysisProcessingRules` as allowed value for `--copy` option; use `processing-rules` instead
+* `fcli ssc appversion create`: Removed deprecated `BugTrackerConfiguration` as allowed value for `--copy` option; use `bugtracker` instead
+* `fcli ssc issue`: Removed hidden/preview `check` command, as this is now implemented through the `check-policy` action
+
+### Features
+
+* `fcli * action`: New `package` action for packaging source code using ScanCentral Client ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli * action`: Significant changes to fcli action yaml syntax; custom actions developed for fcli 2.x will not run on fcli 3.x, and vice versa ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli action`: New top-level action command for cross-product or product-agnostic actions ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli aviator`: New module to manage Fortify Aviator and run Aviator audits (hidden until Aviator has been released) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli config`: Add ability to configure fcli trust store through environment variables ([#690](https://github.com/fortify/fcli/issues/690)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod app create`: New `--skip-if-exists` option ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod issue`: New `update` command (resolves fortify[#669](https://github.com/fortify/fcli/issues/669)) ([#698](https://github.com/fortify/fcli/issues/698)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod`: Renamed `--session` option to `--fod-session` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-dast session`: All SC-DAST session commands have been removed; please use `fcli ssc session` commands instead ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-dast`: Renamed `--session` option to `--ssc-session` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan download`: New command for downloading FPR, logs, job files ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan list`: New command for listing scan jobs ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Add `--debug` option to request debug (diagnosis) logs to be collected for the scan job ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Add `--no-replace` option to keep existing scan jobs ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Add `--publish-as` option to specify the name of the FPR file that is uploaded to SSC ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Add `--scan-timeout` option to specify scan job time-out ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Add `-f / --file` option to specify scan payload; automatically detects MBS or package file ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Local files referenced in `--sargs` must now be preceded with `@`, not `file:`. This is a shorter, more common convention for referencing files. ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Remove `-m / --mbs-file` option; replaced by `-f / --file` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Remove `-p / --package-file` option; replaced by `-f / --file` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Renamed `--ssc-ci-token` option to `--publish-token` to better describe the purpose ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast session`: All SC-SAST session commands have been removed; please use `fcli ssc session` commands instead ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast`: Renamed `--session` option to `--ssc-session` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc action`: Add support for `sc-sast` and `sc-dast` request targets in action implementations ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc appversion create`: Removed deprecated `AnalysisProcessingRules` as allowed value for `--copy` option; use `processing-rules` instead ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc appversion create`: Removed deprecated `BugTrackerConfiguration` as allowed value for `--copy` option; use `bugtracker` instead ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc issue`: Removed hidden/preview `check` command, as this is now implemented through the `check-policy` action ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc session login`: Default session lifetime when authenticating with user credentials is now 3 days for recent SSC versions, instead of only 1 day ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc session login`: New `--client-auth-token` option due to SC-SAST sessions now being managed through SSC sessions ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc session login`: New `--sc-sast-url` option due to SC-SAST sessions now being managed through SSC sessions ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc session login`: Removed `--ci-token` option; please use `--token` option instead ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc session`: Now manages combined SSC/SC-SAST/SC-DAST sessions, allowing a single session to be used for invoking all SSC/SC-SAST/SC-DAST commands ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc`: Renamed `--session` option to `--ssc-session` ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli tool`: Allow cached tool installations to be re-used if fcli state information is lost (for example across different CI pipeline runs) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli tool`: New `run` commands for directly running installed tools through fcli ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli`: New `--style` option to allow for overriding default output styles ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli`:`--output` option: Removed some output formats, partially replaced by new `--style` option ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+
+
+### Bug Fixes
+
+* `fcli fod action`: `gitlab-sast-report`: Output empty string instead of `null` for description field ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod action`: `setup-release`: Add tech stack and language level options (fixes [#691](https://github.com/fortify/fcli/issues/691)) ([#692](https://github.com/fortify/fcli/issues/692)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod app create`: Allow for optional or numeric owner (fixes [#686](https://github.com/fortify/fcli/issues/686)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod dast-scan start-legacy`: New `--validate-entitlement` option to validate entitlement is defined and/or valid (fixes [#682](https://github.com/fortify/fcli/issues/682)) ([#684](https://github.com/fortify/fcli/issues/684)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod dast-scan start`: New `--validate-entitlement` option to validate entitlement is defined and/or valid (fixes [#682](https://github.com/fortify/fcli/issues/682)) ([#684](https://github.com/fortify/fcli/issues/684)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod mast-scan start`: New `--validate-entitlement` option to validate entitlement is defined and/or valid (fixes [#682](https://github.com/fortify/fcli/issues/682)) ([#684](https://github.com/fortify/fcli/issues/684)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod oss-scan start`: New `--validate-entitlement` option to validate entitlement is defined and/or valid (fixes [#682](https://github.com/fortify/fcli/issues/682)) ([#684](https://github.com/fortify/fcli/issues/684)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli fod sast-scan start`: New `--validate-entitlement` option to validate entitlement is defined and/or valid (fixes [#682](https://github.com/fortify/fcli/issues/682)) ([#684](https://github.com/fortify/fcli/issues/684)) ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan start`: Request Linux sensor if package contains file names that are incompatible with Windows sensors ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli sc-sast scan status`: Use v4 endpoint to retrieve SSC-related properties ([2a9e69e](https://github.com/fortify/fcli/commit/2a9e69ef9c5b6e85914caee1b9c2093f575dc0bb))
+* `fcli ssc report`: Add missing report types (fixes [#697](https://github.com/fortify/fcli/issues/697)) ([bd5187b](https://github.com/fortify/fcli/commit/bd5187bf48b4b237d134eb8ae4460190efc6f719))
+
 ## [2.12.3](https://github.com/fortify/fcli/compare/v2.12.2...v2.12.3) (2025-03-12)
 
 
