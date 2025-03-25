@@ -77,7 +77,7 @@ public class OutputRecordWriterFactory {
     }
     
     private String addHeaders(String options) {
-        if ( options==null ) { return null; }
+        if ( StringUtils.isBlank(options) ) { return null; }
         var result = new ArrayList<String>();
         for ( var o : options.split("[\\s,]+") ) {
             result.add(addHeader(o));
