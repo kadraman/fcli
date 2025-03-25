@@ -50,17 +50,17 @@ steps:
                       
 formatters:
   csvRow:
-    Asset ID: ${id}
+    Asset ID: ${#abbreviate(id,255)}
     Mac Address: ""
-    FQDN: ${#ssc.issueBrowserUrl(issue,fs)}
+    FQDN: ${#abbreviate(#ssc.issueBrowserUrl(issue,fs),255)}
     NETBIOS: ""
     IP Address: ""
     Hostname: ""
-    Vulnerability ID: ${issue.issueInstanceId}
-    Vulnerability Summary: ${issue.details?.brief?:''}
+    Vulnerability ID: ${#abbreviate(issue.issueInstanceId,255)}
+    Vulnerability Summary: ${#abbreviate(#htmlToText(issue.details?.brief?:''),512)}
     Severity: ${issue.enginePriority}
     Port: ""
     Protocol: ""
-    Proof: ${issue.fullFileName}
+    Proof: ${#abbreviate(issue.fullFileName,4000)}
     State: ""
         
