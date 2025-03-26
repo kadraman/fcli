@@ -273,7 +273,7 @@ jobs:
     env:
       DOCKER_SRC_LINUX: fcli-other/fcli-docker/linux
       DOCKER_SRC_GITLAB: fcli-other/fcli-docker/gitlab-installer-svc
-      DOCKER_TAG_GITLAB: gitlab-installer-svc
+      DOCKER_TAG_GITLAB: gitlab-installer-svc-linux
     steps:
         - name: Check-out source code
           uses: actions/checkout@v4
