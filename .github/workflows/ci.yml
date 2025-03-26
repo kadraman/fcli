@@ -327,7 +327,7 @@ jobs:
           shell: bash
           run: |
             docker tag fcli-scratch fortifydocker/fcli:${{needs.build.outputs.release_tag}}
-            docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:${{needs.build.outputs.release_tag}}
+            docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:${{needs.build.outputs.release_tag}}-${DOCKER_TAG_GITLAB}
         
         # For now, we only release scratch and GitLab Installer Service images
         - name: PROD - Tag Linux images
