@@ -57,10 +57,10 @@ formatters:
     IP Address: ""
     Hostname: ""
     Vulnerability ID: ${#abbreviate(issue.issueInstanceId,255)}
-    Vulnerability Summary: ${#abbreviate(#htmlToText(issue.details?.brief?:''),512)}
+    Vulnerability Summary: ${#abbreviate(issue.issueName,512)}
     Severity: ${issue.enginePriority}
     Port: ""
     Protocol: ""
-    Proof: ${#abbreviate(issue.fullFileName,4000)}
+    Proof: "${#abbreviate('Location: '+issue.fullFileName?.replaceAll('[^\\w/_.]','*')+'\n'+#htmlToText(issue.details?.brief?.trim()?:''),4000)}"
     State: ""
         
