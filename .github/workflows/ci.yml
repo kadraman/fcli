@@ -272,7 +272,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_SRC_LINUX: fcli-other/fcli-docker/linux
-      DOCKER_SRC_GITLAB: fcli-other/fcli-docker/gitlab-installer-svc
+      DOCKER_SRC_GITLAB: fcli-other/fcli-docker/gitlab-installer-svc/linux
       DOCKER_TAG_GITLAB: gitlab-installer-svc-linux
     steps:
         - name: Check-out source code
