@@ -14,7 +14,6 @@ package com.fortify.cli.common.action.runner;
 
 import java.io.OutputStreamWriter;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.action.model.ActionConfig.ActionConfigOutput;
@@ -43,24 +42,24 @@ public class ActionRunner {
     private final ActionRunnerConfig config;
     
     public final Integer run(String[] args) {
-        return _run(args).get();
+        return _run(args);
     }
     
-    public final Supplier<Integer> _run(String[] args) {
+    public final Integer _run(String[] args) {
         try ( var progressWriter = createProgressWriter() ) {
             var parameterValues = getParameterValues(args);
             try ( var ctx = createContext(progressWriter, parameterValues) ) {
                 initializeCheckStatuses(ctx);
                 ActionRunnerVars vars = new ActionRunnerVars(ctx.getSpelEvaluator(), ctx.getParameterValues());
-                new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();
-             
-                return ()->{
+                try {
+                    new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();
+                } finally {
                     ctx.getDelayedConsoleWriterRunnables().forEach(Runnable::run);
                     if ( !ctx.getCheckStatuses().isEmpty() ) {
                         printCheckStatuses(ctx);
                     }
-                    return ctx.getExitCode();
-                };
+                }
+                return ctx.getExitCode();
             }
         }
     }
