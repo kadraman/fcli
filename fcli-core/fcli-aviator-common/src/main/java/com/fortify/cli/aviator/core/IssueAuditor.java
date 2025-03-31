@@ -1,5 +1,7 @@
 package com.fortify.cli.aviator.core;
 
+import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
+import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator.config.IAviatorLogger;
 import com.fortify.cli.aviator.core.model.AuditResponse;
 import com.fortify.cli.aviator.core.model.UserPrompt;
@@ -13,6 +15,7 @@ import com.fortify.cli.aviator.fpr.filter.FilterSet;
 import com.fortify.cli.aviator.fpr.filter.TagDefinition;
 import com.fortify.cli.aviator.fpr.filter.TagValue;
 import com.fortify.cli.aviator.grpc.AviatorGrpcClient;
+import com.fortify.cli.aviator.grpc.AviatorGrpcClientHelper;
 import com.fortify.cli.aviator.util.Constants;
 import com.fortify.cli.aviator.util.StringUtil;
 import org.slf4j.Logger;
@@ -117,7 +120,9 @@ public class IssueAuditor {
         return new TagDefinition(name, id, values, false);
     }
 
-    public void performAudit(Map<String, AuditResponse> auditResponses, String token, String projectName,String projectBuildId, String url) {
+    public void performAudit(Map<String, AuditResponse> auditResponses, String token, String projectName, String projectBuildId, String url)
+            throws AviatorSimpleException, AviatorTechnicalException {
+
         projectName = StringUtil.isEmpty(projectName) ? projectBuildId : projectName;
         logger.progress("Starting audit for project: %s", projectName);
 
@@ -130,33 +135,48 @@ public class IssueAuditor {
             vulnerabilities = filterVulnerabilities(vulnerabilities, fprInfo.getDefaultEnabledFilterSet());
         }
 
+        userPrompts.clear();
         vulnerabilities.stream().map(IssueObjBuilder::buildIssueObj).forEach(userPrompts::add);
         LOG.info("Built {} user prompts from vulnerabilities", userPrompts.size());
+
         ConcurrentLinkedDeque<UserPrompt> filteredUserPrompts = getIssuesToAudit();
         logger.progress("Filtered issues count: %d", filteredUserPrompts.size());
-        try (AviatorGrpcClient client = createClientFromUrl(url)) {
-            CompletableFuture<Map<String, AuditResponse>> future = client.processBatchRequests(filteredUserPrompts, projectName, token);
-            try {
+
+        if (filteredUserPrompts.isEmpty()) {
+            logger.progress("Audit skipped - no issues to process");
+            logger.writeInfo("Audit skipped - no issues to process");
+        } else {
+            try (AviatorGrpcClient client = AviatorGrpcClientHelper.createClient(url, logger)) {
+                CompletableFuture<Map<String, AuditResponse>> future = client.processBatchRequests(filteredUserPrompts, projectName, token);
                 Map<String, AuditResponse> responses = future.get(500, TimeUnit.MINUTES);
                 responses.forEach((requestId, response) -> {
                     auditResponses.put(response.getIssueId(), response);
                 });
+                logger.progress("Audit completed");
+                logger.writeInfo("Audit completed");
             } catch (ExecutionException e) {
-                LOG.error("Error executing requests: {} ", e.getCause());
+                Throwable cause = e.getCause();
+                if (cause instanceof AviatorSimpleException) {
+                    logger.progress("Audit failed (user error)");
+                    logger.writeInfo("Audit failed: " + cause.getMessage());
+                    throw (AviatorSimpleException) cause;
+                }
+                logger.progress("Audit failed due to unexpected error during execution");
+                logger.writeInfo("Audit failed due to unexpected error");
+                throw new AviatorTechnicalException("Unexpected error during audit execution", cause);
             } catch (TimeoutException e) {
-                LOG.error("Error executing requests:timeout {}", String.valueOf(e.getCause()));
+                logger.progress("Audit failed due to timeout");
+                logger.writeInfo("Audit failed due to timeout");
+                throw new AviatorTechnicalException("Audit timed out after 500 minutes", e);
             } catch (InterruptedException e) {
+                logger.progress("Audit failed due to interruption");
+                logger.writeInfo("Audit failed due to interruption");
                 Thread.currentThread().interrupt();
-                LOG.error("Error executing requests:interrupted {}", e.getCause());
+                throw new AviatorTechnicalException("Audit interrupted", e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
 
-        System.out.println(":::::::::::::: result id "+resultsTag.getId());
-        logger.progress(":::::::::::::: result id "+resultsTag.getId());
         fprInfo.setResultsTag(resultsTag.getId());
-        logger.progress("Audit completed");
     }
 
     private ConcurrentLinkedDeque<UserPrompt> getIssuesToAudit() {
@@ -567,34 +587,6 @@ public class IssueAuditor {
             Integer secondLine = Optional.ofNullable(second.getLastStackTraceElement()).map(StackTraceElement::getLine).orElse(0);
 
             return Integer.compare(firstLine, secondLine);
-        }
-    }
-
-    public AviatorGrpcClient createClientFromUrl(String url) {
-        try {
-            String host;
-            int port;
-
-            if (!url.contains("://")) {
-                String[] parts = url.split(":");
-                host = parts[0];
-                port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9090;
-            } else {
-                URI uri = new URI(url);
-                host = uri.getHost();
-                port = uri.getPort();
-                if (port == -1) {
-                    port = 9090;
-                }
-            }
-
-            if (host == null || host.trim().isEmpty()) {
-                throw new IllegalArgumentException("Invalid host in URL: " + url);
-            }
-
-            return new AviatorGrpcClient(host, port, 10, logger);
-        } catch (URISyntaxException | NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid URL format: " + url, e);
         }
     }
 }
