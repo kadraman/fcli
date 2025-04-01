@@ -53,7 +53,7 @@ steps:
                       
 formatters:
   sn:
-    id: ${issue.analysisType+'-'+issue.issueInstanceId}
+    id: SSC-${av.id+'-'+issue.analysisType+'-'+issue.issueInstanceId}
     fqdn: ${#ssc.issueBrowserUrl(issue,fs)}
     summary: ${issue.issueName}
     severity: ${issue.enginePriority}
