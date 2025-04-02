@@ -25,11 +25,17 @@ cli.options:
     names: --filterset, --fs
     description: "Filter set name or guid from which to load issue data. Default value: Default filter set for given application version"
     required: false
+  friority:
+    names: --priority
+    description: "Comma-separated priority levels to include in the output; defaults to Critical,High"
+    default: Critical,High
+    type: array
   
 steps:
   - var.set:
       av: ${#ssc.appVersion(cli.appversion)}
       fs: ${#ssc.filterSet(av, cli.filterset)}
+      issueListQuery: friority matches '${#join('|',cli.friority)}'
   - with:
       writers:
         snWriter:
@@ -38,7 +44,7 @@ steps:
       do:
         - run.fcli:
             issues:
-              cmd: ssc issue ls --av=${av.id} --embed=details --include=visible,suppressed,removed
+              cmd: ssc issue ls --av=${av.id} --embed=details --include=visible,suppressed,removed -q "${issueListQuery}"
               records.for-each:
                 record.var-name: issue
                 do:
@@ -53,10 +59,10 @@ steps:
                       
 formatters:
   sn:
-    id: SSC-${av.id+'-'+issue.analysisType+'-'+issue.issueInstanceId}
+    id: ${issue.analysisType+'/'+av.id+'/'+issue.issueInstanceId}
     fqdn: ${#ssc.issueBrowserUrl(issue,fs)}
     summary: ${issue.issueName}
-    severity: ${issue.enginePriority}
+    severity: ${issue.friority}
     proof: "${'Location: '+issue.fullFileName?.replaceAll('[^\\w/_.]','*')+'\n'+#htmlToText(issue.details?.brief?.trim()?:'')}"
     state: "${issue.removed||issue.suppressed||issue.primaryTag=='Not an Issue'?'fixed':'open'}"
   csvRow:
