@@ -58,7 +58,7 @@ formatters:
     fqdn: ${#fod.issueBrowserUrl(issue)}
     summary: ${issue.category}
     severity: ${{'Critical','High','Medium','Low'}.contains(issue.severityString)?issue.severityString:'Low'} # In case Info/Best Practice/... are included, these need to be mapped to Low
-    proof: "${'Location: '+issue.primaryLocation?.replaceAll('[^\\w/_.]','*')+'\n'+#htmlToText(issue.details?.summary?.trim()?:'')}"
+    proof: "${'Location: '+issue.primaryLocation?.replaceAll('[^\\w\\s/\\-_.]','*')+'\n'+#htmlToText(issue.details?.summary?.trim()?:'')}"
     state: "${issue.closedStatus||issue.isSuppressed?'fixed':'open'}"
   csvRow:
     asset_id: ${#abbreviate(sn.id,255)}

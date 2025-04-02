@@ -63,7 +63,7 @@ formatters:
     fqdn: ${#ssc.issueBrowserUrl(issue,fs)}
     summary: ${issue.issueName}
     severity: ${issue.friority}
-    proof: "${'Location: '+issue.fullFileName?.replaceAll('[^\\w/_.]','*')+'\n'+#htmlToText(issue.details?.brief?.trim()?:'')}"
+    proof: "${'Location: '+issue.fullFileName?.replaceAll('[^\\w\\s/\\-_.]','*')+'\n'+#htmlToText(issue.details?.brief?.trim()?:'')}"
     state: "${issue.removed||issue.suppressed||issue.primaryTag=='Not an Issue'?'fixed':'open'}"
   csvRow:
     asset_id: ${#abbreviate(sn.id,255)}
