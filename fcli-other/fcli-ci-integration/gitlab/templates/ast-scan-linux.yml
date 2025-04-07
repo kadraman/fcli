@@ -1,0 +1,18 @@
+spec:
+  inputs:
+    stage:
+      default: test
+      description: Build stage
+    image:
+      description: Image providing the build tools necessary for building this project
+---
+
+fortify-ast-scan:
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.image ]]
+  services:
+    - name: fortifydocker/fcli:__VERSION__-gitlab-installer-svc-linux
+  script:
+    - ${CI_BUILDS_DIR}/fortify/fcli action run ci
+
+      
