@@ -60,9 +60,9 @@ jobs:
         - name: Tag images
           shell: bash
           run: |
-            git tag --points-at ${{ inputs.releaseTag }}
-            for v in $(git tag --points-at ${{ inputs.releaseTag }})
+           for v in $(git tag --points-at ${{ inputs.releaseTag }})
             do
+              echo Tagging ${v}
               docker tag fcli-scratch fortifydocker/fcli:${v#v}
               docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:${v#v}-${DOCKER_TAG_GITLAB}
             done
@@ -114,9 +114,9 @@ jobs:
         - name: Tag images
           shell: bash
           run: |
-            git tag --points-at ${{ inputs.releaseTag }}
             for v in $(git tag --points-at ${{ inputs.releaseTag }})
             do
+              echo Tagging ${v}
               docker tag fcli-ltsc2022 fortifydocker/fcli:${v#v}-ltsc2022
             done
         #- name: Docker Login
