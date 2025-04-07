@@ -39,7 +39,7 @@ jobs:
           shell: bash
           run: |
             curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-linux.tgz | tar -zxv -C ${DOCKER_SRC_LINUX}
-            cd ${DOCKER_SRC}
+            cd ${DOCKER_SRC_LINUX}
             for i in scratch alpine ubi9
             do
               docker buildx build --target fcli-${i} -t fcli-${i} --attest type=provenance,mode=max --sbom=true .
