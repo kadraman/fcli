@@ -38,8 +38,8 @@ jobs:
         - name: Build & test Linux images
           shell: bash
           run: |
-            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-linux.tgz | tar -zxv -C ${DOCKER_SRC_LINUX}
             cd ${DOCKER_SRC_LINUX}
+            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-linux.tgz | tar -zxv
             for i in scratch alpine ubi9
             do
               docker buildx build --target fcli-${i} -t fcli-${i} --attest type=provenance,mode=max --sbom=true .
@@ -51,6 +51,7 @@ jobs:
           shell: bash
           run: |
             cd ${DOCKER_SRC_GITLAB}
+            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-linux.tgz | tar -zxv
             docker buildx build -t fcli-${DOCKER_TAG_GITLAB} --attest type=provenance,mode=max --sbom=true .
         
         # For now, we only release scratch and GitLab Installer Service images
@@ -90,9 +91,11 @@ jobs:
         - name: Build & test Windows images
           shell: bash
           run: |
-            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-windows.zip -o fcli-windows.zip 
-            unzip fcli-windows.zip -d ${DOCKER_SRC}
             cd ${DOCKER_SRC}
+            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-windows.zip -o fcli-windows.zip 
+            unzip fcli-windows.zip
+            rm fcli-windows.zip
+            
             for i in ltsc2022
             do
               docker build . --target fcli-${i} -t fcli-${i}
