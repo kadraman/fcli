@@ -340,7 +340,7 @@ jobs:
               ${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}.${{needs.build.outputs.version_patch}}
             do
               docker tag fcli-scratch fortifydocker/fcli:${v}
-              docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:{$v}-${DOCKER_TAG_GITLAB}
+              docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:${v}-${DOCKER_TAG_GITLAB}
             done
         
         # TODO Should we sign the images as well?
