@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.1.0](https://github.com/fortify/fcli/compare/v3.0.0...v3.1.0) (2025-04-07)
+
+
+### Features
+
+* Add FoD `servicenow-csv-report` action ([7978f8d](https://github.com/fortify/fcli/commit/7978f8d58950ef3116f46386ac0214088320fd5c))
+* Add gitlab-installer-svc Docker image ([7978f8d](https://github.com/fortify/fcli/commit/7978f8d58950ef3116f46386ac0214088320fd5c))
+* Add SSC `servicenow-csv-report` action ([7978f8d](https://github.com/fortify/fcli/commit/7978f8d58950ef3116f46386ac0214088320fd5c))
+
+
+### Bug Fixes
+
+* `ci-vars` action: Properly remove trailing `.git` from GitLab repo URL ([b9938b8](https://github.com/fortify/fcli/commit/b9938b80a14b8558164fc369f87ccbb6af88f11e))
+* `fcli fod issue ls`: Add partial server-side filtering support ([daf4aec](https://github.com/fortify/fcli/commit/daf4aecb7426fc5abc52e7c2dffc6a66969718ae))
+* Exception on YAML output if no data ([e25994d](https://github.com/fortify/fcli/commit/e25994dabc922a8a0dd6824fa3b94cf39de80b5c))
+* Fix `stderr` being suppressed in `run.fcli` action step ([7e88f07](https://github.com/fortify/fcli/commit/7e88f0731f1ecdef583d542cc9dcb79ab26be750))
+* Fix table output exception (fixes [#708](https://github.com/fortify/fcli/issues/708)) ([24e70e3](https://github.com/fortify/fcli/commit/24e70e3090ddc037d883b6a319aacf8beb9a7f7d))
+* Improve output on REST response exceptions ([e051bcc](https://github.com/fortify/fcli/commit/e051bcc30c1f2bd8e5746b726ee0251076726133))
+
 ## [3.0.0](https://github.com/fortify/fcli/compare/v2.12.2...v3.0.0) (2025-03-18)
 
 
