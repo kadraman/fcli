@@ -36,7 +36,7 @@ public class ActionStepProcessorWriterAppend extends AbstractActionStepProcessor
     protected final void process(String writerId, TemplateExpressionWithFormatter templateExpressionWithFormatter) {
         var writer = ctx.getWriters().get(writerId);
         if ( writer==null ) {
-            throw new FcliActionValidationException("No writer available with id"+writerId);
+            throw new FcliActionValidationException("No writer available with id "+writerId);
         }
         var value = ActionRunnerHelper.formatValueAsJsonNode(ctx, vars, templateExpressionWithFormatter);
         if ( !(value instanceof ObjectNode) ) {

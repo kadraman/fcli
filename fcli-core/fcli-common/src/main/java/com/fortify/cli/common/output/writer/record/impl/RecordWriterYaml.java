@@ -41,6 +41,11 @@ public class RecordWriterYaml extends AbstractRecordWriterJackson<YAMLGenerator>
     }
     
     @Override
+    protected void closeWithNoData(Writer writer) throws IOException {
+        writer.write("---");
+    }
+    
+    @Override
     protected void writeStart(YAMLGenerator out) throws IOException {
         if ( config.getStyle().isArray() ) { out.writeStartArray(); }
     }

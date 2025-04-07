@@ -1,19 +1,14 @@
 package com.fortify.cli.aviator.ssc.cli.cmd;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
-import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionDescriptorSupplier;
 import com.fortify.cli.aviator.config.AviatorLoggerImpl;
 import com.fortify.cli.aviator.core.AuditFPR;
-import com.fortify.cli.common.exception.FcliSimpleException;
-import com.fortify.cli.common.exception.FcliTechnicalException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.common.output.transform.IRecordTransformer;
@@ -41,7 +36,7 @@ public class AviatorSSCAuditCommand extends AbstractSSCJsonNodeOutputCommand imp
     @Mixin private ProgressWriterFactoryMixin progressWriterFactoryMixin;
     @Mixin private SSCAppVersionResolverMixin.RequiredOption appVersionResolver;
     @Mixin private AviatorUserSessionDescriptorSupplier sessionDescriptorSupplier;
-    @Option(names = {"-p", "--project"}, required = false) private String projectName;
+    @Option(names = {"--app"}, required = false) private String appName;
 
     private static final Logger LOG = LoggerFactory.getLogger(AviatorSSCAuditCommand.class);
 
@@ -49,38 +44,41 @@ public class AviatorSSCAuditCommand extends AbstractSSCJsonNodeOutputCommand imp
     @SneakyThrows
     public JsonNode getJsonNode(UnirestInstance unirest) {
         var sessionDescriptor = sessionDescriptorSupplier.getSessionDescriptor();
+
         try (IProgressWriter progressWriter = progressWriterFactoryMixin.create()) {
             AviatorLoggerImpl logger = new AviatorLoggerImpl(progressWriter);
 
             SSCAppVersionDescriptor av = appVersionResolver.getAppVersionDescriptor(unirest);
             File fprFile = File.createTempFile("aviator_" + av.getApplicationName() + "_" + av.getVersionName(), ".fpr");
-            fprFile.deleteOnExit();
-            progressWriter.writeProgress("Status: Downloading FPR from SSC");
-            SSCFileTransferHelper.download(
-                    unirest,
-                    SSCUrls.DOWNLOAD_CURRENT_FPR(av.getVersionId(), true),
-                    fprFile,
-                    SSCFileTransferHelper.ISSCAddDownloadTokenFunction.ROUTEPARAM_DOWNLOADTOKEN);
 
-            progressWriter.writeProgress("Status: Processing FPR with Aviator");
-            File processedFile = AuditFPR.auditFPR(fprFile, sessionDescriptor.getAviatorToken(), sessionDescriptor.getAviatorUrl(), projectName, logger);
-            processedFile.deleteOnExit();
+            try {
+                progressWriter.writeProgress("Status: Downloading FPR from SSC");
+                SSCFileTransferHelper.download(
+                        unirest,
+                        SSCUrls.DOWNLOAD_CURRENT_FPR(av.getVersionId(), true),
+                        fprFile,
+                        SSCFileTransferHelper.ISSCAddDownloadTokenFunction.ROUTEPARAM_DOWNLOADTOKEN);
 
-            progressWriter.writeProgress("Status: Uploading FPR to SSC");
-            JsonNode uploadResponse = uploadFpr(unirest, processedFile, av);
-            JsonNode dataNode = uploadResponse.get("data");
-            String id = dataNode.has("id") ? dataNode.get("id").asText() : "";
+                progressWriter.writeProgress("Status: Processing FPR with Aviator");
+                File processedFileResult = AuditFPR.auditFPR(fprFile, sessionDescriptor.getAviatorToken(), sessionDescriptor.getAviatorUrl(), appName, logger);
 
-            return av.asObjectNode().put("artifactId", id);
-        } catch (AviatorSimpleException e) {
-            LOG.error("Aviator audit failed: {}", e.getMessage());
-            throw new FcliSimpleException(e.getMessage());
-        } catch (AviatorTechnicalException e) {
-            LOG.error("Technical error during Aviator audit: {}", e.getMessage(), e);
-            throw new FcliTechnicalException("Aviator audit failed due to a technical issue: " + e.getMessage(), e);
-        } catch (IOException e) {
-            LOG.error("I/O error during audit process: {}", e.getMessage(), e);
-            throw new FcliTechnicalException("Failed to process FPR file due to an I/O error.", e);
+                if (processedFileResult != null) {
+                    progressWriter.writeProgress("Status: Uploading FPR to SSC");
+                    JsonNode uploadResponse = uploadFpr(unirest, processedFileResult, av);
+                    JsonNode dataNode = uploadResponse.path("data");
+                    String id = dataNode.path("id").asText("");
+                    return av.asObjectNode().put("artifactId", id);
+                } else {
+                    progressWriter.writeProgress("No issues to audit, skipping upload");
+                    return av.asObjectNode().put("artifactId", "N/A").put("action", "SKIPPED");
+                }
+            } finally {
+                if (fprFile.exists()) {
+                    if (!fprFile.delete()) {
+                        LOG.warn("Failed to delete temporary downloaded FPR file: {}", fprFile.getAbsolutePath());
+                    }
+                }
+            }
         }
     }
 

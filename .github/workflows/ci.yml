@@ -271,7 +271,9 @@ jobs:
     needs: [build, native_linux]
     runs-on: ubuntu-latest
     env:
-      DOCKER_SRC: fcli-other/fcli-docker/linux
+      DOCKER_SRC_LINUX: fcli-other/fcli-docker/linux
+      DOCKER_SRC_GITLAB: fcli-other/fcli-docker/gitlab-installer-svc/linux
+      DOCKER_TAG_GITLAB: gitlab-installer-svc-linux
     steps:
         - name: Check-out source code
           uses: actions/checkout@v4
@@ -296,8 +298,8 @@ jobs:
         - name: Build & test Linux images
           shell: bash
           run: |
-            tar -zxvf ./artifacts/release-assets/fcli-linux.tgz -C ${DOCKER_SRC}
-            cd ${DOCKER_SRC}
+            tar -zxvf ./artifacts/release-assets/fcli-linux.tgz -C ${DOCKER_SRC_LINUX}
+            cd ${DOCKER_SRC_LINUX}
             for i in scratch alpine ubi9
             do
               docker buildx build --target fcli-${i} -t fcli-${i} --attest type=provenance,mode=max --sbom=true .
@@ -305,6 +307,12 @@ jobs:
               docker run --rm -u $(id -u):$(id -g) -v ${PWD}/${i}:/data fcli-${i} fcli tool sc-client install
               test -f ${PWD}/${i}/fortify/tools/bin/scancentral
             done
+        - name: Build GitLab Installer Service image
+          shell: bash
+          run: |
+            tar -zxvf ./artifacts/release-assets/fcli-linux.tgz -C ${DOCKER_SRC_GITLAB}
+            cd ${DOCKER_SRC_GITLAB}
+            docker buildx build -t fcli-${DOCKER_TAG_GITLAB} --attest type=provenance,mode=max --sbom=true .
             
         - name: Docker Login
           if: needs.build.outputs.do_release
@@ -313,20 +321,27 @@ jobs:
             username: ${{ secrets.DOCKER_USERNAME }}
             password: ${{ secrets.DOCKER_PASSWORD }}
         
+        # For now, we only release scratch and GitLab Installer Service images
         - name: DEV - Tag Linux images
           if: needs.build.outputs.do_dev_release
           shell: bash
           run: |
             docker tag fcli-scratch fortifydocker/fcli:${{needs.build.outputs.release_tag}}
+            docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:${{needs.build.outputs.release_tag}}-${DOCKER_TAG_GITLAB}
         
+        # For now, we only release scratch and GitLab Installer Service images
         - name: PROD - Tag Linux images
           if: needs.build.outputs.do_prod_release
           shell: bash
           run: |
-            docker tag fcli-scratch fortifydocker/fcli:latest
-            docker tag fcli-scratch fortifydocker/fcli:${{needs.build.outputs.version_major}}
-            docker tag fcli-scratch fortifydocker/fcli:${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}
-            docker tag fcli-scratch fortifydocker/fcli:${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}.${{needs.build.outputs.version_patch}}
+            for v in latest \
+              ${{needs.build.outputs.version_major}} \
+              ${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}} \
+              ${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}.${{needs.build.outputs.version_patch}}
+            do
+              docker tag fcli-scratch fortifydocker/fcli:${v}
+              docker tag fcli-${DOCKER_TAG_GITLAB} fortifydocker/fcli:{$v}-${DOCKER_TAG_GITLAB}
+            done
         
         # TODO Should we sign the images as well?
         - name: Publish Linux Docker images
@@ -335,7 +350,7 @@ jobs:
           run: | 
             docker push --all-tags fortifydocker/fcli
   
-  # For now, we only publish fcli-scratch Linux image, but we do build the Windows images just for testing
+  # For now, we only publish Linux-based images, but we do build the Windows images just for testing
   docker-win:
     needs: [build, native_win]
     runs-on: windows-2022

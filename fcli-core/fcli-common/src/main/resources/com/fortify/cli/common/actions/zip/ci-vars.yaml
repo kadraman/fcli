@@ -46,7 +46,7 @@ steps:
     var.set:
       global.ci.name:              GitLab
       global.ci.id:                gitlab
-      global.ci.qualifiedRepoName: ${#env('CI_REPOSITORY_URL').replaceAll('[^:]+://[^/]+/(.*)(\.git)?', '$1')}
+      global.ci.qualifiedRepoName: ${#env('CI_REPOSITORY_URL').replaceAll('[^:]+://[^/]+/','').replaceAll('\.git$', '')}
       global.ci.sourceBranch:      ${#env('CI_COMMIT_BRANCH')?:#env('CI_MERGE_REQUEST_SOURCE_BRANCH_NAME')}
       global.ci.commitSHA:         ${#env('CI_COMMIT_SHA')}
       
