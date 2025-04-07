@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/fortify/fcli/compare/v3.1.0...v3.1.1) (2025-04-07)
+
+
+### Bug Fixes
+
+* Fix Docker image publishing ([7426df9](https://github.com/fortify/fcli/commit/7426df9c460282fa3ce6d998222f7afcdc1776ba))
+
 ## [3.1.0](https://github.com/fortify/fcli/compare/v3.0.0...v3.1.0) (2025-04-07)
 
 
