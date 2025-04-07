@@ -78,7 +78,7 @@ jobs:
           if: ${{ inputs.doPublish }}
           shell: bash 
           run: | 
-            # TODO docker push --all-tags fortifydocker/fcli
+            docker push --all-tags fortifydocker/fcli
   
   # For now, we only publish Linux-based images, but we do build the Windows images just for testing
   docker-win:
