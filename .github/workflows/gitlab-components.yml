@@ -30,11 +30,11 @@ jobs:
             git clone $gitUrl fcli-components
             cp -a fcli-other/fcli-ci-integration/gitlab/* fcli-components
             cd fcli-components
-            git config user.name github-actions
-            git config user.email github-actions@fortify.com
             sed -e "s/__VERSION__/${version}/g" -i README.md templates/*.yml
             if [[ `git status --porcelain` ]]; then
               echo "Changes detected"
+              git config user.name github-actions
+              git config user.email github-actions@fortify.com
               git add .
               git commit -m "Update for fcli ${releaseTag}"
               git tag -f -a -m "Auto-generated tag" ${version}
