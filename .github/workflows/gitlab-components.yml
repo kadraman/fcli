@@ -28,7 +28,7 @@ jobs:
             version=${releaseTag#v}
             gitUrl=https://github:${{ secrets.GL_PROJECT_TOKEN }}@gitlab.com/Fortify/components/fcli.git
             git clone $gitUrl fcli-components
-            cp -a fcli-other/fcli-ci-integration/gitlab/* fcli-components
+            cp -a fcli-other/fcli-ci-integration/gitlab/* fcli-other/fcli-ci-integration/gitlab/.gitlab-ci.yml fcli-components
             cd fcli-components
             sed -e "s/__VERSION__/${version}/g" -i README.md templates/*.yml
             if [[ `git status --porcelain` ]]; then
