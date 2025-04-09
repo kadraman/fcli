@@ -131,15 +131,3 @@ jobs:
         #  shell: bash 
         #  run: | 
         #    docker push --all-tags fortifydocker/fcli
-        
-  gitlab-components:
-    name: Trigger gitlab-components workflow
-    needs: [docker-linux] # TODO Update if we add Windows installer service image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check-out source code
-        uses: actions/checkout@v4
-      - run: | 
-          gh workflow run gitlab-components.yml --ref ${GITHUB_REF} -f "releaseTag=${{ inputs.releaseTag }}" -f doPublish=${{ inputs.doPublish }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
