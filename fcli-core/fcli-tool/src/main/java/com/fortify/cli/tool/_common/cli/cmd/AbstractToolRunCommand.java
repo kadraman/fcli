@@ -76,15 +76,16 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
                 .flatMap(List::stream)
                 .toList();
         LOG.debug("Attempting to run "+fullCmd);
-        var process = new ProcessBuilder()
+        var pb = new ProcessBuilder()
                 .command(fullCmd)
                 .directory(new File(workDir))
-                .inheritIO()
-                .start();
+                .inheritIO();
+        updateProcessBuilder(pb);
+        var process = pb.start();
         process.waitFor();
         return process.exitValue();
     }
-    
+
     private final ToolInstallationDescriptor getToolInstallationDescriptor() {
         var toolName = getToolName();
         if ( StringUtils.isBlank(versionToRun) ) { 
@@ -109,5 +110,6 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
     protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
         return null;
     }
+    protected void updateProcessBuilder(ProcessBuilder pb) {};
     
 }

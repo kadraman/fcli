@@ -76,5 +76,5 @@ steps:
     run.fcli:
       UPDATE_TOOL_DEFINITIONS: fcli tool definitions update ${cli.toolDefinitions?:""}
       INSTALL_SC_CLIENT: fcli tool sc-client install -v ${cli.scClientVersion} --with-jre
-      RUN_SC_CLIENT: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
+      RUN_SC_CLIENT: fcli tool sc-client run -v ${cli.scClientVersion} --workdir ${cli.sourceDir} --logdir . -- ${cli.debug?"-debug":""} package -o "${global.package.output}" ${cli.extraOpts}
       
