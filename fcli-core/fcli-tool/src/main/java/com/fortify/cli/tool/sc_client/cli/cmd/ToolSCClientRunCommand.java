@@ -47,7 +47,7 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     protected List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
         var cmd = new ArrayList<String>(super.getJavaBaseCommand(descriptor));
         if ( logDir!=null ) {
-            cmd.add(1, "-Dlog4j.dir="+logDir.toAbsolutePath().toString());
+            cmd.add(1, "-Dlog4j.dir="+logDir.toAbsolutePath().normalize().toString());
         }
         return cmd;
     }
@@ -55,7 +55,7 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Override
     protected void updateProcessBuilder(ProcessBuilder pb) {
         if ( logDir!=null ) {
-            pb.environment().put("SCANCENTRAL_LOG", logDir.toAbsolutePath().toString());
+            pb.environment().put("SCANCENTRAL_LOG", logDir.toAbsolutePath().normalize().toString());
         }
     }
     
