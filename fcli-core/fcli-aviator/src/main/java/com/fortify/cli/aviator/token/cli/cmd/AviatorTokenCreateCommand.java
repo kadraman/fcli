@@ -1,7 +1,10 @@
+// File: /fcli-aviator/src/main/java/com/fortify/cli/aviator/token/cli/cmd/AviatorTokenCreateCommand.java
 package com.fortify.cli.aviator.token.cli.cmd;
 
+import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.DateTimeException;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
@@ -10,12 +13,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
 import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator._common.output.cli.cmd.AbstractAviatorAdminSessionOutputCommand;
-import com.fortify.cli.aviator._common.session.admin.helper.AviatorAdminSessionDescriptor;
+import com.fortify.cli.aviator._common.config.admin.helper.AviatorAdminConfigDescriptor;
 import com.fortify.cli.aviator._common.util.AviatorGrpcUtils;
 import com.fortify.cli.aviator._common.util.AviatorSignatureUtils;
 import com.fortify.cli.aviator.grpc.AviatorGrpcClient;
 import com.fortify.cli.aviator.grpc.AviatorGrpcClientHelper;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
+import com.fortify.cli.aviator.util.FileUtil;
 import com.fortify.grpc.token.TokenGenerationResponse;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -24,36 +28,38 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
-@Command(name = OutputHelperMixins.Create.CMD_NAME)
+@Command(name = OutputHelperMixins.CreateWithDetailsOutput.CMD_NAME)
 public class AviatorTokenCreateCommand extends AbstractAviatorAdminSessionOutputCommand {
-    @Getter @Mixin private OutputHelperMixins.Create outputHelper;
+    @Getter @Mixin private OutputHelperMixins.CreateWithDetailsOutput outputHelper;
     @Option(names = {"-e", "--email"}, required = true) private String email;
     @Option(names = {"-n", "--name"}, required = true) private String customTokenName;
     @Option(names = {"--end-date"}) private String endDate;
+    @Option(names = {"--save-token"}, descriptionKey = "fcli.aviator.token.create.save-token", paramLabel = "<file>") private File saveTokenFile;
+
     private static final Logger LOG = LoggerFactory.getLogger(AviatorTokenCreateCommand.class);
     private static final DateTimeFormatter CURRENT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Override
-    protected JsonNode getJsonNode(AviatorAdminSessionDescriptor sessionDescriptor) throws AviatorSimpleException, AviatorTechnicalException {
-        try (AviatorGrpcClient client = AviatorGrpcClientHelper.createClient(sessionDescriptor.getAviatorUrl())) {
-            String[] messageAndSignature = createMessageAndSignature(sessionDescriptor);
-            TokenGenerationResponse response = generateToken(client, sessionDescriptor, messageAndSignature);
+    protected JsonNode getJsonNode(AviatorAdminConfigDescriptor configDescriptor) throws AviatorSimpleException, AviatorTechnicalException {
+        try (AviatorGrpcClient client = AviatorGrpcClientHelper.createClient(configDescriptor.getAviatorUrl())) {
+            String[] messageAndSignature = createMessageAndSignature(configDescriptor);
+            TokenGenerationResponse response = generateToken(client, configDescriptor, messageAndSignature);
             return processTokenResponse(response);
         }
     }
 
-    private String[] createMessageAndSignature(AviatorAdminSessionDescriptor sessionDescriptor) {
+    private String[] createMessageAndSignature(AviatorAdminConfigDescriptor configDescriptor) {
         String currentDate = CURRENT_DATE_FORMATTER.format(Instant.now().atOffset(ZoneOffset.UTC));
         String safeCustomTokenName = customTokenName == null ? "" : customTokenName;
         String safeEndDate = endDate == null ? "" : endDate;
-        return AviatorSignatureUtils.createMessageAndSignature(sessionDescriptor, email, safeCustomTokenName, currentDate, safeEndDate);
+        return AviatorSignatureUtils.createMessageAndSignature(configDescriptor, email, safeCustomTokenName, currentDate, safeEndDate);
     }
 
-    private TokenGenerationResponse generateToken(AviatorGrpcClient client, AviatorAdminSessionDescriptor sessionDescriptor, String[] messageAndSignature) {
+    private TokenGenerationResponse generateToken(AviatorGrpcClient client, AviatorAdminConfigDescriptor configDescriptor, String[] messageAndSignature) {
         String message = messageAndSignature[0];
         String signature = messageAndSignature[1];
-        return client.generateToken(email, customTokenName, signature, message, sessionDescriptor.getTenant(), endDate);
+        return client.generateToken(email, customTokenName, signature, message, configDescriptor.getTenant(), endDate);
     }
 
     private JsonNode processTokenResponse(TokenGenerationResponse response) {
@@ -63,14 +69,29 @@ public class AviatorTokenCreateCommand extends AbstractAviatorAdminSessionOutput
                     : response.getErrorMessage();
             throw new AviatorSimpleException(errorMessage);
         }
+
+        String generatedToken = response.getToken();
+        if (saveTokenFile != null) {
+            saveTokenToFile(generatedToken, saveTokenFile);
+        }
+
         JsonNode jsonNode = AviatorGrpcUtils.grpcToJsonNode(response);
         if (jsonNode.has("expiry_date")) {
-            long expiryDateEpoch = jsonNode.get("expiry_date").asLong();
-            String formattedDate = DATE_FORMATTER.format(Instant.ofEpochSecond(expiryDateEpoch).atZone(ZoneId.of("UTC")));
-            ((ObjectNode) jsonNode).put("expiry_date", formattedDate);
+            try {
+                long expiryDateEpoch = jsonNode.get("expiry_date").asLong();
+                String formattedDate = DATE_FORMATTER.format(Instant.ofEpochSecond(expiryDateEpoch).atZone(ZoneId.of("UTC")));
+                ((ObjectNode) jsonNode).put("expiry_date", formattedDate);
+            } catch (DateTimeException | NumberFormatException e) {
+                LOG.warn("Could not format expiry_date from epoch seconds: {}", jsonNode.get("expiry_date").asText(), e);
+            }
         }
         LOG.info("Token '{}' created successfully for email: {}", customTokenName, email);
         return jsonNode;
+    }
+
+    private void saveTokenToFile(String token, File file) {
+        FileUtil.writeStringToFile(file.toPath(), token, true);
+        LOG.info("Token saved to file: {}", file.toPath().toAbsolutePath());
     }
 
     @Override

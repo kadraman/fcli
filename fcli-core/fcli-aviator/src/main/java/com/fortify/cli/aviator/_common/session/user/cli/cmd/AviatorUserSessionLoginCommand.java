@@ -12,8 +12,18 @@
  *******************************************************************************/
 package com.fortify.cli.aviator._common.session.user.cli.cmd;
 
+import java.util.Base64;
+import java.util.Date;
+
+import com.fortify.cli.aviator._common.util.AviatorJwtUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionLoginOptions;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionNameArgGroup;
+import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserTokenResolverMixin;
 import com.fortify.cli.aviator._common.session.user.helper.AviatorUserSessionDescriptor;
 import com.fortify.cli.aviator._common.session.user.helper.AviatorUserSessionHelper;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
@@ -28,17 +38,26 @@ import picocli.CommandLine.Mixin;
 public class AviatorUserSessionLoginCommand extends AbstractSessionLoginCommand<AviatorUserSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.Login outputHelper;
     @Getter private AviatorUserSessionHelper sessionHelper = AviatorUserSessionHelper.instance();
+    @Mixin @Getter private AviatorUserTokenResolverMixin tokenResolver;
     @Mixin private AviatorUserSessionLoginOptions sessionLoginOptions = new AviatorUserSessionLoginOptions();
-    @Getter @ArgGroup(headingKey = "aviator.user-session.name.arggroup") 
+    @Getter @ArgGroup(headingKey = "aviator.user-session.name.arggroup")
     private AviatorUserSessionNameArgGroup sessionNameSupplier;
-    
+
+    private static final Logger LOG = LoggerFactory.getLogger(AviatorUserSessionLoginCommand.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
-    protected void logoutBeforeNewLogin(String sessionName, AviatorUserSessionDescriptor sessionDescriptor) {
-        // Nothing to do
-    }
-    
+    protected void logoutBeforeNewLogin(String sessionName, AviatorUserSessionDescriptor sessionDescriptor) {}
+
     @Override
     protected AviatorUserSessionDescriptor login(String sessionName) {
-        return new AviatorUserSessionDescriptor(sessionLoginOptions.getAviatorUrl(), sessionLoginOptions.getAviatorToken());
+        String resolvedToken = tokenResolver.getToken();
+        Date expiryDate = AviatorJwtUtils.extractExpiryDateFromToken(resolvedToken);
+
+        return AviatorUserSessionDescriptor.builder()
+                .aviatorUrl(sessionLoginOptions.getAviatorUrl())
+                .aviatorToken(resolvedToken)
+                .expiryDate(expiryDate)
+                .build();
     }
 }
