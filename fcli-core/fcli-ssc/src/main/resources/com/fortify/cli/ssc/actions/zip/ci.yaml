@@ -91,7 +91,11 @@ steps:
         skip.if-reason:
           - ${sast.skipReason}                     # Skip if SAST scan is skipped
           - ${PACKAGE_ACTION.dependencySkipReason} # Skip if PACKAGE_ACTION was skipped or failed
-          
+    
+      # TODO Improve this to:
+      # - Wait for scan completion (but not publish completion)
+      # - Download logs/fpr if debugging is enabled
+      # - Wait for scan publish completion before running further post-scan steps
       SAST_WAIT:
         cmd: "${#fcliCmd('SAST_WAIT', 'sc-sast scan wait-for')} ::sc_sast_scan:: --store sc_sast_wait"
         skip.if-reason:
@@ -99,7 +103,25 @@ steps:
           - ${SAST_SCAN.dependencySkipReason}                # Skip if SAST_SCAN was skipped or failed
         on.success:
           - var.set: { postScan.skipReason: } # Reset postScan.skipReason to allow post-scan tasks to run
-             
+          
+      DOWNLOAD_SAST_LOG:
+        cmd: "${#fcliCmd('DOWNLOAD_SAST_LOG', 'sc-sast scan download -t log')} ::sc_sast_scan::"
+        skip.if-reason:
+          - ${#isDebugEnabled()?'':'--debug flag not specified'}   # Skip if debugging is disabled
+          - ${SAST_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
+          
+      DOWNLOAD_SAST_SENSOR_LOG:
+        cmd: "${#fcliCmd('DOWNLOAD_SAST_SENSOR_LOG', 'sc-sast scan download -t sensor-log')} ::sc_sast_scan::"
+        skip.if-reason:
+          - ${#isDebugEnabled()?'':'--debug flag not specified'}   # Skip if debugging is disabled
+          - ${SAST_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
+
+      DOWNLOAD_SAST_FPR:
+        cmd: "${#fcliCmd('DOWNLOAD_SAST_FPR', 'sc-sast scan download -t fpr')} ::sc_sast_scan::"
+        skip.if-reason:
+          - ${#isDebugEnabled()?'':'--debug flag not specified'}   # Skip if debugging is disabled
+          - ${SAST_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
+        
       CHECK_POLICY:
         cmd: ${#actionCmd('CHECK_POLICY', 'ssc', 'check-policy')} --av "${global.ci.av}" --progress=none
         stdout: collect

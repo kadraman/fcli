@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fortify.cli.common.util.DebugHelper;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
@@ -31,6 +32,19 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Option(names="--logdir", required=false)
     private Path logDir;
     @Getter private String toolName = ToolSCClientCommands.TOOL_NAME;
+    
+    @Override
+    public List<String> getToolArgs() {
+        var orgArgs = super.getToolArgs();
+        var result = new ArrayList<String>();
+        if ( DebugHelper.isDebugEnabled() && (orgArgs==null || !orgArgs.contains("-debug")) ) {
+            result.add("-debug");
+        }
+        if ( orgArgs!=null ) {
+            result.addAll(orgArgs);
+        }
+        return result;
+    }
 
     @Override
     protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {

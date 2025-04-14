@@ -30,6 +30,7 @@ import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
+import com.fortify.cli.common.util.DebugHelper;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.sc_sast._common.output.cli.cmd.AbstractSCSastJsonNodeOutputCommand;
 import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobHelper;
@@ -67,10 +68,12 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
 	@Option(names = {"--sargs", "--scan-args"}) private String scanArguments = "";
 	@Option(names = {"--no-replace"}) private Boolean noReplace;
 	@Option(names = {"--scan-timeout"}) private Integer scanTimeout;
+	@Option(names = {"--diagnose"}) private Boolean diagnose;
+	
     
     @Override
     public final JsonNode getJsonNode(UnirestInstance unirest) {
-        boolean debug = getGenericOptions().isDebug();
+        String enableDiagnosis = String.valueOf(DebugHelper.isDebugEnabled() || Boolean.TRUE.equals(diagnose));
         var payloadDescriptor = getScanPayloadDescriptor();
         var scanArgsHelper = ScanArgsHelper.parse(scanArguments);
         MultipartBody body = unirest.post("/rest/v2/job")
@@ -93,7 +96,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
         body = updateBody(body, "fprNameOnSsc", publishToAppVersionMixin.getFprFileName());
         body = updateBody(body, "disallowReplacement", noReplace==null ? null : String.valueOf(noReplace));
         body = updateBody(body, "scanTimeout", scanTimeout==null ? null : String.valueOf(scanTimeout));
-        body = updateBody(body, "enableDiagnosis", debug==false ? null : String.valueOf(debug));
+        body = updateBody(body, "enableDiagnosis", enableDiagnosis);
 
         JsonNode response = body.asObject(JsonNode.class).getBody();
         if ( !response.has("token") ) {

@@ -23,6 +23,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.crypto.helper.EncryptionHelper;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.DateTimePeriodHelper;
+import com.fortify.cli.common.util.DebugHelper;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.StringUtils;
 import com.fortify.cli.common.variable.FcliVariableHelper;
@@ -32,6 +33,10 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor
 public class SpelFunctionsStandard {
     private static final DateTimePeriodHelper PeriodHelper = DateTimePeriodHelper.all();
+    
+    public static final boolean isDebugEnabled() {
+        return DebugHelper.isDebugEnabled();
+    }
 
     public static final String uuid() {
         return UUID.randomUUID().toString();

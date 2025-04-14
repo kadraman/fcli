@@ -152,10 +152,6 @@ public class ActionRunnerContext implements AutoCloseable {
         public final JsonNode fmt(String formatterName, JsonNode input) {
             return ActionRunnerHelper.fmt(ctx, formatterName, input);
         }
-        
-        public final boolean isDebugEnabled() {
-            return ctx.getConfig().isDebugEnabled();
-        }
     }
     
     public final boolean isDelayed() {

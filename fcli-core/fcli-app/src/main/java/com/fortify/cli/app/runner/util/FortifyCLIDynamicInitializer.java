@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand.GenericOptionsArgGroup;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand.LogLevel;
+import com.fortify.cli.common.util.DebugHelper;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -76,6 +77,7 @@ public final class FortifyCLIDynamicInitializer {
             // If no log level is specified and --debug is specified, set log level to TRACE
             logLevel = LogLevel.TRACE;
         }
+        DebugHelper.setDebugEnabled(isDebugEnabled);
         if ( logLevel!=LogLevel.NONE && (logFile!=null || logLevel!=null) ) {
             // Configure logging if logLevel is not set to NONE, and logFile and/or logLevel 
             // have been specified
