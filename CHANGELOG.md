@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.0](https://github.com/fortify/fcli/compare/v3.1.1...v3.2.0) (2025-04-14)
+
+
+### Features
+
+* `ci` & `package` actions: Store ScanCentral Client log files in current working directory for easy access ([d3f604b](https://github.com/fortify/fcli/commit/d3f604b875ae3d614bd0a803aa826512dae9a33e))
+* `fcli * action run package/ci`: Use generic `--debug` option to enable ScanCentral Client debug logging ([3f8b007](https://github.com/fortify/fcli/commit/3f8b007e2046c22b674c72e324025b8805e72d25))
+* `fcli sc-sast scan start`: Use generic `--debug` option to enable both fcli logging and requesting ScanCentral diagnostic logs to be generated ([3f8b007](https://github.com/fortify/fcli/commit/3f8b007e2046c22b674c72e324025b8805e72d25))
+* `fcli tool sc-client run`: Add `--logdir` option to specify log file location ([d3f604b](https://github.com/fortify/fcli/commit/d3f604b875ae3d614bd0a803aa826512dae9a33e))
+* Add generic `--debug` flag; this enables both fcli logging, and may be used by some fcli commands or fcli actions to enable additional logging functionality ([3f8b007](https://github.com/fortify/fcli/commit/3f8b007e2046c22b674c72e324025b8805e72d25))
+
+
+### Bug Fixes
+
+* If `--log-level` was specified without `--log-file`, no log file was being generated ([3f8b007](https://github.com/fortify/fcli/commit/3f8b007e2046c22b674c72e324025b8805e72d25))
+
 ## [3.1.1](https://github.com/fortify/fcli/compare/v3.1.0...v3.1.1) (2025-04-07)
 
 
