@@ -53,6 +53,7 @@ public abstract class AbstractActionRunCommand extends AbstractRunnableCommand {
             var configBuilder = ActionRunnerConfig.builder()
                 .onValidationErrors(this::onValidationErrors)
                 .action(action)
+                .debugEnabled(getGenericOptions().isDebug())
                 .progressWriterFactory(progressWriterFactory);
             configure(configBuilder);
             config = configBuilder.build();

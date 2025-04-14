@@ -251,7 +251,7 @@ formatters:
           providing extra options to this custom action through the `PACKAGE_ACTION_EXTRA_OPTS` environment variable.
           Note that any custom action must set the `global.package.output` action variable, pointing to the package or
           MBS file to be scanned.
-      - names: USE_PACKAGE\nPACKAGE_EXTRA_OPTS\nSC_CLIENT_VERSION\nSOURCE_DIR\nDO_PACKAGE_DEBUG\nTOOL_DEFINITIONS
+      - names: USE_PACKAGE\nPACKAGE_EXTRA_OPTS\nSC_CLIENT_VERSION\nSOURCE_DIR\nTOOL_DEFINITIONS
         desc: >-
           These environment variables define packaging behavior. If `USE_PACKAGE` is specified, packaging will be skipped
           and the given package or MBS file (which must already exist) will be used. To pass additional options to the
@@ -259,7 +259,7 @@ formatters:
           - Latest available ScanCentral Client version will be used for packaging; use `SC_CLIENT_VERSION`
           to specify a different version.\n
           - Current working directory will be packaged; use `SOURCE_DIR` to package a different directory.\n
-          - Debug logging for Scancentral Client is disabled; set `DO_PACKAGE_DEBUG` to true to enable debug logging.\n
+          - Debug logging for Scancentral Client is disabled; pass --debug on the fcli invocation to enable debug logging.\n
           - Tool definitions to identify available ScanCentral Client versions will be downloaded from the default
           location; use `TOOL_DEFINITIONS` to use customized tool definitions.\n
         

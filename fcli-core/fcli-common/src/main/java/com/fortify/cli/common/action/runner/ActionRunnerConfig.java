@@ -41,8 +41,10 @@ import lombok.Singular;
 public class ActionRunnerConfig {
     /** Progress writer factory */
     @NonNull private final IProgressWriterFactory progressWriterFactory;
-    /** Data extract action */
+    /** Action to run */
     @NonNull private final Action action;
+    /** Whether debug logging is enabled */
+    @Builder.Default private final boolean debugEnabled = false;
     /** Callback to handle validation errors */
     @NonNull private final Function<OptionsParseResult, RuntimeException> onValidationErrors;
     /** Action context configurers. Main purpose is to register request helpers on the context. */
