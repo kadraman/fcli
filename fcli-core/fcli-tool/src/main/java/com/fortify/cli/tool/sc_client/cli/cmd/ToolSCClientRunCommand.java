@@ -13,6 +13,8 @@
 package com.fortify.cli.tool.sc_client.cli.cmd;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
@@ -22,9 +24,12 @@ import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "run")
 public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
+    @Option(names="--logdir", required=false)
+    private Path logDir;
     @Getter private String toolName = ToolSCClientCommands.TOOL_NAME;
 
     @Override
@@ -36,6 +41,22 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Override
     protected List<String> getJavaHomeEnvVarNames() {
         return List.of("SCANCENTRAL_JAVA_HOME", "JAVA_HOME");
+    }
+    
+    @Override
+    protected List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
+        var cmd = new ArrayList<String>(super.getJavaBaseCommand(descriptor));
+        if ( logDir!=null ) {
+            cmd.add(1, "-Dlog4j.dir="+logDir.toAbsolutePath().normalize().toString());
+        }
+        return cmd;
+    }
+    
+    @Override
+    protected void updateProcessBuilder(ProcessBuilder pb) {
+        if ( logDir!=null ) {
+            pb.environment().put("SCANCENTRAL_LOG", logDir.toAbsolutePath().normalize().toString());
+        }
     }
     
     @Override @SneakyThrows

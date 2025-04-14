@@ -48,7 +48,7 @@ public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunC
         no, yes, auto
     }
     
-    private final List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
+    protected List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
         return List.of(getJavaCommand(descriptor), "-jar", getJar(descriptor));
     }
     

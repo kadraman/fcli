@@ -67,10 +67,10 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
 	@Option(names = {"--sargs", "--scan-args"}) private String scanArguments = "";
 	@Option(names = {"--no-replace"}) private Boolean noReplace;
 	@Option(names = {"--scan-timeout"}) private Integer scanTimeout;
-	@Option(names = {"--debug"}) private Boolean debug;
     
     @Override
     public final JsonNode getJsonNode(UnirestInstance unirest) {
+        boolean debug = getGenericOptions().isDebug();
         var payloadDescriptor = getScanPayloadDescriptor();
         var scanArgsHelper = ScanArgsHelper.parse(scanArguments);
         MultipartBody body = unirest.post("/rest/v2/job")
@@ -93,7 +93,7 @@ public final class SCSastScanStartCommand extends AbstractSCSastJsonNodeOutputCo
         body = updateBody(body, "fprNameOnSsc", publishToAppVersionMixin.getFprFileName());
         body = updateBody(body, "disallowReplacement", noReplace==null ? null : String.valueOf(noReplace));
         body = updateBody(body, "scanTimeout", scanTimeout==null ? null : String.valueOf(scanTimeout));
-        body = updateBody(body, "enableDiagnosis", debug==null ? null : String.valueOf(debug));
+        body = updateBody(body, "enableDiagnosis", debug==false ? null : String.valueOf(debug));
 
         JsonNode response = body.asObject(JsonNode.class).getBody();
         if ( !response.has("token") ) {

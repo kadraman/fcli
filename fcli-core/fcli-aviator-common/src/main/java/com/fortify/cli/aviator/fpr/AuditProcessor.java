@@ -3,7 +3,7 @@ package com.fortify.cli.aviator.fpr;
 import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator.core.model.AuditResponse;
 import com.fortify.cli.aviator.util.Constants;
-import com.fortify.cli.aviator.util.StringUtil;
+import com.fortify.cli.aviator.util.TagMappingConfig;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,18 +235,18 @@ public class AuditProcessor {
         updateOrAddTag(issueElement, tagId, tagValue);
     }
 
-    private void updateAuditXml(Map<String, AuditResponse> auditResponses, String resultsTagId) throws AviatorTechnicalException {
+    private void updateAuditXml(Map<String, AuditResponse> auditResponses, TagMappingConfig tagMappingConfig) throws AviatorTechnicalException {
         for (Map.Entry<String, AuditResponse> entry : auditResponses.entrySet()) {
             String instanceId = entry.getKey();
             AuditResponse response = entry.getValue();
             Element issueElement = findIssueElement(instanceId);
-            resultsTagId = StringUtil.isEmpty(resultsTagId) ? Constants.AUDITOR_STATUS_TAG_ID : resultsTagId;
+            String tagId = tagMappingConfig.getTagId();
 
             if (response.getTier() != null) {
                 if (issueElement != null) {
-                    updateIssueElement(issueElement, response, resultsTagId);
+                    updateIssueElement(issueElement, response, tagMappingConfig);
                 } else {
-                    addNewIssueElement(instanceId, response, resultsTagId);
+                    addNewIssueElement(instanceId, response, tagMappingConfig);
                 }
             } else {
                 logger.debug("Issue is Skipped {}", response.getIssueId());
@@ -265,80 +265,84 @@ public class AuditProcessor {
         return null;
     }
 
-    public void updateIssueElement(Element issueElement, AuditResponse response,String resultsTagId) {
+    public void updateIssueElement(Element issueElement, AuditResponse response, TagMappingConfig tagMappingConfig) {
         int revision = Integer.parseInt(issueElement.getAttribute("revision"));
         issueElement.setAttribute("revision", String.valueOf(++revision));
-
 
         if (response != null && response.getAuditResult() != null) {
             String tagValue = response.getAuditResult().tagValue;
             String tier = response.getTier();
-            if (tier != null && tier.equalsIgnoreCase("GOLD")) {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_NOT_AN_ISSUE);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.NOT_AN_ISSUE);
-                    issueElement.setAttribute("suppressed", "true");
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_REMEDIATION_REQUIRED);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.EXPLOITABLE);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.SUSPICIOUS);
-                }
+            TagMappingConfig.Tier tierConfig = tier != null && tier.equalsIgnoreCase("GOLD")
+                    ? tagMappingConfig.getMapping().getTier_1()
+                    : tagMappingConfig.getMapping().getTier_2();
+            TagMappingConfig.Result resultConfig;
+
+            if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getFp();
+                updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_NOT_AN_ISSUE : Constants.AVIATOR_LIKELY_FP);
+            } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getTp();
+                updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_REMEDIATION_REQUIRED : Constants.AVIATOR_LIKELY_TP);
+            } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getUnsure();
+                updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
             } else {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_FP);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.RELIABILITY_ISSUE);
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_TP);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.SUSPICIOUS);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(issueElement, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    updateOrAddTag(issueElement, resultsTagId, Constants.SUSPICIOUS);
-                }
+                resultConfig = null;
+            }
+
+            if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
+                updateOrAddTag(issueElement, tagMappingConfig.getTagId(), resultConfig.getValue());
+            }
+            if (resultConfig != null && resultConfig.getSuppress()) {
+                issueElement.setAttribute("suppressed", "true");
             }
         }
 
         updateOrAddTag(issueElement, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
 
-        updateOrAddComment(issueElement, response.getAuditResult().comment);
+        if (response != null && response.getAuditResult() != null) {
+            updateOrAddComment(issueElement, response.getAuditResult().comment);
+        }
 
-        updateClientAuditTrail(issueElement, response, resultsTagId);
+        updateClientAuditTrail(issueElement, response, tagMappingConfig);
     }
 
-    private void updateClientAuditTrail(Element issueElement, AuditResponse response, String resultsTagId) {
+    private void updateClientAuditTrail(Element issueElement, AuditResponse response, TagMappingConfig tagMappingConfig) {
         Element clientAuditTrail = getClientAuditTrailElement(issueElement);
 
         if (response != null && response.getAuditResult() != null) {
             String tagValue = response.getAuditResult().tagValue;
             String tier = response.getTier();
-            if (tier != null && tier.equalsIgnoreCase("GOLD")) {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_NOT_AN_ISSUE);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.NOT_AN_ISSUE);
-                    issueElement.setAttribute("suppressed", "true");
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_REMEDIATION_REQUIRED);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.EXPLOITABLE);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.SUSPICIOUS);
-                }
+            TagMappingConfig.Tier tierConfig = tier != null && tier.equalsIgnoreCase("GOLD")
+                    ? tagMappingConfig.getMapping().getTier_1()
+                    : tagMappingConfig.getMapping().getTier_2();
+            TagMappingConfig.Result resultConfig;
+
+            if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getFp();
+                addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_NOT_AN_ISSUE : Constants.AVIATOR_LIKELY_FP);
+            } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getTp();
+                addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_REMEDIATION_REQUIRED : Constants.AVIATOR_LIKELY_TP);
+            } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getUnsure();
+                addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
             } else {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_FP);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.RELIABILITY_ISSUE);
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_TP);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.SUSPICIOUS);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    addTagHistory(clientAuditTrail, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    addTagHistory(clientAuditTrail, resultsTagId, Constants.SUSPICIOUS);
-                }
+                resultConfig = null;
+            }
+
+            if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
+                addTagHistory(clientAuditTrail, tagMappingConfig.getTagId(), resultConfig.getValue());
+            }
+            if (resultConfig != null && resultConfig.getSuppress()) {
+                issueElement.setAttribute("suppressed", "true");
             }
         }
         addTagHistory(clientAuditTrail, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
-
     }
 
     private Element getClientAuditTrailElement(Element issueElement) {
@@ -434,14 +438,12 @@ public class AuditProcessor {
         threadedCommentsElement.appendChild(commentElement);
     }
 
-    public void addNewIssueElement(String instanceId, AuditResponse response, String resultsTagId) {
+    public void addNewIssueElement(String instanceId, AuditResponse response, TagMappingConfig tagMappingConfig) {
         Element issueList = (Element) auditDoc.getElementsByTagNameNS(NAMESPACE_URI, "IssueList").item(0);
         if (issueList == null) {
             issueList = auditDoc.createElementNS(NAMESPACE_URI, "IssueList");
             auditDoc.getDocumentElement().appendChild(issueList);
         }
-
-
 
         Element newIssue = auditDoc.createElementNS(NAMESPACE_URI, "Issue");
         newIssue.setAttribute("instanceId", instanceId);
@@ -450,45 +452,155 @@ public class AuditProcessor {
         if (response != null && response.getAuditResult() != null) {
             String tagValue = response.getAuditResult().tagValue;
             String tier = response.getTier();
-            if (tier != null && tier.equalsIgnoreCase("GOLD")) {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_NOT_AN_ISSUE);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.NOT_AN_ISSUE);
-                    newIssue.setAttribute("suppressed", "true");
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_REMEDIATION_REQUIRED);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.EXPLOITABLE);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.SUSPICIOUS);
-                }
+            TagMappingConfig.Tier tierConfig = tier != null && tier.equalsIgnoreCase("GOLD")
+                    ? tagMappingConfig.getMapping().getTier_1()
+                    : tagMappingConfig.getMapping().getTier_2();
+            TagMappingConfig.Result resultConfig;
+
+            if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getFp();
+                updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_NOT_AN_ISSUE : Constants.AVIATOR_LIKELY_FP);
+            } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getTp();
+                updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID,
+                        tier != null && tier.equalsIgnoreCase("GOLD") ? Constants.AVIATOR_REMEDIATION_REQUIRED : Constants.AVIATOR_LIKELY_TP);
+            } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
+                resultConfig = tierConfig.getUnsure();
+                updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
             } else {
-                if (Constants.NOT_AN_ISSUE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_FP);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.RELIABILITY_ISSUE);
-                } else if (Constants.EXPLOITABLE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_LIKELY_TP);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.SUSPICIOUS);
-                } else if (Constants.UNSURE.equalsIgnoreCase(tagValue)) {
-                    updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_UNSURE);
-                    updateOrAddTag(newIssue, resultsTagId, Constants.SUSPICIOUS);
-                }
+                resultConfig = null;
+            }
+
+            if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
+                updateOrAddTag(newIssue, tagMappingConfig.getTagId(), resultConfig.getValue());
+            }
+            if (resultConfig != null && resultConfig.getSuppress()) {
+                newIssue.setAttribute("suppressed", "true");
             }
         }
-        updateOrAddTag(newIssue, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
 
+        updateOrAddTag(newIssue, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
 
         if (response != null && response.getAuditResult() != null) {
             updateOrAddComment(newIssue, response.getAuditResult().comment);
         }
 
-        updateClientAuditTrail(newIssue, response, resultsTagId);
+        updateClientAuditTrail(newIssue, response, tagMappingConfig);
 
         issueList.appendChild(newIssue);
     }
 
-    public File updateAndSaveAuditXml(Map<String, AuditResponse> auditResponses, String resultsTagId) throws AviatorTechnicalException {
-        updateAuditXml(auditResponses, resultsTagId);
+    public void addCommentToIssueXml(String instanceId, String commentText, String username) {
+        if (auditDoc == null) {
+            logger.error("Cannot add comment, auditDoc is not initialized.");
+            return;
+        }
+        Element issueElement = findIssueElement(instanceId);
+        if (issueElement != null) {
+            addCommentToIssueElement(issueElement, commentText, username);
+            logger.debug("Added comment via XML update for issue: {}", instanceId);
+        } else {
+            logger.warn("Cannot add comment to XML, issue element not found for instance ID: {}. If this is a skipped new issue, addSkippedIssueElement should be used.", instanceId);
+        }
+    }
+
+    public void addSkippedIssueElement(String instanceId, String comment) {
+        if (auditDoc == null) {
+            logger.error("Cannot add skipped issue element, auditDoc is not initialized.");
+            return;
+        }
+        if (findIssueElement(instanceId) != null) {
+            logger.warn("Attempted to add skipped issue element for {}, but it already exists in audit.xml.", instanceId);
+            addCommentToIssueXml(instanceId, comment, Constants.USER_NAME);
+            return;
+        }
+
+        Element issueList = (Element) auditDoc.getElementsByTagNameNS(NAMESPACE_URI, "IssueList").item(0);
+        if (issueList == null) {
+            logger.error("Cannot add skipped issue element, <IssueList> not found in audit.xml.");
+            issueList = auditDoc.createElementNS(NAMESPACE_URI, "IssueList");
+            if (auditDoc.getDocumentElement() != null) {
+                auditDoc.getDocumentElement().appendChild(issueList);
+                logger.warn("Created missing <IssueList> element.");
+            } else {
+                logger.error("Cannot add skipped issue element, document root is null.");
+                return;
+            }
+        }
+
+        Element newIssue = auditDoc.createElementNS(NAMESPACE_URI, "Issue");
+        newIssue.setAttribute("instanceId", instanceId);
+        newIssue.setAttribute("revision", "0");
+        newIssue.setAttribute("suppressed", "false");
+
+        updateOrAddTag(newIssue, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
+        updateOrAddTag(newIssue, Constants.ANALYSIS_TAG_ID, Constants.PENDING_REVIEW);
+
+        addCommentToIssueElement(newIssue, comment, Constants.USER_NAME);
+
+        issueList.appendChild(newIssue);
+        logger.debug("Added skipped issue element to audit.xml for instance ID: {}", instanceId);
+
+        if (!auditIssueMap.containsKey(instanceId)) {
+            AuditIssue skippedAuditIssue = AuditIssue.builder()
+                    .instanceId(instanceId)
+                    .revision(0)
+                    .suppressed(false)
+                    .tags(Map.of(
+                            Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR,
+                            Constants.ANALYSIS_TAG_ID, Constants.PENDING_REVIEW
+                    ))
+                    .threadedComments(List.of(
+                            AuditIssue.Comment.builder()
+                                    .content(comment)
+                                    .username(Constants.USER_NAME)
+                                    .timestamp(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(new Date()))
+                                    .build()
+                    ))
+                    .build();
+            auditIssueMap.put(instanceId, skippedAuditIssue);
+            logger.debug("Added skipped issue {} to in-memory auditIssueMap.", instanceId);
+        }
+    }
+
+    private void addCommentToIssueElement(Element issueElement, String commentText, String username) {
+        NodeList threadedCommentsNodes = issueElement.getElementsByTagNameNS(NAMESPACE_URI, "ThreadedComments");
+        Element threadedCommentsElement;
+
+        if (threadedCommentsNodes.getLength() > 0) {
+            threadedCommentsElement = (Element) threadedCommentsNodes.item(0);
+        } else {
+            threadedCommentsElement = auditDoc.createElementNS(NAMESPACE_URI, "ThreadedComments");
+            issueElement.appendChild(threadedCommentsElement);
+        }
+
+        Element commentElement = auditDoc.createElementNS(NAMESPACE_URI, "Comment");
+
+        Element contentElement = auditDoc.createElementNS(NAMESPACE_URI, "Content");
+        contentElement.setTextContent(commentText != null ? commentText : "");
+        commentElement.appendChild(contentElement);
+
+        Element usernameElement = auditDoc.createElementNS(NAMESPACE_URI, "Username");
+        usernameElement.setTextContent(username != null ? username : "Unknown User");
+        commentElement.appendChild(usernameElement);
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        Element timestampElement = auditDoc.createElementNS(NAMESPACE_URI, "Timestamp");
+        try {
+            timestampElement.setTextContent(dateFormat.format(new Date()));
+        } catch (Exception e) {
+            logger.warn("Could not format timestamp for comment: {}", e.getMessage());
+            timestampElement.setTextContent("");
+        }
+
+        commentElement.appendChild(timestampElement);
+
+        threadedCommentsElement.appendChild(commentElement);
+    }
+
+    public File updateAndSaveAuditXml(Map<String, AuditResponse> auditResponses, TagMappingConfig tagMappingConfig) throws AviatorTechnicalException {
+        updateAuditXml(auditResponses, tagMappingConfig);
         File updatedFile = updateContentInOriginalFpr();
         return updatedFile;
     }
