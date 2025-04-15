@@ -1,6 +1,6 @@
 #!/bin/sh
 set -o errexit
-if [ "true" = "${CI_DEBUG_TRACE}" ]; then
+if [ "true" = "${CI_DEBUG_SERVICES}" ]; then
   set -x
 fi
 if [ -z "${FCLI_INSTALL_DIR}" ]; then
