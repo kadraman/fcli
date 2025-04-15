@@ -355,9 +355,46 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
+  semantic_versions:
+    name: release
+    if: needs.build.outputs.do_prod_release
+    needs: [build, native_linux, native_mac, native_win, combine-artifacts, release]
+    strategy:
+      matrix: 
+        semantic_version: 
+          - v${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}
+          - v${{needs.build.outputs.version_major}}
+          - latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out source code
+        uses: actions/checkout@v4
+            
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          name: combined-artifacts
+    
+      - name: PROD - Publish ${{ matrix.semantic_version }} tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: ${{ matrix.semantic_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: PROD - Publish semantic release ${{ matrix.semantic_version }}
+        run: |
+          gh release delete ${{ matrix.semantic_version }} -y || true
+          gh release create ${{ matrix.semantic_version }} -t "${{ matrix.semantic_version }}" -n "Semantic version release for [${{ needs.build.outputs.release_tag }}](https://github.com/fortify/fcli/releases/tag/${{ needs.build.outputs.release_tag }})" --verify-tag --latest=false
+          files=$(find "./artifacts/release-assets" -type f -printf "%p ")
+          gh release upload "${{ matrix.semantic_version }}" $files --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
   docker:
     name: Trigger Docker builds
-    needs: [build, release]
+    needs: [build, release, semantic_versions]
     runs-on: ubuntu-latest
     steps:
       - name: Check-out source code
