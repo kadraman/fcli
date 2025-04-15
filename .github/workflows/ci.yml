@@ -356,7 +356,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
   semantic_versions:
-    name: release
+    name: Publish semantic versions
     if: needs.build.outputs.do_prod_release
     needs: [build, native_linux, native_mac, native_win, combine-artifacts, release]
     strategy:
