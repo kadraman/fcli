@@ -321,37 +321,37 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
           
-      - name: Publish v{major}.{minor} tag
-        if: needs.build.outputs.do_prod_release
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: v${{steps.release_please.outputs.major}}.${{steps.release_please.outputs.minor}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
-                    
-      - name: Publish v{major} tag
-        if: needs.build.outputs.do_prod_release
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: v${{steps.release_please.outputs.major}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # TODO If we publish a feature/patch for an older major version,
-      #      for example from the rel/v2.x branch,
-      #      this may cause the older major version to be tagged as 'latest'
-      - name: Publish latest tag
-        if: needs.build.outputs.do_prod_release
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Upload assets to release
         if: needs.build.outputs.do_release
         run: |
           files=$(find "./artifacts/release-assets" -type f -printf "%p ")
           gh release upload "${{ needs.build.outputs.release_tag }}" $files --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: PROD - Publish v{major}.{minor} tag
+        if: needs.build.outputs.do_prod_release
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: v${{needs.build.outputs.version_major}}.${{needs.build.outputs.version_minor}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+                              
+      - name: PROD - Publish v{major} tag
+        if: needs.build.outputs.do_prod_release
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: v${{needs.build.outputs.version_major}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # TODO If we publish a feature/patch for an older major version,
+        #      for example from the rel/v2.x branch,
+        #      this may cause the older major version to be tagged as 'latest'
+      - name: PROD - Publish latest tag
+        if: needs.build.outputs.do_prod_release
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
