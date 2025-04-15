@@ -43,8 +43,6 @@ public class ActionRunnerConfig {
     @NonNull private final IProgressWriterFactory progressWriterFactory;
     /** Action to run */
     @NonNull private final Action action;
-    /** Whether debug logging is enabled */
-    @Builder.Default private final boolean debugEnabled = false;
     /** Callback to handle validation errors */
     @NonNull private final Function<OptionsParseResult, RuntimeException> onValidationErrors;
     /** Action context configurers. Main purpose is to register request helpers on the context. */

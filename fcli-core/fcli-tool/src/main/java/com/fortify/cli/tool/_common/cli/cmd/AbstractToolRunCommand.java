@@ -28,6 +28,7 @@ import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool.definitions.helper.ToolDefinitionsHelper;
 
+import lombok.Getter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -52,7 +53,7 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
     @Option(names={"-d", "--workdir"}, required = false, descriptionKey="fcli.tool.run.workdir")
     private String workDir = System.getProperty("user.dir");
     @Parameters(descriptionKey="fcli.tool.run.tool-args")
-    private List<String> toolArgs;
+    @Getter private List<String> toolArgs;
     
     @Override
     public final Integer call() throws Exception {
@@ -71,7 +72,7 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
     
     private final Integer call(List<String> baseCmd) throws Exception {
         if ( baseCmd==null ) { throw new FcliBugException("Base command to execute may not be null"); }
-        var fullCmd = Stream.of(baseCmd, toolArgs)
+        var fullCmd = Stream.of(baseCmd, getToolArgs())
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .toList();
