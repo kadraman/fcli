@@ -395,6 +395,8 @@ jobs:
   docker:
     name: Trigger Docker builds
     needs: [build, release, semantic_versions]
+    # Always run if build & release were successful, ignoring status of semantic_versions
+    if: always() && needs.build.result == 'success' && needs.release.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Check-out source code
