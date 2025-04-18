@@ -40,21 +40,24 @@ public final class LogMaskHelper {
     private final Map<LogMessageType, MultiPatternReplacer> multiPatternReplacers = new HashMap<>();
     
     public final LogMaskHelper registerValue(MaskValue maskAnnotation, String source, Object value) {
+        return registerValue(maskAnnotation.sensitivity(), source, maskAnnotation.description(), value, maskAnnotation.pattern());
+    }
+    
+    public final LogMaskHelper registerValue(LogSensitivityLevel sensitivityLevel, String source, String description, Object value, String patternString) {
         var valueString = valueAsString(value);
-        var patternString = maskAnnotation.pattern(); 
         if ( StringUtils.isNotBlank(patternString) ) {
             var matcher = Pattern.compile(patternString).matcher(valueString);
             if ( matcher.matches() ) {
                 valueString = matcher.group(1);
             }
         }
-        return registerValue(maskAnnotation.sensitivity(), valueString, String.format("<REDACTED %s (%s)>", maskAnnotation.description().toUpperCase(), source.toUpperCase()));
+        return registerValue(sensitivityLevel, valueString, String.format("<REDACTED %s (%s)>", description.toUpperCase(), source.toUpperCase()));
     }
     
     private final String valueAsString(Object value) {
         return JavaHelper.as(value, String.class).orElseGet(
             ()->JavaHelper.as(value, char[].class).map(ca->String.valueOf(ca))
-            .orElseThrow(()->new FcliBugException("MaskValue annotation can only be used on String or char[] fields")));
+            .orElseThrow(()->new FcliBugException("MaskValue annotation can only be used on String or char[] fields, actual type: "+value.getClass().getSimpleName())));
     }
     
     public final LogMaskHelper registerValue(LogSensitivityLevel sensitivityLevel, String valueToMask, String replacement, LogMessageType... logMessageTypes) {
