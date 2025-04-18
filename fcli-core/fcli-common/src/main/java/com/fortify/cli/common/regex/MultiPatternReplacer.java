@@ -14,7 +14,9 @@ package com.fortify.cli.common.regex;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
@@ -23,7 +25,7 @@ import java.util.regex.Pattern;
 import com.fortify.cli.common.exception.FcliBugException;
 
 public final class MultiPatternReplacer {
-    private final StringBuilder globalMatchPatternBuilder = new StringBuilder();
+    private final Set<String> globalMatchPatterns = new HashSet<>();
     private Pattern globalMatchPattern = null;
     private final Map<String,String> valuesToReplace = new HashMap<>();
     private final Map<Pattern, String> patternsToReplace = new HashMap<>();
@@ -41,11 +43,8 @@ public final class MultiPatternReplacer {
     }
     
     private final void registerGlobalMatchPattern(String patternString) {
-        if (!globalMatchPatternBuilder.isEmpty()) {
-            globalMatchPatternBuilder.append('|');
-        }
-        globalMatchPatternBuilder.append(patternString);
-        globalMatchPattern = Pattern.compile(globalMatchPatternBuilder.toString(), Pattern.MULTILINE); // TODO Make flags configurable?
+        globalMatchPatterns.add(patternString);
+        globalMatchPattern = Pattern.compile(String.join("|", globalMatchPatterns), Pattern.MULTILINE); // TODO Make flags configurable?
     }
 
     public final String applyReplacements(String msg) {

@@ -100,7 +100,7 @@ public final class FortifyCLIDynamicInitializer {
     private void registerDefaultLogMaskPatterns() {
         LogMaskHelper.INSTANCE
             .registerPattern(LogSensitivityLevel.high, "Authorization: (?:[a-zA-Z]+ )?(.*?)(?:\\Q[\\r]\\E|\\Q[\\n]\\E)*\\\"?$", "<REDACTED>", LogMessageType.HTTP_OUT)
-            .registerPattern(LogSensitivityLevel.high, "token\\\":\\s*\\\"(.*?)\\\"", "<REDACTED TOKEN (RESPONSE)>", LogMessageType.HTTP_IN);
+            .registerPattern(LogSensitivityLevel.high, "(?:\\\"token\\\"|\\\"access_token\\\"):\\s*\\\"(.*?)\\\"", "<REDACTED TOKEN (RESPONSE)>", LogMessageType.HTTP_IN);
     }
 
     @SuppressWarnings("unchecked")
