@@ -12,15 +12,21 @@
  *******************************************************************************/
 package com.fortify.cli.aviator._common.config.admin.cli.mixin;
 
+import com.fortify.cli.common.log.LogMaskHelper;
+import com.fortify.cli.common.log.MaskValue;
+import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+
 import lombok.Getter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 public class AviatorAdminConfigCreateOptions {
     @Option(names = {"--url", "-u"}, required = true, order=1)
+    @MaskValue(sensitivity = LogSensitivityLevel.low, description = "AVIATOR HOST NAME", pattern = LogMaskHelper.URL_HOSTNAME_PATTERN)
     @Getter private String aviatorUrl;
 
     @Option(names = {"--tenant", "-t"}, required = true, order=2)
+    @MaskValue(sensitivity = LogSensitivityLevel.low, description = "AVIATOR TENANT")
     @Getter private String tenant;
 
     @Mixin @Getter private AviatorAdminPrivateKeyResolverMixin privateKeyResolver;

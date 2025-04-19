@@ -12,10 +12,15 @@
  *******************************************************************************/
 package com.fortify.cli.aviator._common.session.user.cli.mixin;
 
+import com.fortify.cli.common.log.LogMaskHelper;
+import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.MaskValue;
+
 import lombok.Getter;
 import picocli.CommandLine.Option;
 
 public class AviatorUserSessionLoginOptions {
     @Option(names = {"--url"}, required = true, order=1)
+    @MaskValue(sensitivity = LogSensitivityLevel.low, description = "AVIATOR HOST NAME", pattern = LogMaskHelper.URL_HOSTNAME_PATTERN)
     @Getter private String aviatorUrl;
 }
