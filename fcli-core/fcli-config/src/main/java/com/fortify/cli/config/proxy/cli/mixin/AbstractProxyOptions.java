@@ -18,7 +18,7 @@ import java.util.function.Function;
 import com.fortify.cli.common.http.proxy.helper.ProxyDescriptor;
 import com.fortify.cli.common.http.proxy.helper.ProxyDescriptor.ProxyDescriptorBuilder;
 import com.fortify.cli.common.http.proxy.helper.ProxyDescriptor.ProxyMatchMode;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
 
 import lombok.RequiredArgsConstructor;

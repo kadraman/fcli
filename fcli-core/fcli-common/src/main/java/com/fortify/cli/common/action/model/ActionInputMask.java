@@ -15,7 +15,7 @@ package com.fortify.cli.common.action.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -12,20 +12,17 @@
  */
 package com.fortify.cli.common.log;
 
-import ch.qos.logback.classic.pattern.ClassicConverter;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-
 /**
- * This class provides the 'msgType' conversion word that can be 
- * used in logging pattern layouts to show the {@link LogMessageType}
- * in log entries.
- * 
+ * This enum defines sensitivity levels for values being logged, that may need to be masked 
+ * based on current {@link LogMaskLevel}.
+ *
  * @author Ruud Senden
  */
-public class LogMessageTypeConverter extends ClassicConverter {
-    public static final String conversionWord = "msgType";
-    @Override
-    public String convert(ILoggingEvent event) {
-        return LogMessageType.getType(event).toFixedLengthString();
-    }
+public enum LogSensitivityLevel {
+    /** High sensitivity data, like tokens, passwords & other credentials */
+    high, 
+    /** Medium sensitivity data, like current user name */
+    medium, 
+    /** Low sensitivity data, like URLs, tenants, ... */
+    low;
 }

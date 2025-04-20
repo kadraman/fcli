@@ -14,10 +14,8 @@ package com.fortify.cli.common.log;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -27,31 +25,52 @@ import com.fortify.cli.common.regex.MultiPatternReplacer;
 import com.fortify.cli.common.util.JavaHelper;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * This class provides methods for registering values and patterns to be masked in the
+ * fcli log file, and applying those masks to log messages.
+ *
+ * @author Ruud Senden
+ */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class LogMaskHelper {
+    /** Singleton instance of this class. */
     public static final LogMaskHelper INSTANCE = new LogMaskHelper();
-    public static final String URL_HOSTNAME_PATTERN = "https?://([^/]+).*";
     
+    /** The log mask level to apply to logging entries. This is set by FortifyCLIDynamicInitializer based
+     *  on the value of the generic fcli <pre>--log-mask</pre> option. */ 
     @Setter private LogMaskLevel logMaskLevel;
     private final Map<LogMessageType, MultiPatternReplacer> multiPatternReplacers = new HashMap<>();
     
-    public final LogMaskHelper registerValue(MaskValue maskAnnotation, String source, Object value) {
-        return registerValue(maskAnnotation.sensitivity(), source, maskAnnotation.description(), value, maskAnnotation.pattern());
+    /**
+     * Register a value to be masked, based on the semantics as described in {@link MaskValue}. If
+     * {@link MaskValue} is <code>null</code>, the given value will not be registered for masking.
+     */
+    public final LogMaskHelper registerValue(MaskValue maskAnnotation, LogMaskSource source, Object value) {
+        if ( maskAnnotation!=null ) {
+            registerValue(maskAnnotation.sensitivity(), source, maskAnnotation.description(), value, maskAnnotation.pattern());
+        }
+        return this;
     }
     
-    public final LogMaskHelper registerValue(LogSensitivityLevel sensitivityLevel, String source, String description, Object value, String patternString) {
+    /**
+     * Register a value to be masked, based on the same semantics as described in {@link MaskValue} but passing
+     * each attribute of that annotation as a separate method argument.
+     */
+    public final LogMaskHelper registerValue(LogSensitivityLevel sensitivityLevel, LogMaskSource source, String description, Object value, String patternString) {
         var valueString = valueAsString(value);
         if ( StringUtils.isNotBlank(patternString) ) {
             var matcher = Pattern.compile(patternString).matcher(valueString);
             if ( matcher.matches() ) {
+                if ( matcher.groupCount()!=1 ) {
+                    throw new FcliBugException("Pattern string passed to LogMaskHelper::registerValue must contain exactly one capturing group");
+                }
                 valueString = matcher.group(1);
             }
         }
-        return registerValue(sensitivityLevel, valueString, String.format("<REDACTED %s (%s)>", description.toUpperCase(), source.toUpperCase()));
+        return registerValue(sensitivityLevel, valueString, String.format("<REDACTED %s (%s)>", description.toUpperCase(), source));
     }
     
     private final String valueAsString(Object value) {
@@ -60,6 +79,11 @@ public final class LogMaskHelper {
             .orElseThrow(()->new FcliBugException("MaskValue annotation can only be used on String or char[] fields, actual type: "+value.getClass().getSimpleName())));
     }
     
+    /**
+     * Register a value to be masked with the given {@link LogSensitivityLevel}, for the given log 
+     * message type(s). If no log message types are provided, the mask will be applied to all log 
+     * message types. See {@link MultiPatternReplacer#registerValue(String, String)} for details.
+     */
     public final LogMaskHelper registerValue(LogSensitivityLevel sensitivityLevel, String valueToMask, String replacement, LogMessageType... logMessageTypes) {
         if ( isMaskingNeeded(sensitivityLevel) ) {
             for ( var logMessageType : getLogMessageTypesOrDefault(logMessageTypes) ) {
@@ -71,6 +95,12 @@ public final class LogMaskHelper {
         return this;
     }
     
+    /**
+     * Register a pattern that describes one or more values to be masked, with the given sensitivity 
+     * level and for the given log message type(s). If no log message types are provided, the pattern
+     * will be registered for all log message types. See {@link MultiPatternReplacer#registerPattern(String, String)}
+     * for details.
+     */
     public final LogMaskHelper registerPattern(LogSensitivityLevel sensitivityLevel, String patternString, String replacement, LogMessageType... logMessageTypes) {
         if ( isMaskingNeeded(sensitivityLevel) ) {
             for ( var logMessageType : getLogMessageTypesOrDefault(logMessageTypes) ) {
@@ -80,18 +110,32 @@ public final class LogMaskHelper {
         return this;
     }
 
+    /**
+     * Return either the given log message types, or all log message types if no log message types given.
+     */
     private LogMessageType[] getLogMessageTypesOrDefault(LogMessageType... logMessageTypes) {
         return logMessageTypes!=null && logMessageTypes.length!=0 ? logMessageTypes : LogMessageType.all();
     }
     
+    /**
+     * Get the {@link MultiPatternReplacer} instance for the given {@link LogMessageType}.
+     */
     private final MultiPatternReplacer getMultiPatternReplacer(LogMessageType logMessageType) {
         return multiPatternReplacers.computeIfAbsent(logMessageType, t->new MultiPatternReplacer());
     }
     
+    /**
+     * @return true if masking is needed based on comparing the given {@link LogSensitivityLevel}
+     * against the configured {@link LogMaskLevel}, false otherwise.
+     */
     private final boolean isMaskingNeeded(LogSensitivityLevel sensitivityLevel) {
         return logMaskLevel.getSensitivityLevels().contains(sensitivityLevel);
     }
 
+    /**
+     * Mask the given log message using the registered values and patterns for the
+     * given {@link LogMessageType}.
+     */
     public final String mask(LogMessageType logMessageType, String msg) {
         var multiPattern = getMultiPatternReplacer(logMessageType);
         if ( multiPattern==null ) { return null; }
@@ -107,22 +151,6 @@ public final class LogMaskHelper {
             // so instead we return a fixed string indicating that an fcli bug occurred.
             return "<MASKED DUE TO FCLI BUG>";
         }
-    }
-    
-    public static enum LogMaskLevel {
-        high(LogSensitivityLevel.high, LogSensitivityLevel.medium, LogSensitivityLevel.low), 
-        medium(LogSensitivityLevel.high, LogSensitivityLevel.medium), 
-        low(LogSensitivityLevel.high), 
-        none;
-        
-        @Getter private final Set<LogSensitivityLevel> sensitivityLevels;
-        private LogMaskLevel(LogSensitivityLevel... sensitivityLevels) {
-            this.sensitivityLevels = sensitivityLevels==null ? Collections.emptySet() : Set.of(sensitivityLevels);
-        }
-    }
-    
-    public static enum LogSensitivityLevel {
-        high, medium, low;
     }
     
 

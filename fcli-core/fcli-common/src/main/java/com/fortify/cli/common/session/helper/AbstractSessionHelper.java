@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.log.LogMaskHelper;
+import com.fortify.cli.common.log.LogMaskSource;
 import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.util.FcliDataHelper;
 
@@ -84,7 +85,7 @@ public abstract class AbstractSessionHelper<T extends ISessionDescriptor> {
         if ( value!=null ) {
             var maskAnnotation = f.getAnnotation(MaskValue.class);
             if ( maskAnnotation!=null ) {
-                LogMaskHelper.INSTANCE.registerValue(maskAnnotation, "SESSION", value);
+                LogMaskHelper.INSTANCE.registerValue(maskAnnotation, LogMaskSource.SESSION, value);
             } else if ( f.getType().getPackageName().startsWith("com.fortify") ) {
                 visitFields(value.getClass(), value);
             }

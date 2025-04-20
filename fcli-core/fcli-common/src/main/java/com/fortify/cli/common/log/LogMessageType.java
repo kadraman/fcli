@@ -16,20 +16,41 @@ import org.apache.commons.lang3.StringUtils;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
+/**
+ * This enum defines log message types. The log message type is recorded in
+ * the fcli log file through {@link LogMessageTypeConverter} to allow for 
+ * easy identification of log message types, and can be used for registering 
+ * type-specific log masking values or patterns through {@link LogMaskHelper}.
+ *
+ * @author Ruud Senden
+ */
 public enum LogMessageType {
     FCLI, HTTP_IN, HTTP_OUT, OTHER;
     
     private final String fixedLengthString;
+    /** Constructor to generate a fixed length string for the current
+     *  log message type. If new types are added, the right padding
+     *  amount may need to be increased. */
     LogMessageType() {
         this.fixedLengthString = StringUtils.rightPad(this.name(), 8);
     }
     
+    /**
+     * Return the fixed length string for the current log message type.
+     */
     public final String toFixedLengthString() {
         return fixedLengthString;
     }
     
+    /**
+     * Return all known log message types. This is just a synonym for
+     * {@link #values()} for semantic reasons.
+     */
     public static final LogMessageType[] all() { return values(); }
     
+    /**
+     * Get the log message type for the given {@link ILoggingEvent}.
+     */
     public static final LogMessageType getType(ILoggingEvent event) {
         var loggerName = event.getLoggerName();
         if ( loggerName!=null ) {

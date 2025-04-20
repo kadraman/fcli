@@ -14,8 +14,8 @@ package com.fortify.cli.fod._common.session.cli.mixin;
 
 import java.util.Optional;
 
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
 import com.fortify.cli.common.rest.cli.mixin.UrlConfigOptions;
 import com.fortify.cli.common.session.cli.mixin.UserCredentialOptions;
 import com.fortify.cli.common.util.StringUtils;

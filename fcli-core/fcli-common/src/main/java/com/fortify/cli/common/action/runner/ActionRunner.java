@@ -24,6 +24,7 @@ import com.fortify.cli.common.action.runner.processor.ActionCliOptionsProcessor;
 import com.fortify.cli.common.action.runner.processor.ActionStepProcessorSteps;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.log.LogMaskHelper;
+import com.fortify.cli.common.log.LogMaskSource;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.output.writer.record.RecordWriterConfig;
 import com.fortify.cli.common.output.writer.record.RecordWriterFactory;
@@ -151,7 +152,7 @@ public class ActionRunner {
             if ( StringUtils.isBlank(description)) {
                 description = envVar;
             }
-            LogMaskHelper.INSTANCE.registerValue(maskConfig.getSensitivityLevel(), "ACTION ENV-VAR", description, value, maskConfig.getPattern());
+            LogMaskHelper.INSTANCE.registerValue(maskConfig.getSensitivityLevel(), LogMaskSource.ENV_VAR, description, value, maskConfig.getPattern());
         }
     }
 }

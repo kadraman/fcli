@@ -12,20 +12,11 @@
  */
 package com.fortify.cli.common.log;
 
-import ch.qos.logback.classic.pattern.ClassicConverter;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-
 /**
- * This class provides the 'msgType' conversion word that can be 
- * used in logging pattern layouts to show the {@link LogMessageType}
- * in log entries.
- * 
+ * The values in this enum are used to identify where a masked value originated from.
+ *
  * @author Ruud Senden
  */
-public class LogMessageTypeConverter extends ClassicConverter {
-    public static final String conversionWord = "msgType";
-    @Override
-    public String convert(ILoggingEvent event) {
-        return LogMessageType.getType(event).toFixedLengthString();
-    }
+public enum LogMaskSource {
+    SESSION, CLI_OPTION, ENV_VAR, HTTP_RESPONSE;
 }

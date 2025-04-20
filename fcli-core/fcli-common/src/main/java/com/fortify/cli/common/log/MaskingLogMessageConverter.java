@@ -16,7 +16,11 @@ import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
- *
+ * This class provides the 'maskedMsg' conversion word that can be 
+ * used in logging pattern layouts to show masked log messages in
+ * log entries. See {@link LogMaskHelper} for details on how to
+ * register log masks. 
+ * 
  * @author Ruud Senden
  */
 public class MaskingLogMessageConverter extends ClassicConverter {

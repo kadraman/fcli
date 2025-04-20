@@ -26,9 +26,9 @@ import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand.GenericOptionsArgGroup;
 import com.fortify.cli.common.cli.cmd.AbstractRunnableCommand.LogLevel;
 import com.fortify.cli.common.log.LogMaskHelper;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
 import com.fortify.cli.common.log.LogMessageType;
 import com.fortify.cli.common.log.LogMessageTypeConverter;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskingLogMessageConverter;
 import com.fortify.cli.common.util.DebugHelper;
 

@@ -12,8 +12,7 @@
  *******************************************************************************/
 package com.fortify.cli.common.rest.cli.mixin;
 
-import com.fortify.cli.common.log.LogMaskHelper;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.rest.unirest.config.IUrlConfig;
 
@@ -27,7 +26,7 @@ import picocli.CommandLine.Option;
  */
 public class UrlConfigOptions extends ConnectionConfigOptions implements IUrlConfig {
     @Option(names = {"--url"}, required = true, order=1)
-    @MaskValue(sensitivity = LogSensitivityLevel.low, description = "HOST NAME", pattern = LogMaskHelper.URL_HOSTNAME_PATTERN)
+    @MaskValue(sensitivity = LogSensitivityLevel.low, description = "HOST NAME", pattern = MaskValue.URL_HOSTNAME_PATTERN)
     @Getter private String url;
     
     public boolean hasUrlConfig() {

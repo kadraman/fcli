@@ -16,8 +16,8 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

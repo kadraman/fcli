@@ -14,8 +14,7 @@ package com.fortify.cli.ssc._common.session.cli.mixin;
 
 import java.time.OffsetDateTime;
 
-import com.fortify.cli.common.log.LogMaskHelper;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.rest.cli.mixin.ConnectionConfigOptions;
 import com.fortify.cli.common.rest.cli.mixin.UrlConfigOptions;
@@ -43,7 +42,7 @@ public class SSCAndScanCentralSessionLoginOptions {
     
     public static class SSCAndScanCentralUrlConfigOptions extends ConnectionConfigOptions implements ISSCAndScanCentralUrlConfig {
         @Option(names = {"--url"}, required = true, order=1)
-        @MaskValue(sensitivity = LogSensitivityLevel.low, description = "SSC HOST", pattern = LogMaskHelper.URL_HOSTNAME_PATTERN)
+        @MaskValue(sensitivity = LogSensitivityLevel.low, description = "SSC HOST", pattern = MaskValue.URL_HOSTNAME_PATTERN)
         @Getter private String sscUrl;
         
         @Option(names = {"--sc-sast-url"}, required = false, order=1)

@@ -19,7 +19,8 @@ import java.util.concurrent.Callable;
 
 import com.fortify.cli.common.cli.mixin.ICommandAware;
 import com.fortify.cli.common.log.LogMaskHelper;
-import com.fortify.cli.common.log.LogMaskHelper.LogMaskLevel;
+import com.fortify.cli.common.log.LogMaskLevel;
+import com.fortify.cli.common.log.LogMaskSource;
 import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.util.JavaHelper;
 
@@ -97,10 +98,7 @@ public abstract class AbstractRunnableCommand implements Callable<Integer> {
     }
     
     private void registerLogMask(Field field, Object value) {
-        var maskAnnotation = field.getAnnotation(MaskValue.class);
-        if ( maskAnnotation!=null ) {
-            LogMaskHelper.INSTANCE.registerValue(maskAnnotation, "CLI OPTION", value);
-        }
+        LogMaskHelper.INSTANCE.registerValue(field.getAnnotation(MaskValue.class), LogMaskSource.CLI_OPTION, value);
     }
         
 

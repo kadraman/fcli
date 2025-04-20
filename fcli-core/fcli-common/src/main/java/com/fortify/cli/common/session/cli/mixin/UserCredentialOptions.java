@@ -12,7 +12,7 @@
  *******************************************************************************/
 package com.fortify.cli.common.session.cli.mixin;
 
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.rest.unirest.config.IUserCredentialsConfig;
 

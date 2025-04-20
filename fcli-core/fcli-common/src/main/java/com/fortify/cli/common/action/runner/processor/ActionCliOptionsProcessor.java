@@ -39,6 +39,7 @@ import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionDescriptor;
 import com.fortify.cli.common.cli.util.SimpleOptionsParser.OptionsParseResult;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.log.LogMaskHelper;
+import com.fortify.cli.common.log.LogMaskSource;
 import com.fortify.cli.common.spring.expression.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.util.StringUtils;
 import com.github.freva.asciitable.AsciiTable;
@@ -111,7 +112,7 @@ public final class ActionCliOptionsProcessor {
             if ( StringUtils.isBlank(description)) {
                 description = option.getKey();
             }
-            LogMaskHelper.INSTANCE.registerValue(mask.getSensitivityLevel(), "CLI OPTION", description, value, mask.getPattern());
+            LogMaskHelper.INSTANCE.registerValue(mask.getSensitivityLevel(), LogMaskSource.CLI_OPTION, description, value, mask.getPattern());
         }
         optionValues.set(option.getKey(), convertOptionValue(value, option, optionValues));
     }

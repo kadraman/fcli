@@ -12,8 +12,8 @@
  *******************************************************************************/
 package com.fortify.cli.common.cli.cmd.import_debricked;
 
+import com.fortify.cli.common.log.LogSensitivityLevel;
 import com.fortify.cli.common.log.MaskValue;
-import com.fortify.cli.common.log.LogMaskHelper.LogSensitivityLevel;
 import com.fortify.cli.common.rest.unirest.config.IUserCredentialsConfig;
 
 import lombok.Getter;
