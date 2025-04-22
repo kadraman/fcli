@@ -12,7 +12,8 @@
  */
 package com.fortify.cli.common.log;
 
-import ch.qos.logback.classic.pattern.ClassicConverter;
+import com.formkiq.graalvm.annotations.Reflectable;
+
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
@@ -22,7 +23,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  * 
  * @author Ruud Senden
  */
-public class LogMessageTypeConverter extends ClassicConverter {
+@Reflectable
+public class LogMessageTypeConverter extends FcliLogClassicConverter {
     public static final String conversionWord = "msgType";
     @Override
     public String convert(ILoggingEvent event) {
