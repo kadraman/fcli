@@ -14,6 +14,7 @@ package com.fortify.cli.common.log;
 
 import com.formkiq.graalvm.annotations.Reflectable;
 
+import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
@@ -25,7 +26,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  * @author Ruud Senden
  */
 @Reflectable
-public class MaskingLogMessageConverter extends FcliLogClassicConverter {
+public class MaskingLogMessageConverter extends ClassicConverter {
     public static final String conversionWord = "maskedMsg";
     @Override
     public String convert(ILoggingEvent event) {
