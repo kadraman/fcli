@@ -174,17 +174,9 @@
         "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setLevel","parameterTypes":["java.lang.String"] }]
     },
     {
-        "name":"ch.qos.logback.classic.joran.SerializedModelConfigurator",
-        "methods":[{"name":"<init>","parameterTypes":[] }]
-    },
-    {
         "name":"ch.qos.logback.classic.pattern.KeyValuePairConverter",
         "methods":[{"name":"<init>","parameterTypes":[] }]
     },
-    {
-        "name":"ch.qos.logback.classic.util.DefaultJoranConfigurator",
-        "methods":[{"name":"<init>","parameterTypes":[] }]
-    },  
     {
         "name": "ch.qos.logback.core.ConsoleAppender",
         "queryAllPublicMethods":true,
