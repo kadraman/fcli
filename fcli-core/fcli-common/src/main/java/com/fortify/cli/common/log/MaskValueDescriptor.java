@@ -12,11 +12,22 @@
  */
 package com.fortify.cli.common.log;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+
 /**
- * The values in this enum are used to identify where a masked value originated from.
+ * Non-annotation equivalent of {@link MaskValue}.
  *
  * @author Ruud Senden
  */
-public enum LogMaskSource {
-    SESSION, CLI_OPTION, ENV_VAR, HTTP_RESPONSE, GRPC_RESPONSE;
+@RequiredArgsConstructor @Data @Accessors(fluent=true)
+public class MaskValueDescriptor {
+    private final LogSensitivityLevel sensitivity;
+    private final String description;
+    private final String pattern;
+    
+    public MaskValueDescriptor(LogSensitivityLevel sensitivity, String description) {
+        this(sensitivity, description, null);
+    }
 }
