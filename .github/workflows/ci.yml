@@ -7,7 +7,7 @@ on:
       - '**'
        
 env:
-  native_image_opts: --verbose -H:Log=registerResource:verbose -H:+PrintClassInitialization
+  native_image_opts: --verbose -H:Log=registerResource:verbose -H:+PrintClassInitialization --trace-class-initialization=ch.qos.logback.core.model.processor.ImplicitModelHandler$1,ch.qos.logback.core.util.Duration,ch.qos.logback.core.model.processor.ChainedModelFilter$1,ch.qos.logback.core.joran.util.AggregationAssessor$1,ch.qos.logback.core.model.processor.DefaultProcessor$1,ch.qos.logback.classic.model.processor.LogbackClassicDefaultNestedComponentRules,ch.qos.logback.core.subst.Token,ch.qos.logback.core.subst.Parser$1,ch.qos.logback.core.subst.NodeToStringTransformer$1 --initialize-at-run-time=com.fortify.cli.app.runner.util.FortifyCLIDynamicInitializer
   graal_distribution: graalvm-community
   graal_java_version: 21
           
