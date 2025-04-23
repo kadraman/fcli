@@ -61,18 +61,6 @@ public class AuditProcessor {
     @Getter
     private Path extractedPath;
 
-    public void saveFilterTemplateXml(Document doc) throws Exception {
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-        DOMSource source = new DOMSource(doc);
-        Path filterTemplatePath = extractedPath.resolve("filtertemplate.xml");
-        StreamResult result = new StreamResult(filterTemplatePath.toFile());
-        transformer.transform(source, result);
-        logger.debug("Updated filtertemplate.xml saved to: {}", filterTemplatePath);
-    }
-
     public Map<String, AuditIssue> processAuditXML() throws AviatorTechnicalException {
         Path auditPath = extractedPath.resolve("audit.xml");
 
@@ -240,7 +228,7 @@ public class AuditProcessor {
             String instanceId = entry.getKey();
             AuditResponse response = entry.getValue();
             Element issueElement = findIssueElement(instanceId);
-            String tagId = tagMappingConfig.getTagId();
+            String tagId = tagMappingConfig.getTag_id();
 
             if (response.getTier() != null) {
                 if (issueElement != null) {
@@ -293,7 +281,7 @@ public class AuditProcessor {
             }
 
             if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
-                updateOrAddTag(issueElement, tagMappingConfig.getTagId(), resultConfig.getValue());
+                updateOrAddTag(issueElement, tagMappingConfig.getTag_id(), resultConfig.getValue());
             }
             if (resultConfig != null && resultConfig.getSuppress()) {
                 issueElement.setAttribute("suppressed", "true");
@@ -336,7 +324,7 @@ public class AuditProcessor {
             }
 
             if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
-                addTagHistory(clientAuditTrail, tagMappingConfig.getTagId(), resultConfig.getValue());
+                addTagHistory(clientAuditTrail, tagMappingConfig.getTag_id(), resultConfig.getValue());
             }
             if (resultConfig != null && resultConfig.getSuppress()) {
                 issueElement.setAttribute("suppressed", "true");
@@ -473,7 +461,7 @@ public class AuditProcessor {
             }
 
             if (resultConfig != null && resultConfig.getValue() != null && !resultConfig.getValue().isEmpty()) {
-                updateOrAddTag(newIssue, tagMappingConfig.getTagId(), resultConfig.getValue());
+                updateOrAddTag(newIssue, tagMappingConfig.getTag_id(), resultConfig.getValue());
             }
             if (resultConfig != null && resultConfig.getSuppress()) {
                 newIssue.setAttribute("suppressed", "true");
@@ -535,7 +523,7 @@ public class AuditProcessor {
         newIssue.setAttribute("suppressed", "false");
 
         updateOrAddTag(newIssue, Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR);
-        updateOrAddTag(newIssue, Constants.ANALYSIS_TAG_ID, Constants.PENDING_REVIEW);
+        updateOrAddTag(newIssue, Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_EXCLUDED);
 
         addCommentToIssueElement(newIssue, comment, Constants.USER_NAME);
 
@@ -549,7 +537,7 @@ public class AuditProcessor {
                     .suppressed(false)
                     .tags(Map.of(
                             Constants.AVIATOR_STATUS_TAG_ID, Constants.PROCESSED_BY_AVIATOR,
-                            Constants.ANALYSIS_TAG_ID, Constants.PENDING_REVIEW
+                            Constants.AVIATOR_PREDICTION_TAG_ID, Constants.AVIATOR_EXCLUDED
                     ))
                     .threadedComments(List.of(
                             AuditIssue.Comment.builder()
