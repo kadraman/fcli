@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0](https://github.com/fortify/fcli/compare/v3.2.1...v3.3.0) (2025-04-25)
+
+
+### Features
+
+* Add log masking capabilities ([68a7875](https://github.com/fortify/fcli/commit/68a7875e48c8dab63eb4e09163ac5fc45842663a))
+
+
+### Bug Fixes
+
+* FoD `release-summary` action: Support FoD 24.3 (FedRAMP) ([#721](https://github.com/fortify/fcli/issues/721)) ([7c87e8d](https://github.com/fortify/fcli/commit/7c87e8dd2213620986b1aec6feb2d4bb6e079941))
+
 ## [3.2.1](https://github.com/fortify/fcli/compare/v3.2.0...v3.2.1) (2025-04-15)
 
 
