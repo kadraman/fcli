@@ -24,7 +24,6 @@ import picocli.CommandLine.Command;
 
 @Command(
         name = "aviator",
-        hidden = true,
         resourceBundle = "com.fortify.cli.aviator.i18n.AviatorMessages",
         subcommands = {
                 // This list of product subcommands should be in alphabetical
