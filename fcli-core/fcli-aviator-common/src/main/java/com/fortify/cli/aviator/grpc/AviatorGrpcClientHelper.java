@@ -2,6 +2,7 @@ package com.fortify.cli.aviator.grpc;
 
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException; // Added import
 import com.fortify.cli.aviator.config.IAviatorLogger;
+import com.fortify.cli.aviator.util.Constants;
 import io.grpc.CompressorRegistry;
 import io.grpc.DecompressorRegistry;
 import io.grpc.ManagedChannel;
@@ -15,7 +16,7 @@ public class AviatorGrpcClientHelper {
     private static final Logger LOG = LoggerFactory.getLogger(AviatorGrpcClientHelper.class);
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
-    public static AviatorGrpcClient createClient(String url, IAviatorLogger logger) throws AviatorSimpleException {
+    public static AviatorGrpcClient createClient(String url, IAviatorLogger logger, long pingIntervalSeconds) throws AviatorSimpleException {
         if (url == null || url.trim().isEmpty()) {
             throw new AviatorSimpleException("Aviator URL cannot be null or empty.");
         }
@@ -45,7 +46,7 @@ public class AviatorGrpcClientHelper {
                     .compressorRegistry(CompressorRegistry.getDefaultInstance())
                     .decompressorRegistry(DecompressorRegistry.getDefaultInstance())
                     .build();
-            return new AviatorGrpcClient(channel, DEFAULT_TIMEOUT_SECONDS, logger);
+            return new AviatorGrpcClient(channel, DEFAULT_TIMEOUT_SECONDS, logger, pingIntervalSeconds);
 
         } else if (parts.length == 2) {
             String host = parts[0].trim();
@@ -71,7 +72,7 @@ public class AviatorGrpcClientHelper {
                         .compressorRegistry(CompressorRegistry.getDefaultInstance())
                         .decompressorRegistry(DecompressorRegistry.getDefaultInstance())
                         .build();
-                return new AviatorGrpcClient(channel, DEFAULT_TIMEOUT_SECONDS, logger);
+                return new AviatorGrpcClient(channel, DEFAULT_TIMEOUT_SECONDS, logger, pingIntervalSeconds);
             } catch (NumberFormatException e) {
                 throw new AviatorSimpleException("Aviator URL is invalid: Invalid port number '" + portStr + "'. Provided URL: " + url, e);
             }
@@ -81,6 +82,6 @@ public class AviatorGrpcClientHelper {
     }
 
     public static AviatorGrpcClient createClient(String url) throws AviatorSimpleException {
-        return createClient(url, null);
+        return createClient(url, null, Constants.DEFAULT_PING_INTERVAL_SECONDS);
     }
 }
