@@ -1,21 +1,20 @@
 package com.fortify.cli.aviator.fpr;
 
-import com.fortify.cli.aviator._common.exception.AviatorTechnicalException; // Import
-import com.fortify.cli.aviator.fpr.filter.FilterSet;
-import com.fortify.cli.aviator.fpr.filter.FilterTemplate;
-import com.fortify.cli.aviator.fpr.filter.FilterTemplateParser;
-import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException; // Import
-
-import javax.xml.parsers.ParserConfigurationException; // Import
-import java.io.IOException; // Import
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fortify.cli.aviator._common.exception.AviatorTechnicalException; // Import
+import com.fortify.cli.aviator.fpr.filter.FilterSet;
+import com.fortify.cli.aviator.fpr.filter.FilterTemplate;
+import com.fortify.cli.aviator.fpr.filter.FilterTemplateParser;
+
+import lombok.Getter;
 
 public class FPRProcessor {
 

@@ -1,5 +1,8 @@
 package com.fortify.cli.aviator.core;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.fortify.cli.aviator.core.model.AnalysisInfo;
 import com.fortify.cli.aviator.core.model.File;
 import com.fortify.cli.aviator.core.model.IssueData;
@@ -7,9 +10,6 @@ import com.fortify.cli.aviator.core.model.UserPrompt;
 import com.fortify.cli.aviator.fpr.Vulnerability;
 import com.fortify.cli.aviator.util.FileTypeLanguageMapperUtil;
 import com.fortify.cli.aviator.util.FileUtil;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class IssueObjBuilder {
 

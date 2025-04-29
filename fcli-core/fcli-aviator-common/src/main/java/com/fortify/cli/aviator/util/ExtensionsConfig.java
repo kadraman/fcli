@@ -1,10 +1,11 @@
 package com.fortify.cli.aviator.util;
 
-import com.formkiq.graalvm.annotations.Reflectable;
-import lombok.NoArgsConstructor;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.formkiq.graalvm.annotations.Reflectable;
+
+import lombok.NoArgsConstructor;
 
 @NoArgsConstructor @Reflectable
 public class ExtensionsConfig {

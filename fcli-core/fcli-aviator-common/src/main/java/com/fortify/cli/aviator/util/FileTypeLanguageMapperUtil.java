@@ -1,7 +1,5 @@
 package com.fortify.cli.aviator.util;
 
-import java.util.Optional;
-
 public class FileTypeLanguageMapperUtil {
     private static ExtensionsConfig extensionsConfig;
 

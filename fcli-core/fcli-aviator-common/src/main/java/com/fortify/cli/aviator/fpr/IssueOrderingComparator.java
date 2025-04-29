@@ -1,8 +1,8 @@
 package com.fortify.cli.aviator.fpr;
 
-import com.fortify.cli.aviator.core.model.UserPrompt;
-
 import java.util.Comparator;
+
+import com.fortify.cli.aviator.core.model.UserPrompt;
 
 public class IssueOrderingComparator implements Comparator<UserPrompt> {
 
