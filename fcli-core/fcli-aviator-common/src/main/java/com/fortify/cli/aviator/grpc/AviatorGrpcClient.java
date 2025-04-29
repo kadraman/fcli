@@ -372,8 +372,7 @@ public class AviatorGrpcClient implements AutoCloseable {
                     public void onError(Throwable t) {
                         stopPingPong();
                         if (!resultFuture.isDone()) {
-                            if (t instanceof StatusRuntimeException) {
-                                StatusRuntimeException sre = (StatusRuntimeException) t;
+                            if (t instanceof StatusRuntimeException sre) {
                                 String description = sre.getStatus().getDescription() != null ? sre.getStatus().getDescription() : "Unknown gRPC error";
                                 String techMessage = String.format("gRPC stream failed: %s (Status: %s)", description, sre.getStatus().getCode());
                                 resultFuture.completeExceptionally(new AviatorTechnicalException(techMessage, t));

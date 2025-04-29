@@ -43,7 +43,7 @@ public class FPRLoadingUtil {
         File fprFile = new File(fprPath);
 
         if (!fprFile.exists() || !FileUtil.isZipFile(fprFile)) {
-            logger.error("FPR file does not exist or is not a zip file: " + fprPath);
+            logger.error("FPR file does not exist or is not a zip file: {}", fprPath);
             return false;
         }
 
@@ -60,12 +60,12 @@ public class FPRLoadingUtil {
                 }
             }
         } catch (IOException e) {
-            logger.error("Error accessing FPR file: " + fprPath, e);
+            logger.error("Error accessing FPR file: {}", fprPath, e);
             return false;
         }
 
         if (!foundAuditFvdl) {
-            logger.error("FPR file does not contain audit.fvdl in the root directory: " + fprPath);
+            logger.error("FPR file does not contain audit.fvdl in the root directory: {}", fprPath);
         }
 
         return foundAuditFvdl;

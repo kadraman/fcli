@@ -14,10 +14,6 @@ package com.fortify.cli.aviator._common.session.user.cli.cmd;
 
 import java.util.Date;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionLoginOptions;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserSessionNameArgGroup;
 import com.fortify.cli.aviator._common.session.user.cli.mixin.AviatorUserTokenResolverMixin;
@@ -40,9 +36,6 @@ public class AviatorUserSessionLoginCommand extends AbstractSessionLoginCommand<
     @Mixin private AviatorUserSessionLoginOptions sessionLoginOptions = new AviatorUserSessionLoginOptions();
     @Getter @ArgGroup(headingKey = "aviator.user-session.name.arggroup")
     private AviatorUserSessionNameArgGroup sessionNameSupplier;
-
-    private static final Logger LOG = LoggerFactory.getLogger(AviatorUserSessionLoginCommand.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void logoutBeforeNewLogin(String sessionName, AviatorUserSessionDescriptor sessionDescriptor) {}

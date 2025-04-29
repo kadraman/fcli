@@ -1,7 +1,6 @@
 package com.fortify.cli.aviator.fpr;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,7 +8,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fortify.cli.aviator._common.exception.AviatorTechnicalException; // Import
+import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator.fpr.filter.FilterSet;
 import com.fortify.cli.aviator.fpr.filter.FilterTemplate;
 import com.fortify.cli.aviator.fpr.filter.FilterTemplateParser;
@@ -19,7 +18,6 @@ import lombok.Getter;
 public class FPRProcessor {
 
     Logger logger = LoggerFactory.getLogger(FPRProcessor.class);
-    private final Path FPRPath;
     private final Path extractedPath;
     private final Map<String, AuditIssue> auditIssueMap;
     @Getter
@@ -27,7 +25,6 @@ public class FPRProcessor {
     private final AuditProcessor auditProcessor;
 
     public FPRProcessor(String fprPath, Path extractedPath, Map<String, AuditIssue> auditIssueMap, AuditProcessor auditProcessor) {
-        this.FPRPath = Paths.get(fprPath);
         this.extractedPath = extractedPath;
         this.auditIssueMap = auditIssueMap;
         this.auditProcessor = auditProcessor;
