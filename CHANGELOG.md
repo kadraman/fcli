@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/fortify/fcli/compare/v3.3.0...v3.4.0) (2025-04-29)
+
+
+### Features
+
+* Unhide `fcli aviator` commands for upcoming Aviator release ([0e3d0c7](https://github.com/fortify/fcli/commit/0e3d0c7a4df97ca5f5b8b400fc4f9cf3701f1386))
+
 ## [3.3.0](https://github.com/fortify/fcli/compare/v3.2.1...v3.3.0) (2025-04-25)
 
 
