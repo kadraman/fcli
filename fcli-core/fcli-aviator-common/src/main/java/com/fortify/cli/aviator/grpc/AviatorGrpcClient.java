@@ -89,6 +89,11 @@ public class AviatorGrpcClient implements AutoCloseable {
     private final AtomicBoolean streamCompleted = new AtomicBoolean(false);
     private volatile boolean isStreamActive = false;
 
+    private final ScheduledExecutorService pingScheduler;
+    private ScheduledFuture<?> pingTask;
+    private final long pingIntervalSeconds;
+    private final AtomicBoolean isPinging = new AtomicBoolean(false);
+
     private static class RequestMetrics {
         private final long startTime;
         private volatile long endTime = 0;
@@ -108,7 +113,7 @@ public class AviatorGrpcClient implements AutoCloseable {
         }
     }
 
-    public AviatorGrpcClient(ManagedChannel channel, long defaultTimeoutSeconds, IAviatorLogger logger) {
+    public AviatorGrpcClient(ManagedChannel channel, long defaultTimeoutSeconds, IAviatorLogger logger, long pingIntervalSeconds) {
         LOG.info("Initializing AviatorGrpcClient with ManagedChannel");
         this.logger = logger;
         this.streamId = UUID.randomUUID().toString();
@@ -146,9 +151,17 @@ public class AviatorGrpcClient implements AutoCloseable {
         });
         this.isShutdown = new AtomicBoolean(false);
         this.requestSemaphore = new Semaphore(INITIAL_REQUEST_WINDOW);
+
+        this.pingIntervalSeconds = pingIntervalSeconds;
+
+        this.pingScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "aviator-client-ping-" + r.hashCode());
+            t.setDaemon(true);
+            return t;
+        });
     }
 
-    public AviatorGrpcClient(String host, int port, long defaultTimeoutSeconds, IAviatorLogger logger) {
+    public AviatorGrpcClient(String host, int port, long defaultTimeoutSeconds, IAviatorLogger logger, long pingIntervalSeconds) {
         this(ManagedChannelBuilder.forAddress(host, port)
                         .useTransportSecurity()
                         .maxInboundMessageSize(MAX_MESSAGE_SIZE)
@@ -160,8 +173,54 @@ public class AviatorGrpcClient implements AutoCloseable {
                         .decompressorRegistry(DecompressorRegistry.getDefaultInstance())
                         .build(),
                 defaultTimeoutSeconds,
-                logger);
+                logger, pingIntervalSeconds);
         LOG.info("Initialized AviatorGrpcClient - Host: {}, Port: {}", host, port);
+    }
+    public AviatorGrpcClient(ManagedChannel channel, long defaultTimeoutSeconds, IAviatorLogger logger) {
+        this(channel, defaultTimeoutSeconds, logger, 30);
+    }
+
+    private void startPingPong() {
+        if (isPinging.compareAndSet(false, true)) {
+            logger.info("Starting ping-pong keepalive with interval of {} seconds", pingIntervalSeconds);
+            pingTask = pingScheduler.scheduleAtFixedRate(
+                    this::sendPing,
+                    pingIntervalSeconds,
+                    pingIntervalSeconds,
+                    TimeUnit.SECONDS
+            );
+        }
+    }
+
+    private void stopPingPong() {
+        if (isPinging.compareAndSet(true, false) && pingTask != null) {
+            logger.info("Stopping ping-pong keepalive");
+            pingTask.cancel(false);
+            pingTask = null;
+        }
+    }
+
+    // Send ping message
+    private void sendPing() {
+        try {
+            if (requestObserver != null && !streamCompleted.get() && isStreamActive) {
+                PingRequest pingRequest = PingRequest.newBuilder()
+                        .setStreamId(streamId)
+                        .setTimestamp(System.currentTimeMillis())
+                        .build();
+
+                UserPromptRequest pingMsg = UserPromptRequest.newBuilder()
+                        .setPing(pingRequest)
+                        .build();
+
+                LOG.info("Sending ping streamId: {}", streamId);
+                requestObserver.onNext(pingMsg);
+            }
+        } catch (Exception e) {
+            if (!streamCompleted.get()) {
+                LOG.warn("Failed to send ping: {}", e.getMessage());
+            }
+        }
     }
 
     public CompletableFuture<Map<String, AuditResponse>> processBatchRequests(
@@ -191,6 +250,15 @@ public class AviatorGrpcClient implements AutoCloseable {
                     @Override
                     public void onNext(AuditorResponse response) {
                         logger.info("Received response - Status: " + response.getStatus() + ", RequestId: " + response.getRequestId());
+                        if ("PONG".equals(response.getStatus())) {
+                            logger.info("Received pong from server: StreamId: {}, Client timestamp: {}, Server timestamp: {}, RequestId: {}",
+                                    response.getStreamId(),
+                                    response.getPong().getClientTimestamp(),
+                                    response.getPong().getServerTimestamp(),
+                                    response.getRequestId());
+                            return;
+                        }
+
                         if ("PROCESSING_ERROR".equals(response.getStatus()) || "REQUEST_PROCESSING_ERROR".equals(response.getStatus())) {
                             logger.error(response.getStatusMessage());
                             RequestMetrics metrics = requestMetricsMap.remove(response.getRequestId());
@@ -241,6 +309,7 @@ public class AviatorGrpcClient implements AutoCloseable {
                                 isInitialized.set(true);
                                 initLatch.countDown();
                                 logger.info("Stream initialized successfully");
+                                startPingPong();
                             } else {
                                 logger.progress("Stream initialization failed: " + response.getStatusMessage());
                                 resultFuture.completeExceptionally(new AviatorTechnicalException("Stream initialization failed: " + response.getStatusMessage()));
@@ -273,6 +342,7 @@ public class AviatorGrpcClient implements AutoCloseable {
 
                     @Override
                     public void onError(Throwable t) {
+                        stopPingPong();
                         if (!resultFuture.isDone()) {
                             if (t instanceof StatusRuntimeException) {
                                 StatusRuntimeException sre = (StatusRuntimeException) t;
@@ -288,6 +358,7 @@ public class AviatorGrpcClient implements AutoCloseable {
 
                     @Override
                     public void onCompleted() {
+                        stopPingPong();
                         logger.progress("Stream completed");
                         if (!resultFuture.isDone()) {
                             resultFuture.complete(responses);
@@ -313,6 +384,7 @@ public class AviatorGrpcClient implements AutoCloseable {
                     .build();
 
             requestObserver.onNext(initRequest);
+            LOG.info("Client Id  for stream initialization {}",streamId);
 
             processingExecutor.submit(() -> {
                 try {
@@ -338,6 +410,7 @@ public class AviatorGrpcClient implements AutoCloseable {
         }
 
         return resultFuture.exceptionally(ex -> {
+            stopPingPong();
             Throwable cause = (ex instanceof CompletionException || ex instanceof ExecutionException) && ex.getCause() != null ? ex.getCause() : ex;
             if (cause instanceof AviatorSimpleException) throw (AviatorSimpleException) cause;
             if (cause instanceof AviatorTechnicalException) throw (AviatorTechnicalException) cause;
@@ -501,6 +574,7 @@ public class AviatorGrpcClient implements AutoCloseable {
     public void close() {
         LOG.debug("Closing client...");
         isShutdown.set(true);
+        stopPingPong();
         try {
             if (isStreamActive && !latch.await(10, TimeUnit.SECONDS)) {
                 LOG.warn("Timed out waiting for stream completion");
@@ -548,6 +622,19 @@ public class AviatorGrpcClient implements AutoCloseable {
                 }
             }
         }
+
+        if (pingScheduler != null && !pingScheduler.isShutdown()) {
+            try {
+                pingScheduler.shutdown();
+                if (!pingScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    pingScheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                pingScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
         LOG.info("Client closed");
     }
 
