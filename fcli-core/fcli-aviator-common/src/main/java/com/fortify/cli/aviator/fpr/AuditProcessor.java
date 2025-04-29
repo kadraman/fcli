@@ -68,7 +68,7 @@ public class AuditProcessor {
     }
 
     @Getter
-    private Path extractedPath;
+    private final Path extractedPath;
 
     public Map<String, AuditIssue> processAuditXML() throws AviatorTechnicalException {
         Path auditPath = extractedPath.resolve("audit.xml");
@@ -237,7 +237,6 @@ public class AuditProcessor {
             String instanceId = entry.getKey();
             AuditResponse response = entry.getValue();
             Element issueElement = findIssueElement(instanceId);
-            String tagId = tagMappingConfig.getTag_id();
 
             if (response.getTier() != null) {
                 if (issueElement != null) {

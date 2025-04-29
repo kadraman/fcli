@@ -20,10 +20,12 @@ public class ExtensionsConfig {
     }
 
     public String getLanguageForExtension(String extension) {
-        if (extension == null) {
+        if (StringUtil.isEmpty(extension)) {
             return "Unknown";
         }
-        var ext = extension.startsWith(".") ? extension : "." + extension;
+        var ext = extension.startsWith(".")
+                ? extension
+                : "." + extension;
 
         return supportedExtensions.getOrDefault(ext, "Unknown");
     }

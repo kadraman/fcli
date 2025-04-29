@@ -56,7 +56,7 @@ public class AviatorAppCreateCommand extends AbstractAviatorAdminSessionOutputCo
         JsonNode applicationNode = AviatorGrpcUtils.grpcToJsonNode(createdApplication);
         JsonNode legalTerms = applicationNode.get("legalTermsOfService");
         if (legalTerms != null) {
-            ((ObjectNode) applicationNode).put("disclaimer", legalTerms);
+            ((ObjectNode) applicationNode).set("disclaimer", legalTerms);
         }
 
         return applicationNode;
