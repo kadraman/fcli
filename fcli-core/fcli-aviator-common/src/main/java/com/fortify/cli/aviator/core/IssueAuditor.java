@@ -29,6 +29,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.fortify.cli.aviator.util.Constants.DEFAULT_PING_INTERVAL_SECONDS;
+
 
 public class IssueAuditor {
 
@@ -144,7 +146,7 @@ public class IssueAuditor {
         if (filteredUserPrompts.isEmpty()) {
             logger.progress("Audit skipped - no issues to process");
         } else {
-            try (AviatorGrpcClient client = AviatorGrpcClientHelper.createClient(url, logger)) {
+            try (AviatorGrpcClient client = AviatorGrpcClientHelper.createClient(url, logger, DEFAULT_PING_INTERVAL_SECONDS)) {
                 CompletableFuture<Map<String, AuditResponse>> future =
                         client.processBatchRequests(filteredUserPrompts, projectName, token);
                 Map<String, AuditResponse> responses = future.get(500, TimeUnit.MINUTES);
