@@ -20,7 +20,7 @@ import com.google.protobuf.util.JsonFormat;
 
 public class AviatorGrpcUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AviatorGrpcUtils.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper(); // Singleton instance
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Map<String, MaskValueDescriptor> maskedFields = Stream.of(
             new AbstractMap.SimpleImmutableEntry<>("token", new MaskValueDescriptor(LogSensitivityLevel.high, "AVIATOR TOKEN"))
             ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

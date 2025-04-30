@@ -1,5 +1,31 @@
 package com.fortify.cli.aviator.grpc;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fortify.aviator.application.Application;
 import com.fortify.aviator.application.ApplicationById;
 import com.fortify.aviator.application.ApplicationByTenantName;
@@ -12,7 +38,17 @@ import com.fortify.aviator.entitlement.Entitlement;
 import com.fortify.aviator.entitlement.EntitlementServiceGrpc;
 import com.fortify.aviator.entitlement.ListEntitlementsByTenantRequest;
 import com.fortify.aviator.entitlement.ListEntitlementsByTenantResponse;
-import com.fortify.aviator.grpc.*;
+import com.fortify.aviator.grpc.AnalysisInfo;
+import com.fortify.aviator.grpc.AuditRequest;
+import com.fortify.aviator.grpc.AuditorResponse;
+import com.fortify.aviator.grpc.AuditorServiceGrpc;
+import com.fortify.aviator.grpc.File;
+import com.fortify.aviator.grpc.Fragment;
+import com.fortify.aviator.grpc.IssueData;
+import com.fortify.aviator.grpc.PingRequest;
+import com.fortify.aviator.grpc.StackTraceElementList;
+import com.fortify.aviator.grpc.StreamInitRequest;
+import com.fortify.aviator.grpc.UserPromptRequest;
 import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
 import com.fortify.cli.aviator._common.exception.AviatorTechnicalException;
 import com.fortify.cli.aviator.config.IAviatorLogger;
@@ -32,6 +68,7 @@ import com.fortify.grpc.token.TokenGenerationResponse;
 import com.fortify.grpc.token.TokenServiceGrpc;
 import com.fortify.grpc.token.TokenValidationRequest;
 import com.fortify.grpc.token.TokenValidationResponse;
+
 import io.grpc.CompressorRegistry;
 import io.grpc.DecompressorRegistry;
 import io.grpc.ManagedChannel;
@@ -42,15 +79,6 @@ import io.grpc.stub.AbstractBlockingStub;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 public class AviatorGrpcClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(AviatorGrpcClient.class);
@@ -344,8 +372,7 @@ public class AviatorGrpcClient implements AutoCloseable {
                     public void onError(Throwable t) {
                         stopPingPong();
                         if (!resultFuture.isDone()) {
-                            if (t instanceof StatusRuntimeException) {
-                                StatusRuntimeException sre = (StatusRuntimeException) t;
+                            if (t instanceof StatusRuntimeException sre) {
                                 String description = sre.getStatus().getDescription() != null ? sre.getStatus().getDescription() : "Unknown gRPC error";
                                 String techMessage = String.format("gRPC stream failed: %s (Status: %s)", description, sre.getStatus().getCode());
                                 resultFuture.completeExceptionally(new AviatorTechnicalException(techMessage, t));

@@ -1,28 +1,43 @@
 package com.fortify.cli.aviator.fpr;
 
-import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
-import com.fortify.cli.aviator.core.model.File;
-import com.fortify.cli.aviator.core.model.Fragment;
-import com.fortify.cli.aviator.fpr.filter.AnalyzerType;
-import com.fortify.cli.aviator.util.StringUtil;
-import com.fortify.cli.aviator.core.model.StackTraceElement;
-import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.*;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import com.fortify.cli.aviator._common.exception.AviatorSimpleException;
+import com.fortify.cli.aviator.core.model.File;
+import com.fortify.cli.aviator.core.model.Fragment;
+import com.fortify.cli.aviator.core.model.StackTraceElement;
+import com.fortify.cli.aviator.fpr.filter.AnalyzerType;
+import com.fortify.cli.aviator.util.StringUtil;
+
+import lombok.Getter;
 
 public class FVDLProcessor {
 
