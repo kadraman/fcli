@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/fortify/fcli/compare/v3.4.0...v3.4.1) (2025-04-30)
+
+
+### Bug Fixes
+
+* Fix bug in Aviator module ([7f66cbc](https://github.com/fortify/fcli/commit/7f66cbcbb0f600ad67ff3db067515290cb980fe2))
+
 ## [3.4.0](https://github.com/fortify/fcli/compare/v3.3.0...v3.4.0) (2025-04-29)
 
 
