@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.1](https://github.com/fortify/fcli/compare/v3.5.0...v3.5.1) (2025-05-22)
+
+
+### Bug Fixes
+
+* `fcli aviator`: Fix `NullPointerException` when auditing certain vulnerabilities ([#744](https://github.com/fortify/fcli/issues/744)) ([4bd9e5d](https://github.com/fortify/fcli/commit/4bd9e5d8d73f068f0344f758be218acf1ff5d36f))
+
 ## [3.5.0](https://github.com/fortify/fcli/compare/v3.4.1...v3.5.0) (2025-05-19)
 
 
