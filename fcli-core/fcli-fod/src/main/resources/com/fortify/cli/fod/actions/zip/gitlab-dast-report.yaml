@@ -32,7 +32,7 @@ steps:
         uri:    /api/v3/scans/${rel.currentDynamicScanId}/site-tree
         if:     ${rel.currentDynamicScanId!=null}
         on.fail: 
-          - log.debug: "Site tree unavailable: ${exception.getMessage()}"
+          - log.debug: "Site tree unavailable: ${siteTree_exception.getMessage()}"
   - log.progress: Processing issue data
   - rest.call:
       issues:
