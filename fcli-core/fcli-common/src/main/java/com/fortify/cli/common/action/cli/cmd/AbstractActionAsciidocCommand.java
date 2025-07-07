@@ -138,7 +138,7 @@ public abstract class AbstractActionAsciidocCommand extends AbstractRunnableComm
         //      https://github.com/fortify/fcli/issues/622), or should we allow Markdown syntax in action descriptions?
         //      We could either add support for new markdownDescription properties, or allow Markdown in existing
         //      description properties and clean this up in the 'action help' command.
-        var manPages = listDir(manpageDir).stream().filter(s->s.matches("fcli-[\\w-]+-[\\w-]+-[\\w-]+\\.adoc|fcli-[\\w-]+-[\\w-]+\\.adoc"))
+        var manPages = listDir(manpageDir).stream().filter(s->s.matches("fcli-[\\w-]+-[\\w-]+-[\\w-]+\\.adoc|fcli-action-[\\w-]+\\.adoc"))
             .map(s->s.replaceAll("\\.adoc", ""))
             .sorted((a,b)->Integer.compare(a.length(), b.length())) // In case of overlapping names, we need to replace longest matching name
             .collect(Collectors.toSet());
