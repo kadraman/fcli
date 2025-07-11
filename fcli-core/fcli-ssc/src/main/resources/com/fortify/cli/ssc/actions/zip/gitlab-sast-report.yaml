@@ -125,4 +125,22 @@ formatters:
       location:
         file:       ${issueSourceFileResolver.resolve(issue.fullFileName)}
         start_line: ${issue.lineNumber==0?1:issue.lineNumber}
+      details:
+        code_flows: 
+          name: Code Flows
+          type: code-flows
+          items: |-
+            ${#normalizeAndMergeTraceNodes(issue.details?.traceNodes).![
+                         #this.![{
+                           type: 'code-flow-node',
+                           node_type: {'SOURCE': 'source', 'SINK': 'sink', '':'propagation'}.get(sourceOrSink),
+                           file_location: {
+                             type: 'file-location',
+                             file_name: #root.issueSourceFileResolver.resolve(path),
+                             line_start: line==0||line==null?1:line
+                           }
+                         }]
+                      ]
+            }
         
+          
