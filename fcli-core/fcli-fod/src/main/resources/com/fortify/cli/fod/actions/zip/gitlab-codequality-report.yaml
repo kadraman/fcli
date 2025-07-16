@@ -19,17 +19,16 @@ cli.options:
   release:
     names: --release, --rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
+  sourceDir:
+    names: --source-dir
+    required: false
+    description: "(PREVIEW) Optional local repository directory to convert Fortify-reported source file paths to actual repository file paths"
+
   
 steps:
   - var.set:
       rel: ${#fod.release(cli.release)}
-  - log.progress: Loading static scan summary
-  - rest.call:
-      staticScanSummary:
-        uri:  /api/v3/scans/${rel.currentStaticScanId}/summary
-        if:   ${rel.currentStaticScanId!=null}
-        on.fail: 
-          - log.warn: Unable to load static scan summary, some scan metadata may be missing from the report
+      issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
   - log.progress: Processing issue data
   - rest.call:
       issues:
@@ -62,7 +61,7 @@ formatters:
       check_name: ${issue.category}
       fingerprint: ${issue.instanceId}
       location:
-          path: ${issue.primaryLocationFull}
+          path: ${issueSourceFileResolver.resolve(issue.primaryLocationFull)}
           lines: 
-              begin: ${issue.lineNumber}
+              begin: ${issue.lineNumber==0?1:issue.lineNumber}
       severity: ${issue.severityString}
