@@ -20,6 +20,7 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -27,9 +28,9 @@ import lombok.NoArgsConstructor;
  * steps specified in the do-block, and cleaning up the session afterwards.
  */
 @Reflectable @NoArgsConstructor
-@Data
+@Data @EqualsAndHashCode(callSuper = true)
 @JsonInclude(Include.NON_NULL)
-public final class ActionStepWithSession implements IActionElement {
+public final class ActionStepWithSession extends AbstractActionElementIf {
     @JsonPropertyDescription("""
         Required SpEL template expression; the session login command to run before running \
         the steps specified in the do-block.

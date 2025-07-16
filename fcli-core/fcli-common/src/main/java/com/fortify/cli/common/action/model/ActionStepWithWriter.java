@@ -23,6 +23,7 @@ import com.fortify.cli.common.output.writer.record.RecordWriterStyle;
 import com.fortify.cli.common.spring.expression.wrapper.TemplateExpression;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -30,9 +31,9 @@ import lombok.NoArgsConstructor;
  * steps specified in the do-block, and cleaning up the session afterwards.
  */
 @Reflectable @NoArgsConstructor
-@Data
+@Data @EqualsAndHashCode(callSuper = true)
 @JsonInclude(Include.NON_NULL)
-public final class ActionStepWithWriter implements IActionElement {
+public final class ActionStepWithWriter extends AbstractActionElementIf {
     @JsonPropertyDescription("""
         Required SpEL template expression; destination where to write the output of this writer. \
         Destination can be specified as one of the following: 

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -28,9 +29,9 @@ import lombok.NoArgsConstructor;
  * be run around a set of steps. 
  */
 @Reflectable @NoArgsConstructor
-@Data
+@Data @EqualsAndHashCode(callSuper = true)
 @JsonInclude(Include.NON_NULL)
-public final class ActionStepWithCleanup implements IActionElement {
+public final class ActionStepWithCleanup extends AbstractActionElementIf {
     // TODO Add property that allows for installing a shutdown hook
     @JsonPropertyDescription("""
         Required list of initialization steps to be run before the steps in the do-block will be \
