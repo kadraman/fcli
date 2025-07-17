@@ -206,8 +206,9 @@ public final class ActionStep extends AbstractActionElementIf {
         run on other fcli 3.x versions.
         
         x.skipped: Boolean value indicating whether execution was skipped due to skip.if-reason configuration
-        x.skipReason: Reason why execution was skipped; will be null if x.skipped==true
+        x.skipReason: Reason why execution was skipped; will be null if x.skipped==true (deprecated; see x.statusReason)
         x.status: Set to either SKIPPED (x.skipped==true), SUCCESS (x.exitCode==0), or FAILED (x.exitCode!=0)
+        x.statusReason: Reason why execution failed or was skipped; will be null if step was executed successfully
         x.dependencySkipReason: Optional skip reason for steps that are dependent on this fcli invocation
         x.success: Set to true if fcli invocation was successful, false if failed
         x.failed: Set to true if fcli invocation failed, false if successfull
