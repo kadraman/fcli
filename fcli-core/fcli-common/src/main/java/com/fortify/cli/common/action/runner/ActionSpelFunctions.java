@@ -362,6 +362,15 @@ public class ActionSpelFunctions {
         return skipByDefault ? String.format("Set %s to 'true' to enable this step", doEnvName) : null;
     }
     
+    public static final String skipReasonIf(boolean skip, String reason) {
+        return skip ? reason: null;
+    }
+    
+    public static final String skipBlankEnvReason(String envName) {
+        return StringUtils.isNotBlank(EnvHelper.env(envName)) ? null : String.format("%s not set", envName); 
+    }
+    
+    
     /**
      * If a custom action has been configured through _ACTION env var, this method returns true.
      * If no custom action has been configured, this method checks whether a built-in action
