@@ -60,6 +60,12 @@ public class FcliBuildPropertiesHelper {
         return buildProperties.getProperty("actionSchemaVersion", "unknown");
     }
     
+    public static final String getFcliDocBaseUrl() {
+        return isDevelopmentRelease()
+                ? "https://fortify.github.io/fcli/latest_dev"
+                : String.format("https://fortify.github.io/fcli/v%s", getFcliVersion());
+    }
+    
     public static final String getFcliBuildInfo() {
         return String.format("%s version %s, built on %s" 
                 , FcliBuildPropertiesHelper.getFcliProjectName()
@@ -76,5 +82,4 @@ public class FcliBuildPropertiesHelper {
         }
         return p;
     }
-
 }

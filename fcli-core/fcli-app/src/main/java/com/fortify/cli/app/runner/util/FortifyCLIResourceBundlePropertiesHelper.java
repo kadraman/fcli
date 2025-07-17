@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fortify.cli.common.action.helper.ActionSchemaHelper;
+import com.fortify.cli.common.util.FcliBuildPropertiesHelper;
 import com.fortify.cli.fod._common.scan.helper.FoDScanStatus;
 import com.fortify.cli.sc_dast.scan.helper.SCDastScanStatus;
 import com.fortify.cli.sc_sast.scan.helper.SCSastScanJobArtifactState;
@@ -35,7 +36,7 @@ public class FortifyCLIResourceBundlePropertiesHelper {
         initializeSCDastProperties(props);
         initializeSCSastProperties(props);
         initializeSSCProperties(props);
-        initializeActionProperties(props);
+        initializeVersionRelatedProperties(props);
         return props;
     }
 
@@ -61,8 +62,9 @@ public class FortifyCLIResourceBundlePropertiesHelper {
         props.setProperty("fcli.ssc.artifact.states.complete", getValueNamesString(SSCArtifactStatus.getDefaultCompleteStates()));
     }
     
-    private static final void initializeActionProperties(Properties props) {
+    private static final void initializeVersionRelatedProperties(Properties props) {
         props.setProperty("fcli.action.supportedSchemaVersions", ActionSchemaHelper.getSupportedSchemaVersionsString());
+        props.setProperty("fcli.docBaseUrl", FcliBuildPropertiesHelper.getFcliDocBaseUrl());
     }
     
     private static final String getValueNamesString(Enum<?>[] values) {
