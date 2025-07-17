@@ -46,7 +46,7 @@ public final class FortifyCLIStaticInitializer {
         ToolUninstaller.deleteAllPending();
         initializeTrustStore();
         initializeLocale();
-        System.setProperties(FortifyCLIResourceBundlePropertiesHelper.getResourceBundleProperties());
+        System.getProperties().putAll(FortifyCLIResourceBundlePropertiesHelper.getResourceBundleProperties());
     }
     
     private void initializeTrustStore() {
