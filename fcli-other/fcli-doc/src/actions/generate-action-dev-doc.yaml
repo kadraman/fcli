@@ -137,6 +137,7 @@ formatters:
     * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-action/src/main/resources/com/fortify/cli/generic_action/actions/zip[`fcli action` actions]
     * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip[`fcli ssc` actions]
     * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip[`fcli fod` actions]
+    * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-other/fcli-doc/src/actions/generate-action-dev-doc.yaml[generate-action-dev-doc.yaml] (used to generate this document)
     
     === Schema-based code assistance
         
