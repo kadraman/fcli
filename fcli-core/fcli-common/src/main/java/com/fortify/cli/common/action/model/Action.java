@@ -75,8 +75,8 @@ public class Action implements IActionElement {
         action YAML schema version used by this action. When a user tries to run this action, fcli will check \
         whether the current fcli version is compatible with the given action schema version.   
         """)
-    @SampleYamlSnippets({"$schema: https://fortify.github.io/fcli/schemas/action/fcli-action-schema-!!!schema-version!!!.json",
-        "# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-!!!schema-version!!!.json"})
+    @SampleYamlSnippets({"$schema: !!!fcli-action-schema-url!!!",
+        "# yaml-language-server: $schema=!!!fcli-action-schema-url!!!"})
     @JsonProperty(value = "$schema", required=false) public String schema;
     
     @JsonPropertyDescription("""

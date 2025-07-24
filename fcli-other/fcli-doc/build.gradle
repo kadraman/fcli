@@ -84,11 +84,11 @@ task prepareAsciiDocForVersionedHtml(type: Copy) {
     }
 }
 
-task generateActionSchemaDoc(type: JavaExec) {
+task generateActionDevDoc(type: JavaExec) {
     dependsOn 'build', 'prepareAsciiDocForVersionedHtml'
     classpath = sourceSets.main.runtimeClasspath
     main 'com.fortify.cli.app.FortifyCLI'
-    args 'action', 'run', '--on-unsigned=ignore', "${projectDir}/src/actions/generate-schema-doc.yaml", "--file=${htmlAsciiDocDir}/action-schema.adoc"
+    args 'action', 'run', '--on-unsigned=ignore', "${projectDir}/src/actions/generate-action-dev-doc.yaml", "--file=${htmlAsciiDocDir}/action-development.adoc"
 }
 
 task generateGenericActionAsciiDoc(type: JavaExec) {
@@ -120,7 +120,7 @@ task generateFoDActionAsciiDoc(type: JavaExec) {
 
 // Generate HTML documentation from AsciiDoc prepared by prepareAsciiDocForVersionedHtml
 task asciiDoctorVersionedHtml(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
-    dependsOn(prepareAsciiDocForVersionedHtml, generateActionSchemaDoc, generateGenericActionAsciiDoc, generateSSCActionAsciiDoc, generateFoDActionAsciiDoc)
+    dependsOn(prepareAsciiDocForVersionedHtml, generateActionDevDoc, generateGenericActionAsciiDoc, generateSSCActionAsciiDoc, generateFoDActionAsciiDoc)
     forkOptions {
         jvmArgs("--add-opens","java.base/sun.nio.ch=ALL-UNNAMED","--add-opens","java.base/java.io=ALL-UNNAMED")
     }

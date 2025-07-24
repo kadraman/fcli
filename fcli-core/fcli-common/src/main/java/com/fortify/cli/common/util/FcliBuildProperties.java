@@ -38,15 +38,6 @@ public class FcliBuildProperties {
         return version.startsWith("0.") || version.equals("unknown");
     }
     
-    public final String getRepoBranchOrTag() {
-        // TODO Determine correct dev branch, to avoid incorrect links if we ever move to dev/v4.x
-        return isDevelopmentRelease() ? "dev/v3.x" : String.format("v%s", getFcliVersion());
-    }
-    
-    public final String getSourceCodeBaseUrl() {
-        return "https://github.com/fortify/fcli/blob/"+getRepoBranchOrTag();
-    }
-    
     public final String getFcliProjectName() {
         return buildProperties.getProperty("projectName", "fcli");
     }
@@ -73,10 +64,23 @@ public class FcliBuildProperties {
         return buildProperties.getProperty("actionSchemaVersion", "unknown");
     }
     
+    public final String getRepoBranchOrTag() {
+        // TODO Determine correct dev branch, to avoid incorrect links if we ever move to dev/v4.x
+        return isDevelopmentRelease() ? "dev/v3.x" : String.format("v%s", getFcliVersion());
+    }
+    
+    public final String getSourceCodeBaseUrl() {
+        return "https://github.com/fortify/fcli/blob/"+getRepoBranchOrTag();
+    }
+    
     public final String getFcliDocBaseUrl() {
         return isDevelopmentRelease()
                 ? "https://fortify.github.io/fcli/latest_dev"
                 : String.format("https://fortify.github.io/fcli/v%s", getFcliVersion());
+    }
+    
+    public final String getFcliActionSchemaUrl() {
+        return String.format("https://fortify.github.io/fcli/schemas/action/fcli-action-schema-%s.json", getFcliActionSchemaVersion());
     }
     
     public final String getFcliBuildInfo() {

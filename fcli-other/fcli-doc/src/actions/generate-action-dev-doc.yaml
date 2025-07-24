@@ -110,7 +110,7 @@ steps:
 # descriptions? (see description.replace(...) in propertyRow below)     
 formatters:
   result: |
-    = Fcli action schema documentation
+    = Fcli Action Development Guide
     
     [%autowidth]
     |===
@@ -123,13 +123,87 @@ formatters:
     == Introduction
     
     Fcli actions are defined in YAML files that describe action behavior through a set of instructions, 
-    combined with a rich expression syntax. This document provides an overview of the following:
+    combined with a rich expression syntax. This document provides information about the action instructions
+    and expression syntax that are supported by the current fcli version, as well as some general hints and
+    tips on custom action development.
+    
+    === Getting started
+    
+    To get accustomed with action syntax and features, it is highly recommended to have a look at the YAML 
+    contents of some of the fcli built-in actions. You can view the contents of built-in actions by running
+    the `fcli * action get <action>` command, or view the contents online at the following locations:
+    
+    * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-common/src/main/resources/com/fortify/cli/common/actions/zip[common actions]
+    * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-action/src/main/resources/com/fortify/cli/generic_action/actions/zip[`fcli action` actions]
+    * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip[`fcli ssc` actions]
+    * link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip[`fcli fod` actions]
+    
+    === Schema-based code assistance
         
-    * The <<primary-yaml-instructions,primary (top-level) YAML instructions>> that are supported by 
-      the current fcli (schema) version
-    * The <<type-step,YAML step instructions>> that are supported by the current fcli (schema) version
-    * The <<yaml-types,YAML types>> that describe the supported properties for each instruction type
-    * The <<expression,expression>> syntax 
+    Fcli provides an action schema, which allows YAML editors and IDEs to provide code completion, documentation
+    and validation for fcli action YAML documents. You may need to install a plugin to enable proper YAML editing
+    and schema support. Following are some commonly used IDE plugins that are known to work with one of the schema
+    associations listed below:
+
+    * Visual Studio Code: link:https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml[Red Hat YAML plugin]
+    * Eclipse: link:https://marketplace.eclipse.org/content/wild-web-developer-html-css-javascript-typescript-nodejs-angular-json-yaml-kubernetes-xml[Wild Web Developer]
+
+    For optimal compatibility with various IDEs and YAML editors, fcli allows the schema to be declared in two ways:
+
+    * YAML comment, supported by IDEs like Visual Studio Code, Eclipse and IntelliJ:
+    +
+    ----
+    # yaml-language-server: $schema=${fcliBuildProperties.fcliActionSchemaUrl}
+    ----
+    * YAML property, supported by Eclipse and some other YAML editors:
+    +
+    ----
+    $schema: ${fcliBuildProperties.fcliActionSchemaUrl}
+    ----
+
+    Fcli requires at least one of these statements to be provided in the action YAML file. You may also provide both,
+    in which case the schema URL must be identical in both statements. Once you've added one of these statements to
+    your action YAML file, your IDE or YAML editor may automatically provide support for editing and validating action
+    YAML files. If not, try closing and re-opening the YAML file, or consult the documentation of your IDE or YAML editor.
+
+    As shown in the sample schema statements above, the current fcli version ${fcliBuildProperties.fcliVersion} supports
+    schema version link:${fcliBuildProperties.fcliActionSchemaUrl}[${fcliBuildProperties.fcliActionSchemaVersion}]. Other
+    fcli versions may support different schema versions. In general, fcli provides backward compatibility for earlier schema
+    versions with the same schema major version range, and forward compatibility for later schema patch versions within the
+    same schema minor version range.
+    
+    NOTE: Fcli built-in actions should always point to the development version of the schema, for example
+    `https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json`. This allows fcli developers to utilize
+    the latest schema changes in their IDE, before the schema has been released. The fcli build process takes care of
+    updating the schema URL to the appropriate schema release version, thereby making sure that all fcli built-in actions
+    will eventually point to the current schema version.
+    
+    === Design considerations
+
+    Given that actions can define and process arbitrary parameters, it may be tempting to implement generic, highly
+    configurable actions. For example, you could implement a highly configurable action for checking all kinds of
+    security policy criteria, with the actual criteria to be checked being passed as action parameters.
+
+    However, from a CI/CD perspective, this means that every pipeline must properly set these action parameters.
+    Pipeline authors may copy existing pipelines or use pipeline templates to have these action parameters set to
+    predefined values, but what if those parameters need to updated globally? Potentially, this means that you'd
+    need to update thousands of pipelines to adjust action parameters. 
+
+    This is exactly the reason why we don't provide highly configurable `check-policy` actions, but instead just
+    provide a default implementation that can be customized according to organization requirements. Instead of
+    passing fine-grained pass/fail criteria as action parameters, those criteria are hard-coded into the action.
+    If there is a need to apply different criteria for different types of applications, for example based on
+    business risk, multiple approaches are possible:
+
+    * Use SSC/FoD application version/release attributes like `Business Risk` or other characteristics to identify
+      what criteria to apply. This is the preferred approach, to allow the criteria to be applied to automatically
+      match the centrally maintained attributes/characteristics.
+    * Have the action take one or more parameters that identify what criteria to apply. This could be a policy name,
+      or a functional identifier like `--business-risk`.
+    * Publish separate actions that implement different policy criteria, like `check-high-risk-policy` and `check-low-risk-policy`.
+
+    The examples above are based on actions that perform policy checks, but the same principles and considerations
+    (may) apply to other types of actions.
     
     [[primary-yaml-instructions]]
     == Primary YAML instructions
@@ -202,7 +276,7 @@ formatters:
     ** link:${fcliBuildProperties.sourceCodeBaseUrl}/fcli-core/fcli-ssc/src/main/java/com/fortify/cli/ssc/action/helper/SSCActionSpelFunctions.java[SSCActionSpelFunctions] (only available for actions run through `fcli ssc action run`)
     
   formattedDescription: ${description.replaceAll('"(\{[a-zA-Z]+\})','\\$1').replaceAll('(.)\n(?!\n)','$1 +\\n')}
-  formattedSampleSnippets: ${sampleSnippets.size()==0?'':('*Sample snippet'+(sampleSnippets.size()==1?'':'s')+'*\n\n'+#join('\n', sampleSnippets?.!['[source,yaml]\n----\n'+#this.replace('!!!schema-version!!!',#fcliBuildProperties().fcliActionSchemaVersion)+'\n----\n']))} 
+  formattedSampleSnippets: ${sampleSnippets.size()==0?'':('*Sample snippet'+(sampleSnippets.size()==1?'':'s')+'*\n\n'+#join('\n', sampleSnippets?.!['[source,yaml]\n----\n'+#this.replace('!!!fcli-action-schema-url!!!',#fcliBuildProperties().fcliActionSchemaUrl)+'\n----\n']))} 
   propertyTable: |
     [cols="1,1,3"]
     |===
