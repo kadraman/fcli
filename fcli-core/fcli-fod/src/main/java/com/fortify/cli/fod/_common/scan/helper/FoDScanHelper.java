@@ -16,7 +16,6 @@ package com.fortify.cli.fod._common.scan.helper;
 import static java.util.function.Predicate.not;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,7 +42,6 @@ import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupOpe
 import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupPostmanRequest;
 import com.fortify.cli.fod._common.util.FoDEnums;
 import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
-import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeHelper;
 import com.fortify.cli.fod.rest.lookup.helper.FoDLookupDescriptor;
 import com.fortify.cli.fod.rest.lookup.helper.FoDLookupHelper;
@@ -193,76 +191,9 @@ public class FoDScanHelper {
                 .build();
     }
 
-
     public static final HttpRequest<?> addDefaultScanListParams(HttpRequest<?> request) {
         return request.queryString("orderBy", "startedDateTime")
                 .queryString("orderByDirection", "DESC");
-    }
-
-    public static HttpRequest<?> getPostmanSetupRequest(UnirestInstance unirest, String releaseId,
-                                                        FoDScanDastAutomatedSetupBaseRequest base,
-                                                        ArrayList<Integer> collectionFileIds) {
-        FoDScanDastAutomatedSetupPostmanRequest setupRequest = FoDScanDastAutomatedSetupPostmanRequest.builder()
-                .collectionFileIds(collectionFileIds)
-                .build();
-        BeanUtils.copyProperties(base, setupRequest);
-
-        return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/postman-scan-setup")
-                .routeParam("relId", releaseId)
-                .body(setupRequest);
-    }
-
-    @SneakyThrows
-    public static HttpRequest<?> getOpenApiSetupRequest(UnirestInstance unirest, String releaseId,
-                                                        FoDScanDastAutomatedSetupBaseRequest base,
-                                                        Integer fileId, String apiUrl, String apiKey) {
-        boolean isUrl = (apiUrl != null && !apiUrl.isEmpty());
-        int fileIdToUse = (fileId != null ? fileId : 0);
-        FoDScanDastAutomatedSetupOpenApiRequest setupRequest = FoDScanDastAutomatedSetupOpenApiRequest.builder()
-                .sourceType(isUrl ? "Url" : "FileId")
-                .sourceUrn(isUrl ? apiUrl : String.valueOf(fileIdToUse))
-                .apiKey(apiKey)
-                .build();
-        BeanUtils.copyProperties(base, setupRequest);
-
-        return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/openapi-scan-setup")
-                .routeParam("relId", releaseId)
-                .body(setupRequest);
-    }
-
-    public static HttpRequest<?> getGraphQlSetupRequest(UnirestInstance unirest, String releaseId,
-                                                        FoDScanDastAutomatedSetupBaseRequest base,
-                                                        Integer fileId, String apiUrl, FoDEnums.ApiSchemeType schemeType, String host, String servicePath) {
-        boolean isUrl = (apiUrl != null && !apiUrl.isEmpty());
-        int fileIdToUse = (fileId != null ? fileId : 0);
-        FoDScanDastAutomatedSetupGraphQlRequest setupRequest = FoDScanDastAutomatedSetupGraphQlRequest.builder()
-                .sourceType(isUrl ? "Url" : "FileId")
-                .sourceUrn(isUrl ? apiUrl : String.valueOf(fileIdToUse))
-                .schemeType(schemeType)
-                .host(host)
-                .servicePath(servicePath)
-                .build();
-        BeanUtils.copyProperties(base, setupRequest);
-
-        return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/graphql-scan-setup")
-                .routeParam("relId", releaseId)
-                .body(setupRequest);
-    }
-
-    public static HttpRequest<?> getGrpcSetupRequest(UnirestInstance unirest, String releaseId,
-                                                     FoDScanDastAutomatedSetupBaseRequest base,
-                                                     Integer fileId, FoDEnums.ApiSchemeType schemeType, String host, String servicePath) {
-        FoDScanDastAutomatedSetupGrpcRequest setupRequest = FoDScanDastAutomatedSetupGrpcRequest.builder()
-                .fileId(fileId)
-                .schemeType(schemeType)
-                .host(host)
-                .servicePath(servicePath)
-                .build();
-        BeanUtils.copyProperties(base, setupRequest);
-
-        return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/grpc-scan-setup")
-                .routeParam("relId", releaseId)
-                .body(setupRequest);
     }
 
     private static final FoDScanDescriptor getDescriptor(JsonNode node) {

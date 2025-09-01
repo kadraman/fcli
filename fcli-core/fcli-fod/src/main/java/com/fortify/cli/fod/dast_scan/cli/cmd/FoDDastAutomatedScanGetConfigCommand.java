@@ -22,9 +22,10 @@ import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
+@Getter
 @Command(name = FoDOutputHelperMixins.GetConfig.CMD_NAME)
 public class FoDDastAutomatedScanGetConfigCommand extends AbstractFoDScanConfigGetCommand {
-    @Getter @Mixin private FoDOutputHelperMixins.GetConfig outputHelper;
+    @Mixin private FoDOutputHelperMixins.GetConfig outputHelper;
 
     @Override
     protected FoDScanConfigDastAutomatedDescriptor getDescriptor(UnirestInstance unirest, String releaseId) {

@@ -15,15 +15,23 @@ package com.fortify.cli.fod.dast_scan.cli.cmd;
 import java.util.ArrayList;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.fod.dast_scan.helper.FileUploadResult;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fortify.cli.common.cli.util.CommandGroup;
 import com.fortify.cli.fod._common.output.cli.mixin.FoDOutputHelperMixins;
-import com.fortify.cli.fod._common.rest.FoDUrls;
-import com.fortify.cli.fod._common.scan.cli.cmd.AbstractFoDScanSetupCommand;
 import com.fortify.cli.fod._common.scan.helper.FoDScanAssessmentTypeDescriptor;
 import com.fortify.cli.fod._common.scan.helper.FoDScanHelper;
 import com.fortify.cli.fod._common.scan.helper.FoDScanType;
 import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupWebsiteRequest;
 import com.fortify.cli.fod._common.util.FoDEnums;
+import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
+import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedHelper;
+import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeHelper;
+import com.fortify.cli.fod.release.helper.FoDReleaseDescriptor;
 
 import kong.unirest.HttpRequest;
 import kong.unirest.UnirestInstance;
@@ -33,7 +41,8 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Command(name = FoDOutputHelperMixins.SetupWebsite.CMD_NAME) @CommandGroup("*-scan-setup")
-public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetupCommand {
+public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDDastAutomatedScanSetupCommand {
+    private static final Log LOG = LogFactory.getLog(FoDDastAutomatedScanSetupWebsiteCommand.class);
     @Getter @Mixin private FoDOutputHelperMixins.SetupWebsite outputHelper;
     private final static FoDEnums.DastAutomatedFileTypes dastFileType = FoDEnums.DastAutomatedFileTypes.LoginMacro;
 
@@ -87,17 +96,37 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
 
     @Override
     protected HttpRequest<?> getBaseRequest(UnirestInstance unirest, String releaseId) {
+        return null;
+    }
+
+    @Override
+    protected JsonNode setup(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+                             FoDScanConfigDastAutomatedDescriptor currentSetup) {
+        var relId = releaseDescriptor.getReleaseId();
+
+        LOG.info("Finding appropriate entitlement to use.");
+
+        var atd = FoDReleaseAssessmentTypeHelper.getAssessmentTypeDescriptor(unirest, relId, FoDScanType.Dynamic,
+                entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), assessmentType);
+        var assessmentTypeId = atd.getAssessmentTypeId();
+        var entitlementIdToUse = atd.getEntitlementId();
+        assessmentTypeName = atd.getName();
+
+        if (currentSetup != null) validateEntitlement(currentSetup, entitlementIdToUse, relId, atd);
+        LOG.info("Configuring release to use entitlement " + entitlementIdToUse);
+
         boolean requiresSiteAuthentication = false;
         boolean requiresNetworkAuthentication = false;
         boolean requiresLoginMacroCreation = false;
         int fileIdToUse = (loginMacroFileId != null ? loginMacroFileId : 0);
+        FileUploadResult fileUploadResult = null;
 
         if (loginMacroFileId != null && loginMacroFileId > 0) {
             requiresSiteAuthentication = true;
         }
         if (uploadFileMixin != null && uploadFileMixin.getFile() != null) {
             requiresSiteAuthentication = true;
-            fileIdToUse = uploadFileToUse(unirest, releaseId, FoDScanType.Dynamic, dastFileType.name());
+            fileUploadResult = uploadFileToUse(unirest, relId, FoDScanType.Dynamic, dastFileType.name());
         }
         FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType networkAuthenticationSettings = null;
         if (networkAuthenticationType != null) {
@@ -115,27 +144,28 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
         if (createLoginMacro != null) {
             requiresSiteAuthentication = true;
             requiresLoginMacroCreation = createLoginMacro;
-            loginMacroFileCreationSettings = new FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType(macroPrimaryUsername,
-                    macroPrimaryPassword, macroSecondaryUsername, macroSecondaryPassword);
+            loginMacroFileCreationSettings = new FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType(
+                    macroPrimaryUsername, macroPrimaryPassword, macroSecondaryUsername, macroSecondaryPassword);
         }
         if (fodConnectNetwork != null) {
             // if Fortify Connect network site override environmentFacingType to Internal
             environmentFacingType = FoDEnums.DynamicScanEnvironmentFacingType.Internal;
         }
 
-        FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, releaseId, FoDScanType.Dynamic,
-                assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId);
+        FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, relId, FoDScanType.Dynamic,
+                assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId != null && entitlementId > 0 ? entitlementId : 0);
         entitlementId = assessmentTypeDescriptor.getEntitlementId();
         FoDScanDastAutomatedSetupWebsiteRequest setupRequest = FoDScanDastAutomatedSetupWebsiteRequest.builder()
                 .dynamicSiteUrl(siteUrl)
                 .enableRedundantPageDetection(redundantPageProtection != null ? redundantPageProtection : false)
                 .requiresSiteAuthentication(requiresSiteAuthentication)
-                .loginMacroFileId(fileIdToUse)
+                .loginMacroFileId(fileIdToUse != 0 ? fileIdToUse : (fileUploadResult != null ? fileUploadResult.getFileId() : 0))
                 .exclusionsList(exclusionsList)
                 .restrictToDirectoryAndSubdirectories(restrictToDirectoryAndSubdirectories != null ? restrictToDirectoryAndSubdirectories : false)
                 .policy(scanPolicy)
                 .timeBoxInHours(timebox)
-                .dynamicScanEnvironmentFacingType(environmentFacingType != null ? environmentFacingType : FoDEnums.DynamicScanEnvironmentFacingType.External)
+                .dynamicScanEnvironmentFacingType(environmentFacingType != null ? environmentFacingType :
+                        FoDEnums.DynamicScanEnvironmentFacingType.External)
                 .timeZone(timeZoneToUse)
                 .requiresNetworkAuthentication(requiresNetworkAuthentication)
                 .networkAuthenticationSettings(networkAuthenticationSettings)
@@ -148,9 +178,7 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDScanSetu
                 .networkName(fodConnectNetwork != null ? fodConnectNetwork : "")
                 .build();
 
-        return unirest.put(FoDUrls.DAST_AUTOMATED_SCANS + "/website-scan-setup")
-                .routeParam("relId", releaseId)
-                .body(setupRequest);
+        return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
+                "/website-scan-setup").asJsonNode();
     }
-
 }
