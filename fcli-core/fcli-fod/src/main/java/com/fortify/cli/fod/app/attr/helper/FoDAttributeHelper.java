@@ -105,6 +105,15 @@ public class FoDAttributeHelper {
             FoDAttributeDescriptor attributeDescriptor = FoDAttributeHelper.getAttributeDescriptor(unirest, attr.getKey(), true);
             updatesWithId.put(Integer.valueOf(attributeDescriptor.getId()), attr.getValue());
         }
+        if (current == null || current.isEmpty()) {
+            for (Map.Entry<Integer, String> entry : updatesWithId.entrySet()) {
+                ObjectNode attrObj = objectMapper.createObjectNode();
+                attrObj.put("id", entry.getKey());
+                attrObj.put("value", entry.getValue());
+                attrArray.add(attrObj);
+            }
+            return attrArray;
+        };
         for (FoDAttributeDescriptor attr : current) {
             ObjectNode attrObj = objectMapper.createObjectNode();
             attrObj.put("id", attr.getId());
