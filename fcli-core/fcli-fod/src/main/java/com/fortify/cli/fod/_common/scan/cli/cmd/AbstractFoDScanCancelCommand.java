@@ -32,9 +32,13 @@ public abstract class AbstractFoDScanCancelCommand extends AbstractFoDJsonNodeOu
     @Override
     public final JsonNode getJsonNode(UnirestInstance unirest) {
         FoDScanDescriptor descriptor = scanResolver.getScanDescriptor(unirest, getScanType());
-        unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
+        JsonNode response = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
                 .routeParam("relId", String.valueOf(descriptor.getReleaseId()))
-                .routeParam("scanId", String.valueOf(descriptor.getScanId()));
+                .routeParam("scanId", String.valueOf(descriptor.getScanId()))
+                .asObject(JsonNode.class).getBody();
+        if (response.has("success") && !response.get("success").asBoolean()) {
+            throw new IllegalStateException("Error cancelling scan: "+response.get("message").asText());
+        }
         return descriptor.asJsonNode();
     }
     

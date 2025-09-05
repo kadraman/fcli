@@ -18,18 +18,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.scan.helper.FoDScanDescriptor;
 import com.fortify.cli.fod._common.scan.helper.FoDScanHelper;
 import com.fortify.cli.fod._common.scan.helper.FoDScanType;
 import com.fortify.cli.fod._common.scan.helper.FoDStartScanResponse;
+import com.fortify.cli.fod._common.util.FoDEnums;
 import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseDescriptor;
 
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
+import lombok.SneakyThrows;
 
 public class FoDScanDastAutomatedHelper extends FoDScanHelper {
+
     @Getter
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -39,6 +43,80 @@ public class FoDScanDastAutomatedHelper extends FoDScanHelper {
                 .asObject(ObjectNode.class)
                 .getBody();
         return JsonHelper.treeToValue(body, FoDScanConfigDastAutomatedDescriptor.class);
+    }
+
+    private static boolean isWaitingStatus(String status) {
+        return "Pending".equals(status) || "Queued".equals(status) || "Waiting".equals(status) ||"Scheduled".equals(status);
+    }
+
+    private static boolean isActiveStatus(String status) {
+        return "Pending".equals(status) || "Queued".equals(status) || "Waiting".equals(status) ||"Scheduled".equals(status) || "In_Progress".equals(status);
+    }
+
+    @SneakyThrows
+    public static final FoDScanDescriptor handleInProgressScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+                                                               FoDEnums.InProgressScanActionType inProgressScanActionType,
+                                                               IProgressWriterI18n progressWriter, int maxAttempts,
+                                                               int waitIntervalSeconds) {
+        var releaseId = releaseDescriptor.getReleaseId();
+        int waitMillis = waitIntervalSeconds * 1000;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            JsonNode response = unirest.get(FoDUrls.RELEASE_SCANS)
+                    .routeParam("relId", releaseId)
+                    .queryString("orderBy", "startedDateTime")
+                    .queryString("orderByDirection", "DESC")
+                    .queryString("fields", "scanId,scanType,analysisStatusType")
+                    .asObject(JsonNode.class).getBody();
+            JsonNode itemsNode = response.path("items");
+            if (!itemsNode.isArray() || itemsNode.isEmpty()) continue;
+
+            for (JsonNode node : itemsNode) {
+                if (!"Dynamic".equals(node.path("scanType").asText())) continue;
+                String status = node.path("analysisStatusType").asText();
+                String scanId = node.path("scanId").asText();
+
+                /*if (isWaitingStatus(status)) {
+                    progressWriter.writeProgress("Status: An existing scan: %s is %s", scanId, status);
+                    Thread.sleep(waitMillis);
+                    break;
+                }*/
+                if (isActiveStatus(status)) {
+                    switch (inProgressScanActionType) {
+                        case CancelScanInProgress:
+                            progressWriter.writeProgress("Status: Cancelling scan %s", scanId);
+                            JsonNode cancelResponse = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
+                                    .routeParam("relId", releaseId)
+                                    .routeParam("scanId", scanId)
+                                    .asObject(JsonNode.class).getBody();
+                            if (cancelResponse.has("success") && !cancelResponse.get("success").asBoolean()) {
+                                throw new IllegalStateException("Error cancelling scan "+cancelResponse.get("message").asText());
+                            }
+                            break;
+                        case Queue:
+                            int timeout = (maxAttempts * waitIntervalSeconds) - (attempt * waitIntervalSeconds);
+                            progressWriter.writeProgress("Status: Scan %s is %s, waiting up to %s seconds for it to complete", scanId, status, timeout);
+                            Thread.sleep(waitMillis);
+                            break;
+                        case DoNotStartScan:
+                            progressWriter.writeProgress("Status: A scan is running %s, no new scan will be started", scanId);
+                            JsonNode scan = objectMapper.createObjectNode()
+                                    .put("scanId", node.path("scanId").asText())
+                                    .put("scanType", FoDScanType.Dynamic.name())
+                                    .put("releaseAndScanId",  String.format("%s:%s", releaseId, node.path("scanId").asText()))
+                                    .put("analysisStatusType", status)
+                                    .put("applicationName", releaseDescriptor.getApplicationName())
+                                    .put("releaseName", releaseDescriptor.getReleaseName())
+                                    .put("microserviceName", releaseDescriptor.getMicroserviceName());
+                            return JsonHelper.treeToValue(scan, FoDScanDescriptor.class);
+                    }
+                    break;
+                }
+                // if an existing scan is not running, waiting or in progress, then it's fine to run
+                progressWriter.writeProgress("Status: Starting new scan");
+                return null;
+            }
+        }
+        throw new FcliSimpleException("Unable to start Dynamic scan after " + maxAttempts + " attempts. Please check the UI and try again.");
     }
 
     public static final FoDScanDescriptor startScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor) {
@@ -59,4 +137,5 @@ public class FoDScanDastAutomatedHelper extends FoDScanHelper {
                 .put("microserviceName", releaseDescriptor.getMicroserviceName());
         return JsonHelper.treeToValue(node, FoDScanDescriptor.class);
     }
+
 }
