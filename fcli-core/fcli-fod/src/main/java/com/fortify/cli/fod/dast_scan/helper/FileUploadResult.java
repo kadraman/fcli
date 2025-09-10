@@ -12,11 +12,11 @@
  */
 package com.fortify.cli.fod.dast_scan.helper;
 
-import lombok.Getter;
+import lombok.Data;
 
 import java.util.ArrayList;
 
-@Getter
+@Data
 public class FileUploadResult {
     private final int fileId;
     private final ArrayList<String> hosts;

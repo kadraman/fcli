@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import com.fortify.cli.fod._common.scan.cli.cmd.AbstractFoDScanSetupCommand;
+import com.fortify.cli.fod._common.scan.helper.mobile.FoDScanMobileHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -66,6 +67,21 @@ public class FoDMastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
     @Mixin private ProgressWriterFactoryMixin progressWriterFactory;
 
     @Override
+    protected String getScanType() {
+        return "Mobile Assessment";
+    }
+
+    @Override
+    protected String getSetupType() {
+        return auditPreferenceType.name();
+    }
+
+    @Override
+    protected FoDScanConfigMobileDescriptor getSetupDescriptor(UnirestInstance unirest, String releaseId) {
+        return FoDScanMobileHelper.getSetupDescriptor(unirest, releaseId);
+    }
+
+    @Override
     protected boolean isExistingSetup(FoDScanConfigMobileDescriptor setupDescriptor) {
         return (setupDescriptor != null && setupDescriptor.getAssessmentTypeId() != 0);
     }
@@ -109,20 +125,6 @@ public class FoDMastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
         return FoDScanConfigMobileHelper.setupScan(unirest, releaseDescriptor, setupMastScanRequest).asJsonNode();
     }
 
-    @Override
-    public JsonNode getJsonNode(UnirestInstance unirest) {
-        try (var progressWriter = progressWriterFactory.create()) {
-            var releaseDescriptor = releaseResolver.getReleaseDescriptor(unirest);
-            var setupDescriptor = FoDScanConfigMobileHelper.getSetupDescriptor(unirest, releaseDescriptor.getReleaseId());
-            var skippedNode = handleSkipIfExists(skipIfExists, setupDescriptor);
-            if (skippedNode != null) {
-                return skippedNode;
-            } else {
-                return setup(unirest, releaseDescriptor, setupDescriptor);
-            }
-        }
-    }
-
     private void validateEntitlement(FoDScanConfigMobileDescriptor currentSetup, Integer entitlementIdToUse, String releaseId, FoDReleaseAssessmentTypeDescriptor atd) {
         // validate entitlement specified or currently in use against assessment type found
         if (entitlementId != null && entitlementId > 0) {
@@ -150,8 +152,8 @@ public class FoDMastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
     public JsonNode transformRecord(JsonNode record) {
         FoDReleaseDescriptor releaseDescriptor = releaseResolver.getReleaseDescriptor(getUnirestInstance());
         return ((ObjectNode)record)
-            .put("scanType", assessmentTypeName)
-            .put("setupType", auditPreferenceType.name())
+            .put("scanType", getScanType())
+            .put("setupType", getSetupType())
             .put("applicationName", releaseDescriptor.getApplicationName())
             .put("releaseName", releaseDescriptor.getReleaseName())
             .put("microserviceName", releaseDescriptor.getMicroserviceName());

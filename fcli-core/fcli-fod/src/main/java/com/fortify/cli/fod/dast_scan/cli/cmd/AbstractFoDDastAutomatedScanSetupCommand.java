@@ -16,7 +16,6 @@ package com.fortify.cli.fod.dast_scan.cli.cmd;
 import java.util.ArrayList;
 import java.util.Objects;
 
-import com.fortify.cli.common.output.transform.IRecordTransformer;
 import com.fortify.cli.fod.dast_scan.helper.FileUploadResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,13 +33,12 @@ import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedHelper;
 import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeHelper;
-import com.fortify.cli.fod.release.helper.FoDReleaseDescriptor;
 import kong.unirest.HttpRequest;
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
 import picocli.CommandLine.Mixin;
 
-public abstract class AbstractFoDDastAutomatedScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScanConfigDastAutomatedDescriptor> implements IRecordTransformer {
+public abstract class AbstractFoDDastAutomatedScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScanConfigDastAutomatedDescriptor> {
     private static final Log LOG = LogFactory.getLog(AbstractFoDDastAutomatedScanSetupCommand.class);
     @Getter private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,6 +50,11 @@ public abstract class AbstractFoDDastAutomatedScanSetupCommand extends AbstractF
 
     protected void setFileId(int fileId) {
         this.fileId = fileId;
+    }
+
+    @Override
+    protected String getScanType() {
+        return "DAST Automated";
     }
 
     protected FileUploadResult uploadFileToUse(UnirestInstance unirest, String releaseId, FoDScanType scanType, String fileType) {
@@ -93,37 +96,9 @@ public abstract class AbstractFoDDastAutomatedScanSetupCommand extends AbstractF
     }
 
     @Override
-    protected JsonNode setup(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
-                             FoDScanConfigDastAutomatedDescriptor currentSetup) {
-        var releaseId = releaseDescriptor.getReleaseId();
-        HttpRequest<?> request = getBaseRequest(unirest, releaseId);
-        request.asString(); // successful invocation returns empty response
-        return releaseDescriptor.asObjectNode()
-                .put("scanType", getScanType())
-                .put("setupType", getSetupType())
-                .put("filename", (uploadFileMixin.getFile() != null ? uploadFileMixin.getFile().getName() : "N/A"))
-                .put("entitlementId", entitlementId)
-                .put("fileId", fileId);
-        //return FoDScanDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupDastAutomatScanRequest).asJsonNode();
+    protected FoDScanConfigDastAutomatedDescriptor getSetupDescriptor(UnirestInstance unirest, String releaseId) {
+        return FoDScanDastAutomatedHelper.getSetupDescriptor(unirest, releaseId);
     }
-
-    @Override
-    public final JsonNode getJsonNode(UnirestInstance unirest) {
-        var releaseDescriptor = releaseResolver.getReleaseDescriptor(unirest);
-        var releaseId = releaseDescriptor.getReleaseId();
-        var setupDescriptor = FoDScanDastAutomatedHelper.getSetupDescriptor(unirest, releaseId);
-        var skippedNode = handleSkipIfExists(skipIfExists, setupDescriptor);
-        if (skippedNode != null) {
-            return skippedNode;
-        } else {
-            return setup(unirest, releaseDescriptor, setupDescriptor);
-        }
-    }
-
-    protected abstract String getScanType();
-    protected abstract String getSetupType();
-
-    protected abstract HttpRequest<?> getBaseRequest(UnirestInstance unirest, String releaseId);
 
     protected void validateEntitlement(FoDScanConfigDastAutomatedDescriptor currentSetup, Integer entitlementIdToUse,
                                        String relId, FoDReleaseAssessmentTypeDescriptor atd) {
@@ -149,15 +124,4 @@ public abstract class AbstractFoDDastAutomatedScanSetupCommand extends AbstractF
         }
     }
 
-    public JsonNode transformRecord(JsonNode record) {
-        FoDReleaseDescriptor releaseDescriptor = releaseResolver.getReleaseDescriptor(getUnirestInstance());
-        return ((ObjectNode)record)
-                .put("scanType", getScanType())
-                .put("setupType", getSetupType())
-                .put("fileId", (fileId != 0 ? fileId : null))
-                .put("filename", (uploadFileMixin.getFile() != null ? uploadFileMixin.getFile().getName() : "N/A"))
-                .put("applicationName", releaseDescriptor.getApplicationName())
-                .put("releaseName", releaseDescriptor.getReleaseName())
-                .put("microserviceName", releaseDescriptor.getMicroserviceName());
-    }
 }

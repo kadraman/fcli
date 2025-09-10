@@ -44,18 +44,39 @@ public abstract class AbstractFoDScanSetupCommand<T> extends AbstractFoDJsonNode
 
     protected String assessmentTypeName;
 
+    protected abstract String getScanType();
+    protected abstract String getSetupType();
+    protected abstract T getSetupDescriptor(UnirestInstance unirest, String releaseId);
     protected abstract boolean isExistingSetup(T setupDescriptor);
     protected abstract ObjectNode convertToObjectNode(T setupDescriptor);
-    protected JsonNode handleSkipIfExists(boolean skipIfExists, T setupDescriptor) {
+    protected JsonNode handleSkipIfExists(boolean skipIfExists, T setupDescriptor, FoDReleaseDescriptor releaseDescriptor) {
         if (skipIfExists && isExistingSetup(setupDescriptor)) {
             ObjectNode skippedNode = convertToObjectNode(setupDescriptor);
-            skippedNode.put("__action__", "SKIPPED_EXISTING");
+            skippedNode.put("setupType", getSetupType())
+                    .put("scanType", getScanType())
+                    .put("applicationName", releaseDescriptor.getApplicationName())
+                    .put("releaseName", releaseDescriptor.getReleaseName())
+                    .put("microserviceName", releaseDescriptor.getMicroserviceName())
+                    .put("__action__", "SKIPPED_EXISTING");
             return skippedNode;
         }
         return null;
     }
     protected abstract JsonNode setup(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor, T currentSetup);
-    
+
+    @Override
+    public final JsonNode getJsonNode(UnirestInstance unirest) {
+        var releaseDescriptor = releaseResolver.getReleaseDescriptor(unirest);
+        var releaseId = releaseDescriptor.getReleaseId();
+        T setupDescriptor = getSetupDescriptor(unirest, releaseId);
+        var skippedNode = handleSkipIfExists(skipIfExists, setupDescriptor, releaseDescriptor);
+        if (skippedNode != null) {
+            return skippedNode;
+        } else {
+            return setup(unirest, releaseDescriptor, setupDescriptor);
+        }
+    }
+
     @Override
     public final String getActionCommandResult() {
         return "SETUP";

@@ -13,7 +13,6 @@
 
 package com.fortify.cli.fod.dast_scan.helper;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.fod._common.rest.FoDUrls;
@@ -48,7 +47,7 @@ public class FoDScanConfigDastAutomatedHelper {
     }
 
     @SneakyThrows
-    public static JsonNode setupPostmanScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+    public static <T> FoDScanConfigDastAutomatedDescriptor setupPostmanScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
                                             FoDScanDastAutomatedSetupBaseRequest base,
                                             ArrayList<Integer> collectionFileIds) {
         FoDScanDastAutomatedSetupPostmanRequest setupRequest = FoDScanDastAutomatedSetupPostmanRequest.builder()
@@ -56,11 +55,11 @@ public class FoDScanConfigDastAutomatedHelper {
                 .build();
         BeanUtils.copyProperties(base, setupRequest);
         return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
-                "/postman-scan-setup").asJsonNode();
+                "/postman-scan-setup");
     }
 
     @SneakyThrows
-    public static JsonNode setupOpenApiScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+    public static <T> FoDScanConfigDastAutomatedDescriptor setupOpenApiScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
                                             FoDScanDastAutomatedSetupBaseRequest base, FileUploadResult fileUploadResult,
                                             String apiUrl, String apiKey) {
         boolean isUrl = (apiUrl != null && !apiUrl.isEmpty());
@@ -72,11 +71,11 @@ public class FoDScanConfigDastAutomatedHelper {
                 .build();
         BeanUtils.copyProperties(base, setupRequest);
         return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
-                "/openapi-scan-setup").asJsonNode();
+                "/openapi-scan-setup");
     }
 
     @SneakyThrows
-    public static JsonNode setupGraphQlScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+    public static <T> FoDScanConfigDastAutomatedDescriptor setupGraphQlScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
                                             FoDScanDastAutomatedSetupBaseRequest base, FileUploadResult fileUploadResult,
                                             String apiUrl, FoDEnums.ApiSchemeType schemeType, String host,
                                             String servicePath) {
@@ -91,11 +90,11 @@ public class FoDScanConfigDastAutomatedHelper {
                 .build();
         BeanUtils.copyProperties(base, setupRequest);
         return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
-                "/graphql-scan-setup").asJsonNode();
+                "/graphql-scan-setup");
     }
 
     @SneakyThrows
-    public static JsonNode setupGrpcScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+    public static <T> FoDScanConfigDastAutomatedDescriptor setupGrpcScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
                                          FoDScanDastAutomatedSetupBaseRequest base, FileUploadResult fileUploadResult,
                                          FoDEnums.ApiSchemeType schemeType, String host, String servicePath) {
         int fileIdToUse = (fileUploadResult != null ? fileUploadResult.getFileId() : 0);
@@ -107,6 +106,6 @@ public class FoDScanConfigDastAutomatedHelper {
                 .build();
         BeanUtils.copyProperties(base, setupRequest);
         return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
-                "/grpc-scan-setup").asJsonNode();
+                "/grpc-scan-setup");
     }
 }

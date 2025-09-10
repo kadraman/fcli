@@ -33,7 +33,6 @@ import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedHelper;
 import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeHelper;
 import com.fortify.cli.fod.release.helper.FoDReleaseDescriptor;
 
-import kong.unirest.HttpRequest;
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
 import picocli.CommandLine.Command;
@@ -86,17 +85,8 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDDastAuto
     private String fodConnectNetwork;
 
     @Override
-    protected String getScanType() {
-        return "DAST Automated";
-    }
-    @Override
     protected String getSetupType() {
         return "Website";
-    }
-
-    @Override
-    protected HttpRequest<?> getBaseRequest(UnirestInstance unirest, String releaseId) {
-        return null;
     }
 
     @Override
@@ -105,57 +95,121 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDDastAuto
         var relId = releaseDescriptor.getReleaseId();
 
         LOG.info("Finding appropriate entitlement to use.");
-
         var atd = FoDReleaseAssessmentTypeHelper.getAssessmentTypeDescriptor(unirest, relId, FoDScanType.Dynamic,
                 entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), assessmentType);
         var assessmentTypeId = atd.getAssessmentTypeId();
         var entitlementIdToUse = atd.getEntitlementId();
         assessmentTypeName = atd.getName();
-
         if (currentSetup != null) validateEntitlement(currentSetup, entitlementIdToUse, relId, atd);
         LOG.info("Configuring release to use entitlement " + entitlementIdToUse);
 
         boolean requiresSiteAuthentication = false;
         boolean requiresNetworkAuthentication = false;
         boolean requiresLoginMacroCreation = false;
-        int fileIdToUse = (loginMacroFileId != null ? loginMacroFileId : 0);
-        FileUploadResult fileUploadResult = null;
 
-        if (loginMacroFileId != null && loginMacroFileId > 0) {
+        int fileIdToUse = getLoginMacroFileId();
+        FileUploadResult fileUploadResult = handleFileUpload(unirest, relId);
+
+        if (fileIdToUse > 0 || fileUploadResult != null) {
             requiresSiteAuthentication = true;
         }
-        if (uploadFileMixin != null && uploadFileMixin.getFile() != null) {
-            requiresSiteAuthentication = true;
-            fileUploadResult = uploadFileToUse(unirest, relId, FoDScanType.Dynamic, dastFileType.name());
-        }
-        FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType networkAuthenticationSettings = null;
-        if (networkAuthenticationType != null) {
+
+        FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType networkAuthenticationSettings =
+                getNetworkAuthenticationSettings();
+
+        if (networkAuthenticationSettings != null) {
             requiresNetworkAuthentication = true;
-            networkAuthenticationSettings = new FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType(networkAuthenticationType, username, password);
         }
-        ArrayList<FoDScanDastAutomatedSetupWebsiteRequest.Exclusion> exclusionsList = new ArrayList<>();
-        if (exclusions != null && !exclusions.isEmpty()) {
-            for (String s: exclusions) {
-                exclusionsList.add(new FoDScanDastAutomatedSetupWebsiteRequest.Exclusion(s));
-            }
-        }
-        String timeZoneToUse = FoDScanHelper.validateTimezone(unirest, timezone);
-        FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType loginMacroFileCreationSettings = null;
+
+        ArrayList<FoDScanDastAutomatedSetupWebsiteRequest.Exclusion> exclusionsList = buildExclusionsList();
+
+        String timeZoneToUse = getTimeZoneToUse(unirest);
+
+        FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType loginMacroFileCreationSettings =
+                getLoginMacroFileCreationSettings();
+
         if (createLoginMacro != null) {
             requiresSiteAuthentication = true;
             requiresLoginMacroCreation = createLoginMacro;
-            loginMacroFileCreationSettings = new FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType(
-                    macroPrimaryUsername, macroPrimaryPassword, macroSecondaryUsername, macroSecondaryPassword);
         }
+
         if (fodConnectNetwork != null) {
-            // if Fortify Connect network site override environmentFacingType to Internal
             environmentFacingType = FoDEnums.DynamicScanEnvironmentFacingType.Internal;
         }
 
-        FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = FoDScanHelper.getEntitlementToUse(unirest, relId, FoDScanType.Dynamic,
-                assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(), entitlementId != null && entitlementId > 0 ? entitlementId : 0);
+        FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor = getEntitlementToUse(unirest, relId);
         entitlementId = assessmentTypeDescriptor.getEntitlementId();
-        FoDScanDastAutomatedSetupWebsiteRequest setupRequest = FoDScanDastAutomatedSetupWebsiteRequest.builder()
+
+        FoDScanDastAutomatedSetupWebsiteRequest setupRequest = buildSetupRequest(
+                fileIdToUse, fileUploadResult, requiresSiteAuthentication, exclusionsList,
+                requiresNetworkAuthentication, networkAuthenticationSettings, timeZoneToUse,
+                requiresLoginMacroCreation, loginMacroFileCreationSettings, assessmentTypeDescriptor
+        );
+
+        return buildResultNode(unirest, releaseDescriptor, setupRequest, fileIdToUse, fileUploadResult);
+    }
+
+    private int getLoginMacroFileId() {
+        return (loginMacroFileId != null ? loginMacroFileId : 0);
+    }
+
+    private FileUploadResult handleFileUpload(UnirestInstance unirest, String relId) {
+        if (uploadFileMixin != null && uploadFileMixin.getFile() != null) {
+            return uploadFileToUse(unirest, relId, FoDScanType.Dynamic, dastFileType.name());
+        }
+        return null;
+    }
+
+    private FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType getNetworkAuthenticationSettings() {
+        if (networkAuthenticationType != null) {
+            return new FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType(
+                    networkAuthenticationType, username, password);
+        }
+        return null;
+    }
+
+    private ArrayList<FoDScanDastAutomatedSetupWebsiteRequest.Exclusion> buildExclusionsList() {
+        ArrayList<FoDScanDastAutomatedSetupWebsiteRequest.Exclusion> exclusionsList = new ArrayList<>();
+        if (exclusions != null && !exclusions.isEmpty()) {
+            for (String s : exclusions) {
+                exclusionsList.add(new FoDScanDastAutomatedSetupWebsiteRequest.Exclusion(s));
+            }
+        }
+        return exclusionsList;
+    }
+
+    private String getTimeZoneToUse(UnirestInstance unirest) {
+        return FoDScanHelper.validateTimezone(unirest, timezone);
+    }
+
+    private FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType getLoginMacroFileCreationSettings() {
+        if (createLoginMacro != null) {
+            return new FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType(
+                    macroPrimaryUsername, macroPrimaryPassword, macroSecondaryUsername, macroSecondaryPassword);
+        }
+        return null;
+    }
+
+    private FoDScanAssessmentTypeDescriptor getEntitlementToUse(UnirestInstance unirest, String relId) {
+        return FoDScanHelper.getEntitlementToUse(
+                unirest, relId, FoDScanType.Dynamic,
+                assessmentType, entitlementFrequencyTypeMixin.getEntitlementFrequencyType(),
+                entitlementId != null && entitlementId > 0 ? entitlementId : 0);
+    }
+
+    private FoDScanDastAutomatedSetupWebsiteRequest buildSetupRequest(
+            int fileIdToUse,
+            FileUploadResult fileUploadResult,
+            boolean requiresSiteAuthentication,
+            ArrayList<FoDScanDastAutomatedSetupWebsiteRequest.Exclusion> exclusionsList,
+            boolean requiresNetworkAuthentication,
+            FoDScanDastAutomatedSetupWebsiteRequest.NetworkAuthenticationType networkAuthenticationSettings,
+            String timeZoneToUse,
+            boolean requiresLoginMacroCreation,
+            FoDScanDastAutomatedSetupWebsiteRequest.LoginMacroFileCreationType loginMacroFileCreationSettings,
+            FoDScanAssessmentTypeDescriptor assessmentTypeDescriptor
+    ) {
+        return FoDScanDastAutomatedSetupWebsiteRequest.builder()
                 .dynamicSiteUrl(siteUrl)
                 .enableRedundantPageDetection(redundantPageProtection != null ? redundantPageProtection : false)
                 .requiresSiteAuthentication(requiresSiteAuthentication)
@@ -177,8 +231,22 @@ public class FoDDastAutomatedScanSetupWebsiteCommand extends AbstractFoDDastAuto
                 .loginMacroFileCreationDetails(loginMacroFileCreationSettings)
                 .networkName(fodConnectNetwork != null ? fodConnectNetwork : "")
                 .build();
+    }
 
-        return FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
-                "/website-scan-setup").asJsonNode();
+    private ObjectNode buildResultNode(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor,
+                                       FoDScanDastAutomatedSetupWebsiteRequest setupRequest,
+                                       int fileIdToUse,
+                                       FileUploadResult fileUploadResult) {
+        ObjectNode node = FoDScanConfigDastAutomatedHelper.setupScan(unirest, releaseDescriptor, setupRequest,
+                "/website-scan-setup").asObjectNode();
+        node.put("scanType", getScanType())
+                .put("setupType", getSetupType())
+                .put("filename", (uploadFileMixin.getFile() != null ? uploadFileMixin.getFile().getName() : "N/A"))
+                .put("entitlementId", entitlementId)
+                .put("fileId", (fileIdToUse != 0 ? fileIdToUse : (fileUploadResult != null ? fileUploadResult.getFileId() : 0)))
+                .put("applicationName", releaseDescriptor.getApplicationName())
+                .put("releaseName", releaseDescriptor.getReleaseName())
+                .put("microserviceName", releaseDescriptor.getMicroserviceName());
+        return node;
     }
 }

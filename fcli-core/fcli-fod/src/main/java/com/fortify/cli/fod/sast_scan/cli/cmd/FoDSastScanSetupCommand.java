@@ -78,6 +78,21 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
     @Mixin private ProgressWriterFactoryMixin progressWriterFactory;
 
     @Override
+    protected String getScanType() {
+        return "Static Assessment";
+    }
+
+    @Override
+    protected String getSetupType() {
+        return auditPreferenceType.name();
+    }
+
+    @Override
+    protected FoDScanConfigSastDescriptor getSetupDescriptor(UnirestInstance unirest, String releaseId) {
+        return FoDScanSastHelper.getSetupDescriptor(unirest, releaseId);
+    }
+
+    @Override
     protected boolean isExistingSetup(FoDScanConfigSastDescriptor setupDescriptor) {
         return (setupDescriptor != null && setupDescriptor.getAssessmentTypeId() != 0);
     }
@@ -118,20 +133,6 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
                 .includeFortifyAviator(useAviator).build();
 
         return FoDScanConfigSastHelper.setupScan(unirest, releaseDescriptor, setupSastScanRequest).asJsonNode();
-    }
-
-    @Override
-    public JsonNode getJsonNode(UnirestInstance unirest) {
-        try (var progressWriter = progressWriterFactory.create()) {
-            var releaseDescriptor = releaseResolver.getReleaseDescriptor(unirest);
-            var setupDescriptor = FoDScanSastHelper.getSetupDescriptor(unirest, releaseDescriptor.getReleaseId());
-            var skippedNode = handleSkipIfExists(skipIfExists, setupDescriptor);
-            if (skippedNode != null) {
-                return skippedNode;
-            } else {
-                return setup(unirest, releaseDescriptor, setupDescriptor);
-            }
-        }
     }
 
     private Integer getLanguageLevelId(UnirestInstance unirest, Integer technologyStackId) {
@@ -188,8 +189,8 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
         FoDReleaseDescriptor releaseDescriptor = releaseResolver.getReleaseDescriptor(getUnirestInstance());
         return ((ObjectNode)record)
         // Start partial fix for (#598)
-                        .put("scanType", assessmentTypeName)
-                        .put("setupType", auditPreferenceType.name())
+                        .put("scanType", getScanType())
+                        .put("setupType", getSetupType())
         // End               
                         .put("applicationName", releaseDescriptor.getApplicationName())
                         .put("releaseName", releaseDescriptor.getReleaseName())
