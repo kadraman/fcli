@@ -20,6 +20,7 @@ import com.fortify.cli.fod._common.output.cli.cmd.AbstractFoDJsonNodeOutputComma
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.scan.cli.mixin.FoDScanResolverMixin;
 import com.fortify.cli.fod._common.scan.helper.FoDScanDescriptor;
+import com.fortify.cli.fod._common.scan.helper.FoDScanHelper;
 import com.fortify.cli.fod._common.scan.helper.FoDScanType;
 
 import kong.unirest.UnirestInstance;
@@ -32,13 +33,9 @@ public abstract class AbstractFoDScanCancelCommand extends AbstractFoDJsonNodeOu
     @Override
     public final JsonNode getJsonNode(UnirestInstance unirest) {
         FoDScanDescriptor descriptor = scanResolver.getScanDescriptor(unirest, getScanType());
-        JsonNode response = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
-                .routeParam("relId", String.valueOf(descriptor.getReleaseId()))
-                .routeParam("scanId", String.valueOf(descriptor.getScanId()))
-                .asObject(JsonNode.class).getBody();
-        if (response.has("success") && !response.get("success").asBoolean()) {
-            throw new IllegalStateException("Error cancelling scan: "+response.get("message").asText());
-        }
+        FoDScanHelper.cancelScan(unirest,
+                String.valueOf(descriptor.getReleaseId()),
+                String.valueOf(descriptor.getScanId()));
         return descriptor.asJsonNode();
     }
     

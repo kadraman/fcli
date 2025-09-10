@@ -70,6 +70,7 @@ public class FoDScanDastAutomatedHelper extends FoDScanHelper {
             JsonNode itemsNode = response.path("items");
             if (!itemsNode.isArray() || itemsNode.isEmpty()) continue;
 
+            boolean foundActive = false;
             for (JsonNode node : itemsNode) {
                 if (!"Dynamic".equals(node.path("scanType").asText())) continue;
                 String status = node.path("analysisStatusType").asText();
@@ -81,37 +82,18 @@ public class FoDScanDastAutomatedHelper extends FoDScanHelper {
                     break;
                 }*/
                 if (isActiveStatus(status)) {
-                    switch (inProgressScanActionType) {
-                        case CancelScanInProgress:
-                            progressWriter.writeProgress("Status: Cancelling scan %s", scanId);
-                            JsonNode cancelResponse = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
-                                    .routeParam("relId", releaseId)
-                                    .routeParam("scanId", scanId)
-                                    .asObject(JsonNode.class).getBody();
-                            if (cancelResponse.has("success") && !cancelResponse.get("success").asBoolean()) {
-                                throw new IllegalStateException("Error cancelling scan "+cancelResponse.get("message").asText());
-                            }
-                            break;
-                        case Queue:
-                            int timeout = (maxAttempts * waitIntervalSeconds) - (attempt * waitIntervalSeconds);
-                            progressWriter.writeProgress("Status: Scan %s is %s, waiting up to %s seconds for it to complete", scanId, status, timeout);
-                            Thread.sleep(waitMillis);
-                            break;
-                        case DoNotStartScan:
-                            progressWriter.writeProgress("Status: A scan is running %s, no new scan will be started", scanId);
-                            JsonNode scan = objectMapper.createObjectNode()
-                                    .put("scanId", node.path("scanId").asText())
-                                    .put("scanType", FoDScanType.Dynamic.name())
-                                    .put("releaseAndScanId",  String.format("%s:%s", releaseId, node.path("scanId").asText()))
-                                    .put("analysisStatusType", status)
-                                    .put("applicationName", releaseDescriptor.getApplicationName())
-                                    .put("releaseName", releaseDescriptor.getReleaseName())
-                                    .put("microserviceName", releaseDescriptor.getMicroserviceName());
-                            return JsonHelper.treeToValue(scan, FoDScanDescriptor.class);
-                    }
-                    break;
+                    foundActive = true;
+                    FoDScanDescriptor result = handleActiveScan(
+                            unirest, releaseId, node, status, releaseDescriptor,
+                            inProgressScanActionType, progressWriter, maxAttempts,
+                            waitIntervalSeconds, attempt, waitMillis
+                    );
+                    if (result != null) return result;
+                    break; // wait and retry
                 }
-                // if an existing scan is not running, waiting or in progress, then it's fine to run
+            }
+            // if an existing scan is not running, waiting or in progress, then it's fine to run
+            if (!foundActive) {
                 progressWriter.writeProgress("Status: Starting new scan");
                 return null;
             }
@@ -136,6 +118,45 @@ public class FoDScanDastAutomatedHelper extends FoDScanHelper {
                 .put("releaseName", releaseDescriptor.getReleaseName())
                 .put("microserviceName", releaseDescriptor.getMicroserviceName());
         return JsonHelper.treeToValue(node, FoDScanDescriptor.class);
+    }
+
+    private static FoDScanDescriptor handleActiveScan(
+            UnirestInstance unirest,
+            String releaseId,
+            JsonNode node,
+            String status,
+            FoDReleaseDescriptor releaseDescriptor,
+            FoDEnums.InProgressScanActionType inProgressScanActionType,
+            IProgressWriterI18n progressWriter,
+            int maxAttempts,
+            int waitIntervalSeconds,
+            int attempt,
+            int waitMillis
+    ) throws InterruptedException {
+        String scanId = node.path("scanId").asText();
+        switch (inProgressScanActionType) {
+            case CancelScanInProgress:
+                progressWriter.writeProgress("Status: Cancelling scan %s", scanId);
+                FoDScanHelper.cancelScan(unirest, releaseId, scanId);
+                break;
+            case Queue:
+                int timeout = (maxAttempts * waitIntervalSeconds) - (attempt * waitIntervalSeconds);
+                progressWriter.writeProgress("Status: Scan %s is %s, waiting up to %s seconds for it to complete", scanId, status, timeout);
+                Thread.sleep(waitMillis);
+                break;
+            case DoNotStartScan:
+                progressWriter.writeProgress("Status: A scan is running %s, no new scan will be started", scanId);
+                JsonNode scan = objectMapper.createObjectNode()
+                        .put("scanId", scanId)
+                        .put("scanType", FoDScanType.Dynamic.name())
+                        .put("releaseAndScanId", String.format("%s:%s", releaseId, scanId))
+                        .put("analysisStatusType", status)
+                        .put("applicationName", releaseDescriptor.getApplicationName())
+                        .put("releaseName", releaseDescriptor.getReleaseName())
+                        .put("microserviceName", releaseDescriptor.getMicroserviceName());
+                return JsonHelper.treeToValue(scan, FoDScanDescriptor.class);
+        }
+        return null;
     }
 
 }

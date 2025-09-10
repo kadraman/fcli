@@ -272,5 +272,15 @@ public class FoDScanHelper {
     private static final FoDScanDescriptor getEmptyDescriptor() {
         return JsonHelper.treeToValue(getObjectMapper().createObjectNode(), FoDScanDescriptor.class);
     }
+Fod
+    public static void cancelScan(UnirestInstance unirest, String releaseId, String scanId) {
+        JsonNode cancelResponse = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
+                .routeParam("relId", releaseId)
+                .routeParam("scanId", scanId)
+                .asObject(JsonNode.class).getBody();
+        if (cancelResponse.has("success") && !cancelResponse.get("success").asBoolean()) {
+            throw new IllegalStateException("Error cancelling scan " + cancelResponse.get("message").asText());
+        }
+    }
 
 }
