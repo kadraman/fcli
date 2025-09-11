@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.scan.helper.FoDScanDescriptor;
 import com.fortify.cli.fod._common.scan.helper.FoDScanHelper;
@@ -26,19 +27,38 @@ import com.fortify.cli.fod._common.scan.helper.FoDStartScanResponse;
 import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseDescriptor;
 
+import kong.unirest.HttpResponse;
+import kong.unirest.UnirestException;
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
+
+import java.util.Objects;
 
 public class FoDScanDastAutomatedHelper extends FoDScanHelper {
     @Getter
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static final FoDScanConfigDastAutomatedDescriptor getSetupDescriptor(UnirestInstance unirest, String relId) {
-        var body = unirest.get(FoDUrls.DAST_AUTOMATED_SCANS + "/scan-setup")
-                .routeParam("relId", relId)
-                .asObject(ObjectNode.class)
-                .getBody();
-        return JsonHelper.treeToValue(body, FoDScanConfigDastAutomatedDescriptor.class);
+        // Unlike other scan setup retrievals, DAST Automated scan setup retrieval returns 400
+        // when no setup exists, so we need to handle that specifically
+        try {
+            HttpResponse<JsonNode> response = unirest.get(FoDUrls.DAST_AUTOMATED_SCANS + "/scan-setup")
+                    .routeParam("relId", relId)
+                    .asObject(JsonNode.class);
+
+            return JsonHelper.treeToValue(response.getBody(), FoDScanConfigDastAutomatedDescriptor.class);
+        } catch (UnexpectedHttpResponseException e) {
+            if (e.getStatus() == 400) {
+                // use the internal FoD "errorCode" to determine if any settings have been defined
+                if (e.getMessage().contains("errorCode: 6000")) {
+                    return null;
+                }
+                throw new FcliSimpleException("Bad request. Error: " + e.getMessage());
+            }
+            throw new FcliSimpleException("Unexpected HTTP error: " + e.getMessage());
+        } catch (UnirestException e) {
+            throw new FcliSimpleException("Request failed: " + e.getMessage());
+        }
     }
 
     public static final FoDScanDescriptor startScan(UnirestInstance unirest, FoDReleaseDescriptor releaseDescriptor) {
