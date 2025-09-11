@@ -15,14 +15,12 @@ package com.fortify.cli.fod._common.scan.helper;
 
 import static java.util.function.Predicate.not;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.BeanUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,11 +33,6 @@ import com.fortify.cli.common.output.transform.fields.RenameFieldsTransformer;
 import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedHelper;
-import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupBaseRequest;
-import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupGraphQlRequest;
-import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupGrpcRequest;
-import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupOpenApiRequest;
-import com.fortify.cli.fod._common.scan.helper.dast.FoDScanDastAutomatedSetupPostmanRequest;
 import com.fortify.cli.fod._common.util.FoDEnums;
 import com.fortify.cli.fod.dast_scan.helper.FoDScanConfigDastAutomatedDescriptor;
 import com.fortify.cli.fod.release.helper.FoDReleaseAssessmentTypeHelper;
@@ -50,7 +43,6 @@ import com.fortify.cli.fod.rest.lookup.helper.FoDLookupType;
 import kong.unirest.HttpRequest;
 import kong.unirest.UnirestInstance;
 import lombok.Getter;
-import lombok.SneakyThrows;
 
 public class FoDScanHelper {
     @Getter
@@ -202,6 +194,16 @@ public class FoDScanHelper {
 
     private static final FoDScanDescriptor getEmptyDescriptor() {
         return JsonHelper.treeToValue(getObjectMapper().createObjectNode(), FoDScanDescriptor.class);
+    }
+
+    public static void cancelScan(UnirestInstance unirest, String releaseId, String scanId) {
+        JsonNode cancelResponse = unirest.post(FoDUrls.RELEASE + "/scans/{scanId}/cancel-scan")
+                .routeParam("relId", releaseId)
+                .routeParam("scanId", scanId)
+                .asObject(JsonNode.class).getBody();
+        if (cancelResponse.has("success") && !cancelResponse.get("success").asBoolean()) {
+            throw new IllegalStateException("Error cancelling scan " + cancelResponse.get("message").asText());
+        }
     }
 
 }
