@@ -27,15 +27,32 @@ ext {
 	ghPagesVersionedOutputDir = "${docsBuildDir}/gh-pages/versioned/output"
 }
 
+task prepare {
+    dependsOn(build)
+    doLast {
+        [docsBuildDir, manpageAsciiDocDir, htmlAsciiDocDir, htmlOutputDir, ghPagesStaticOutputDir, schemaOutputDir, actionSchemaOutputDir, ghPagesVersionedOutputDir].forEach {
+            d -> mkdir d
+        }
+    }
+}
+
 task generateActionSchema(type: JavaExec) {
-    dependsOn('build')
+    dependsOn(prepare)
     classpath(sourceSets.main.runtimeClasspath, configurations.runtimeClasspath)
     main 'com.fortify.cli.common.action.schema.generator.GenerateActionSchema'
     // Pass whether this is an (fcli) development release, schema version and output dir
     args project.version.startsWith("0."), fcliActionSchemaVersion, actionSchemaOutputDir
 }
 
-task generateManpageAsciiDoc(type: JavaExec) {
+task generateAsciiDocActionDevelopment(type: JavaExec) {
+    dependsOn(prepare)
+    classpath = sourceSets.main.runtimeClasspath
+    main 'com.fortify.cli.app.FortifyCLI'
+    args 'action', 'run', '--on-unsigned=ignore', '--on-invalid-version=ignore', "${projectDir}/src/actions/generate-action-dev-doc.yaml", "--file=${htmlAsciiDocDir}/action-development.adoc"
+}
+
+task generateAsciiDocManPage(type: JavaExec) {
+    dependsOn(prepare)
     // Outer task collects resource bundle properties by executing FortifyCLIResourceBundlePropertiesHelper,
     // which are then passed as system properties to the man page generator. This allows generated man pages
     // to list property values that are usually generated at fcli runtime.
@@ -60,13 +77,39 @@ task generateManpageAsciiDoc(type: JavaExec) {
     }
 }
 
+task generateAsciiDocGenericActions(type: JavaExec) {
+    dependsOn(generateAsciiDocManPage)
+    group = "Documentation"
+    description = "Generate Generic Action AsciiDoc"
+    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
+    main 'com.fortify.cli.app.FortifyCLI'
+    args "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/generic-actions.adoc"
+}
+
+task generateAsciiDocSSCActions(type: JavaExec) {
+    dependsOn(generateAsciiDocManPage)
+    group = "Documentation"
+    description = "Generate SSC Action AsciiDoc"
+    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
+    main 'com.fortify.cli.app.FortifyCLI'
+    args "ssc", "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/ssc-actions.adoc"
+}
+
+task generateAsciiDocFoDActions(type: JavaExec) {
+    dependsOn(generateAsciiDocManPage)
+    group = "Documentation"
+    description = "Generate FoD Action AsciiDoc"
+    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
+    main 'com.fortify.cli.app.FortifyCLI'
+    args "fod", "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/fod-actions.adoc"
+}
 
 task generateManpageOutput(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
-	dependsOn(generateManpageAsciiDoc)
-	forkOptions {
+    dependsOn(generateAsciiDocManPage)
+    forkOptions {
         jvmArgs("--add-opens","java.base/sun.nio.ch=ALL-UNNAMED","--add-opens","java.base/java.io=ALL-UNNAMED")
     }
-    sourceDir = file("${manpageAsciiDocDir}")  
+    sourceDir = file("${manpageAsciiDocDir}")
     outputDir = file("${manpageOutputDir}")
     logDocuments = true
     outputOptions {
@@ -75,7 +118,7 @@ task generateManpageOutput(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
 }
 
 task prepareAsciiDocForVersionedHtml(type: Copy) {
-	dependsOn 'generateManpageAsciiDoc'
+    dependsOn(generateAsciiDocActionDevelopment, generateAsciiDocManPage, generateAsciiDocGenericActions, generateAsciiDocSSCActions, generateAsciiDocFoDActions)
 	into "${htmlAsciiDocDir}"
 	from("${versionedAsciiDocSrcDir}") {
         include "*.adoc"
@@ -86,43 +129,9 @@ task prepareAsciiDocForVersionedHtml(type: Copy) {
     }
 }
 
-task generateActionDevDoc(type: JavaExec) {
-    dependsOn 'build', 'prepareAsciiDocForVersionedHtml'
-    classpath = sourceSets.main.runtimeClasspath
-    main 'com.fortify.cli.app.FortifyCLI'
-    args 'action', 'run', '--on-unsigned=ignore', '--on-invalid-version=ignore', "${projectDir}/src/actions/generate-action-dev-doc.yaml", "--file=${htmlAsciiDocDir}/action-development.adoc"
-}
-
-task generateGenericActionAsciiDoc(type: JavaExec) {
-    dependsOn(generateManpageAsciiDoc, prepareAsciiDocForVersionedHtml)
-    group = "Documentation"
-    description = "Generate Generic Action AsciiDoc"
-    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
-    main 'com.fortify.cli.app.FortifyCLI'
-    args "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/generic-actions.adoc"
-}
-
-task generateSSCActionAsciiDoc(type: JavaExec) {
-    dependsOn(generateManpageAsciiDoc, prepareAsciiDocForVersionedHtml)
-    group = "Documentation"
-    description = "Generate SSC Action AsciiDoc"
-    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
-    main 'com.fortify.cli.app.FortifyCLI'
-    args "ssc", "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/ssc-actions.adoc"
-}
-
-task generateFoDActionAsciiDoc(type: JavaExec) {
-    dependsOn(generateManpageAsciiDoc, prepareAsciiDocForVersionedHtml)
-    group = "Documentation"
-    description = "Generate FoD Action AsciiDoc"
-    classpath(configurations.runtimeClasspath, configurations.annotationProcessor)
-    main 'com.fortify.cli.app.FortifyCLI'
-    args "fod", "action", "asciidoc", "-d=${manpageAsciiDocDir}", "-f=${htmlAsciiDocDir}/fod-actions.adoc"
-}
-
 // Generate HTML documentation from AsciiDoc prepared by prepareAsciiDocForVersionedHtml
 task asciiDoctorVersionedHtml(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
-    dependsOn(prepareAsciiDocForVersionedHtml, generateActionDevDoc, generateGenericActionAsciiDoc, generateSSCActionAsciiDoc, generateFoDActionAsciiDoc)
+    dependsOn(prepareAsciiDocForVersionedHtml)
     forkOptions {
         jvmArgs("--add-opens","java.base/sun.nio.ch=ALL-UNNAMED","--add-opens","java.base/java.io=ALL-UNNAMED")
     }
