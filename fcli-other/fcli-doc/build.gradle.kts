@@ -173,47 +173,49 @@ fun registerAsciidoctorTask(
     name: String,
     depends: TaskProvider<*>,
     outputDirProvider: Provider<Directory>,
+    source: java.io.File,
     backend: String,
-    source: () -> java.io.File
+    attributes: Map<String, Any> = mapOf()
 ) = tasks.register<AsciidoctorTask>(name) {
     group = "documentation"
     description = "Generate $name output"
     dependsOn(depends)
-    setSourceDir(source())
+    setSourceDir(source)
     setOutputDir(outputDirProvider.get().asFile)
+    setLogDocuments(true)
     outputs.dir(outputDirProvider)
     outputOptions { backends(backend) }
-    val schemaUrl = rootProject.extra["fcliActionSchemaUrl"].toString()
-    when (name) {
-        "asciiDoctorVersionedHtml", "asciiDoctorVersionedJekyll" -> attributes(
-            mapOf(
-                "toc" to "left", "sectanchors" to "true", "docinfo" to "shared", "jekyll" to (name == "asciiDoctorVersionedJekyll"),
-                "bannertitle" to "FCLI: The Universal Fortify CLI", "docversion" to project.version.toString(),
-                "actionSchemaVersion" to fcliActionSchemaVersion.toString(), "actionSchemaUrl" to schemaUrl
-            )
-        )
-        "asciiDoctorStaticJekyll" -> attributes(
-            mapOf(
-                "toc" to "left", "sectanchors" to "true", "docinfo" to "shared", "jekyll" to true, "stylesheet" to false,
-                "bannertitle" to "FCLI: The Universal Fortify CLI", "docversion" to "[select]", "revnumber" to "none"
-            )
-        )
-        else -> { /* no extra attributes */ }
-    }
+    attributes(attributes)
+    options(mapOf("template_dirs" to listOf(asciiDocTemplatesSrcDir.asFile.absolutePath)))
 }
 
+fun registerAsciidoctorTaskHtml(
+    name: String,
+    depends: TaskProvider<*>,
+    outputDirProvider: Provider<Directory>,
+    jekyll: Boolean,
+    source: java.io.File
+) = registerAsciidoctorTask(name, depends, outputDirProvider, source, "html5",
+    buildMap {
+        put("toc", "left")
+        put("sectanchors", "true")
+        put("docinfo", "shared")
+        put("jekyll", jekyll)
+        if (jekyll) put("stylesheet", false)
+        put("bannertitle", "FCLI: The Universal Fortify CLI")
+        put("docversion", project.version.toString())
+        put("actionSchemaVersion", fcliActionSchemaVersion.toString())
+        put("actionSchemaUrl", rootProject.extra["fcliActionSchemaUrl"].toString())
+    })
+
 val generateManpageOutput = registerAsciidoctorTask(
-    "generateManpageOutput", generateAsciiDocAll, manpageOutDir, "manpage"
-) { asciiDocManPageOutDir.get().asFile }
-val asciiDoctorVersionedHtml = registerAsciidoctorTask(
-    "asciiDoctorVersionedHtml", generateAsciiDocAll, htmlOutDir, "html5"
-) { asciiDocOutDir.get().asFile }
-val asciiDoctorVersionedJekyll = registerAsciidoctorTask(
-    "asciiDoctorVersionedJekyll", generateAsciiDocAll, ghPagesVersionedOutDir, "html5"
-) { asciiDocOutDir.get().asFile }
-val asciiDoctorStaticJekyll = registerAsciidoctorTask(
-    "asciiDoctorStaticJekyll", generateActionSchema, ghPagesStaticOutDir, "html5"
-) { staticAsciiDocSrcDir.asFile }
+    "generateManpageOutput", generateAsciiDocAll, manpageOutDir, asciiDocManPageOutDir.get().asFile, "manpage")
+val asciiDoctorVersionedHtml = registerAsciidoctorTaskHtml(
+    "asciiDoctorVersionedHtml", generateAsciiDocAll, htmlOutDir, false, asciiDocOutDir.get().asFile)
+val asciiDoctorVersionedJekyll = registerAsciidoctorTaskHtml(
+    "asciiDoctorVersionedJekyll", generateAsciiDocAll, ghPagesVersionedOutDir, true, asciiDocOutDir.get().asFile)
+val asciiDoctorStaticJekyll = registerAsciidoctorTaskHtml(
+    "asciiDoctorStaticJekyll", generateActionSchema, ghPagesStaticOutDir, true, staticAsciiDocSrcDir.asFile)
 
 fun registerDocsZip(name: String, dep: TaskProvider<*>, archive: String, fromDir: Provider<Directory>, toDist: Boolean = false) =
     tasks.register<Zip>(name) {
