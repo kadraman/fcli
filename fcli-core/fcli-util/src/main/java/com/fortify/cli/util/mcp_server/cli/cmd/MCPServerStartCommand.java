@@ -13,7 +13,10 @@
 package com.fortify.cli.util.mcp_server.cli.cmd;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -27,11 +30,20 @@ import com.fortify.cli.common.mcp.MCPExclude;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.util.FcliBuildProperties;
 import com.fortify.cli.common.util.PicocliSpecHelper;
+import com.fortify.cli.common.action.helper.ActionLoaderHelper;
+import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionSource;
+import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
+import com.fortify.cli.common.action.model.Action;
+import com.fortify.cli.common.action.model.ActionCliOption;
+import com.fortify.cli.common.action.model.ActionMcpIncludeExclude;
 import com.fortify.cli.util.mcp_server.helper.mcp.arg.MCPToolArgHandlers;
+import com.fortify.cli.util.mcp_server.helper.mcp.arg.IMCPToolArgHandler;
+import com.fortify.cli.util.mcp_server.helper.mcp.arg.MCPToolArgHandlerActionOption;
 import com.fortify.cli.util.mcp_server.helper.mcp.runner.IMCPToolRunner;
 import com.fortify.cli.util.mcp_server.helper.mcp.runner.MCPToolFcliRunnerPlainText;
 import com.fortify.cli.util.mcp_server.helper.mcp.runner.MCPToolFcliRunnerRecords;
 import com.fortify.cli.util.mcp_server.helper.mcp.runner.MCPToolFcliRunnerRecordsPaged;
+import com.fortify.cli.util.mcp_server.helper.mcp.runner.MCPToolFcliRunnerAction;
 
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -40,6 +52,7 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -93,14 +106,39 @@ public class MCPServerStartCommand extends AbstractRunnableCommand {
     }
 
     private List<SyncToolSpecification> createToolSpecs() {
-        return module.getSubcommandsStream(commandHelper)
+        var result = new ArrayList<SyncToolSpecification>();
+        // Existing Picocli command-based tools
+        result.addAll(module.getSubcommandsStream(commandHelper)
                 .filter(spec->!PicocliSpecHelper.isMcpIgnored(spec))
-                .map(cs->createToolSpec(cs))
-                .peek(s->LOG.debug("Registering tool: {}", s.tool().name()))
+                .map(cs->createCommandToolSpec(cs))
+                .peek(s->LOG.debug("Registering cmd tool: {}", s.tool().name()))
+                .toList());
+        // New action-based tools
+        result.addAll(createActionToolSpecs());
+        return result;
+    }
+    
+    private List<SyncToolSpecification> createActionToolSpecs() {
+        var actionSources = ActionSource.defaultActionSources(module.toString());
+        var validationHandler = ActionValidationHandler.WARN;
+        return ActionLoaderHelper.streamAsActions(actionSources, validationHandler)
+                .filter(this::includeActionAsMcpTool)
+                .map(a->new ActionToolSpecHelper(module.toString(), a).createToolSpec())
+                .peek(s->LOG.debug("Registering action tool: {}", s.tool().name()))
                 .toList();
     }
     
-    private static final SyncToolSpecification createToolSpec(CommandSpec spec) {
+    private boolean includeActionAsMcpTool(Action action) {
+        try {
+            return action.getConfig()==null || action.getConfig().getMcp()!=ActionMcpIncludeExclude.exclude;
+        } catch (Exception e) { // Be defensive; never fail server start due to malformed action
+            LOG.warn("Error checking MCP include/exclude for action {}: {}", 
+                    action!=null && action.getMetadata()!=null ? action.getMetadata().getName() : "<unknown>", e.toString());
+            return false;
+        }
+    }
+    
+    private static final SyncToolSpecification createCommandToolSpec(CommandSpec spec) {
         return new CommandToolSpecHelper(spec).createToolSpec();
     }
 
@@ -152,9 +190,76 @@ public class MCPServerStartCommand extends AbstractRunnableCommand {
         }
     }
     
+    // Helper for action-based MCP tools
+    private static final class ActionToolSpecHelper {
+        private final String module;
+        private final Action action;
+        private final List<IMCPToolArgHandler> argHandlers;
+        
+        private ActionToolSpecHelper(String module, Action action) {
+            this.module = module;
+            this.action = action;
+            this.argHandlers = createArgHandlers();
+        }
+        
+        public final SyncToolSpecification createToolSpec() {
+            return McpServerFeatures.SyncToolSpecification.builder()
+                    .tool(createTool())
+                    .callHandler(new MCPToolFcliRunnerAction(module, action, argHandlers)::run)
+                    .build();
+        }
+        
+        private final Tool createTool() {
+            return Tool.builder()
+                    .name(getToolName())
+                    .description(getDescription())
+                    .inputSchema(createSchema())
+                    .build();
+        }
+        
+        private List<IMCPToolArgHandler> createArgHandlers() {
+            var result = new ArrayList<IMCPToolArgHandler>();
+            if ( action.getCliOptions()!=null ) {
+                for ( Map.Entry<String, ActionCliOption> e : action.getCliOptions().entrySet() ) {
+                    var opt = e.getValue();
+                    if ( opt.getMcp()==ActionMcpIncludeExclude.exclude ) { continue; }
+                    var name = getLongestName(opt);
+                    if ( StringUtils.isBlank(name) ) { continue; }
+                    result.add(new MCPToolArgHandlerActionOption(name, opt.getDescription(), opt.isRequired(), opt.getType()));
+                }
+            }
+            return result;
+        }
+        
+        private JsonSchema createSchema() {
+            var schema = new JsonSchema("object", new LinkedHashMap<String,Object>(), new ArrayList<String>(), false, new LinkedHashMap<String,Object>(), new LinkedHashMap<String,Object>());
+            argHandlers.forEach(h->h.updateSchema(schema));
+            return schema;
+        }
+        
+        private String getToolName() {
+            return "fcli_"+module.replace('-', '_')+"_action_"+action.getMetadata().getName().replace('-', '_');
+        }
+        
+        private String getDescription() {
+            var usage = action.getUsage();
+            return usage!=null ? usage.getHeader() : action.getMetadata().getName();
+        }
+        
+        private String getLongestName(ActionCliOption opt) {
+            var names = opt.getNamesAsArray();
+            if ( names==null || names.length==0 ) { return null; }
+            String longest = null;
+            for ( var n : names ) {
+                if ( longest==null || n.length()>longest.length() ) { longest = n; }
+            }
+            return longest;
+        }
+    }
+    
     /** Fcli modules for which MCP server commands are exposed */
     public static enum McpModule {
-        fod, ssc, sc_sast, sc_dast;
+        fod, ssc, sc_sast, sc_dast, aviator;
         
         @Override
         public String toString() {
