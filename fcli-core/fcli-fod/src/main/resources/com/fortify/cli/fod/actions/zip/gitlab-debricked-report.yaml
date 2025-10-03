@@ -19,11 +19,6 @@ cli.options:
   release:
     names: --release, --rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
-  page-size:
-    names: --page-size
-    description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and FoD), and could potentially negatively affect overall FoD performance or result in read time-outs (see `--socket-timeout` option on `fcli fod session login` command). Default value: 50"
-    required: false
-    default: "50"
 
 steps:
   - var.set:
@@ -44,7 +39,7 @@ steps:
       issues:
         uri: /api/v3/releases/${rel.releaseId}/vulnerabilities
         query:
-          limit: ${cli['page-size']}
+          limit: 50
           filters: "Category:Open Source"
         log.progress:
           page.post-process: Processed ${totalIssueCount?:0} of ${issues_raw.totalCount} issues
