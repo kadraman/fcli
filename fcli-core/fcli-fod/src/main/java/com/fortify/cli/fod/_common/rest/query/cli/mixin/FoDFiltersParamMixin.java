@@ -15,6 +15,7 @@ package com.fortify.cli.fod._common.rest.query.cli.mixin;
 import com.fortify.cli.common.mcp.MCPExclude;
 import com.fortify.cli.common.rest.query.cli.mixin.AbstractServerSideQueryMixin;
 
+import org.springframework.expression.Expression;
 import picocli.CommandLine.Option;
 
 public class FoDFiltersParamMixin extends AbstractServerSideQueryMixin {
@@ -29,6 +30,14 @@ public class FoDFiltersParamMixin extends AbstractServerSideQueryMixin {
     
     @Override
     protected String getServerSideQueryParamOptionValue() {
+        return filtersParam;
+    }
+
+    public Expression getFilterExpression() {
+        return super.getExpression();
+    }
+
+    public String getFiltersParam() {
         return filtersParam;
     }
 }

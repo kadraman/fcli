@@ -61,7 +61,11 @@ public abstract class AbstractServerSideQueryMixin implements IHttpRequestUpdate
     
     protected abstract String getServerSideQueryParamName();
     protected abstract String getServerSideQueryParamOptionValue();
-    
+
+    protected Expression getExpression() {
+        return this.getSpelExpression();
+    }
+
     private final Expression getSpelExpression() {
         QueryExpression queryExpression = getQueryExpression();
         return queryExpression==null ? null : queryExpression.getExpression();
