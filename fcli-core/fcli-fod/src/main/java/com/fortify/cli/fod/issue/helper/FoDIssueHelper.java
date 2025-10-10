@@ -113,8 +113,8 @@ public class FoDIssueHelper {
                 throw e;
             }
             LOG.error("Error retrieving issues for release " +
-                    (StringUtils.isNotEmpty(releaseId) ? releaseId : "<null>" +
-                    ": " + e.getMessage()));
+                    (StringUtils.isNotEmpty(releaseId) ? releaseId : "<null>") +
+                    ": " + e.getMessage());
             return JsonHelper.getObjectMapper().createArrayNode();
         }
     }
