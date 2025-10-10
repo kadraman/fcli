@@ -68,7 +68,7 @@ public class FoDIssueIncludeMixin implements IHttpRequestUpdater, IRecordTransfo
     private ObjectNode addVisibilityProperties(ObjectNode record) {
         Map<String,String> visibility = new LinkedHashMap<>();
         if ( getBoolean(record, "isSuppressed") ) { visibility.put("suppressed", "(S)"); }
-        // Updated as per (Issue#820): using status field as wel  to determine fixed status instead of just closedStatus field
+        // Updated as per (Issue#820): using status field as well to determine fixed status instead of just closedStatus field
         if ( getBoolean(record, "closedStatus") || isFixValidated(record) ) { visibility.put("fixed", "(F)"); }
         if ( visibility.isEmpty() )               { visibility.put("visible", " "); }
         record.put("visibility", String.join(",", visibility.keySet()))
