@@ -19,25 +19,21 @@ import org.springframework.expression.Expression;
 import picocli.CommandLine.Option;
 
 public class FoDFiltersParamMixin extends AbstractServerSideQueryMixin {
-    @Option(names="--filters-param", required=false, descriptionKey="fcli.fod.filters-param")
+    @Option(names = "--filters-param", required = false, descriptionKey = "fcli.fod.filters-param")
     @MCPExclude // Not suitable for LLM, as LLM doesn't know option syntax/fields
     private String filtersParam;
-    
+
     @Override
     protected String getServerSideQueryParamName() {
         return "filters";
     }
-    
+
     @Override
-    protected String getServerSideQueryParamOptionValue() {
+    public String getServerSideQueryParamOptionValue() {
         return filtersParam;
     }
 
     public Expression getFilterExpression() {
-        return super.getExpression();
-    }
-
-    public String getFiltersParam() {
-        return filtersParam;
+        return super.getSpelExpression();
     }
 }

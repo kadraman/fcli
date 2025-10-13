@@ -162,14 +162,26 @@ public class FoDIssueHelper {
             Set<String> releaseIds = releaseIdsByInstance.get(instanceId);
             Set<String> relatedIds = idsByInstance.get(instanceId);
             Set<String> vulnIds = vulnIdsByInstance.getOrDefault(instanceId, Collections.emptySet());
-            record.put("vulnIds", String.join(",", vulnIds));
-            record.put("foundInReleases", String.join(",", releaseNames));
-            record.put("foundInReleaseIds", String.join(",", releaseIds));
-            record.put("ids", relatedIds.stream()
+            ArrayNode vulnIdsArray = JsonHelper.getObjectMapper().createArrayNode();
+            vulnIds.forEach(vulnIdsArray::add);
+            ArrayNode releaseNamesArray = JsonHelper.getObjectMapper().createArrayNode();
+            releaseNames.forEach(releaseNamesArray::add);
+            ArrayNode releaseIdsArray = JsonHelper.getObjectMapper().createArrayNode();
+            releaseIds.forEach(releaseIdsArray::add);
+            ArrayNode idsArray = JsonHelper.getObjectMapper().createArrayNode();
+            relatedIds.forEach(idsArray::add);
+            record.set("vulnIds", vulnIdsArray);
+            record.put("vulnIdsString", String.join(", ", vulnIds));
+            record.set("foundInReleases", releaseNamesArray);
+            record.put("foundInReleasesString", String.join(", ", releaseNames));
+            record.set("foundInReleaseIds", releaseIdsArray);
+            record.put("foundInReleaseIdsString", String.join(", ", releaseIds));
+            record.set("ids", idsArray);
+            record.put("idsString", relatedIds.stream()
                     .map(Integer::parseInt)
                     .sorted()
                     .map(String::valueOf)
-                    .collect(Collectors.joining(",")));
+                    .collect(Collectors.joining(", ")));
             result.add(record);
         }
         return result;

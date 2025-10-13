@@ -70,7 +70,7 @@ public class FoDIssueListCommand extends AbstractFoDJsonNodeOutputCommand implem
         String filtersParamValue = Optional.ofNullable(filterParamMixin.getFilterExpression())
                 .map(serverSideQueryParamGenerator::getServerSideQueryParamValue)
                 .filter(v -> !v.isEmpty())
-                .orElse(Optional.ofNullable(filterParamMixin.getFiltersParam()).orElse(""));
+                .orElse(Optional.ofNullable(filterParamMixin.getServerSideQueryParamOptionValue()).orElse(""));
         // If a release is specified, just get issues for that release
         if (releaseResolver.getQualifiedReleaseNameOrId() != null) {
             if (appResolver.getAppNameOrId() != null) {
