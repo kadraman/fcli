@@ -10,7 +10,7 @@
  * herein. The information contained herein is subject to change 
  * without notice.
  *******************************************************************************/
-package com.fortify.cli.fod.app.attr.helper;
+package com.fortify.cli.fod.attribute.helper;
 
 import java.util.*;
 
@@ -169,4 +169,45 @@ public class FoDAttributeHelper {
         }
         return attrArray;
     }
+
+    public static FoDAttributeDescriptor createAttribute(UnirestInstance unirest, FoDAttributeCreateRequest request) {
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("name", request.getName());
+        body.put("attributeType", request.getAttributeType());
+        body.put("attributeDataType", request.getAttributeDataType());
+        body.put("isRequired", request.getIsRequired());
+        body.put("isRestricted", request.getIsRestricted());
+        body.put("picklistValues", request.getPicklistValues()==null ? null : objectMapper.valueToTree(request.getPicklistValues()));
+        var response =  unirest.post(FoDUrls.ATTRIBUTES)
+                .header("Content-Type", "application/json")
+                .body(body)
+                .asObject(JsonNode.class)
+                .getBody();
+        if (response.has("success") && response.get("success").asBoolean()) {
+            var attributeId = response.get("id").asText();
+            return getAttributeDescriptor(unirest, attributeId, true);
+        } else {
+            throw new FcliSimpleException("Failed to create attribute: " + response.toString());
+        }
+    }
+
+    public static FoDAttributeDescriptor updateAttribute(UnirestInstance unirest, String attributeId, FoDAttributeUpdateRequest request) {
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("isRequired", request.getIsRequired());
+        body.put("isRestricted", request.getIsRestricted());
+        body.put("overwriteExistingValues", request.getOverwriteExistingValues());
+        body.put("picklistValues", request.getPicklistValues()==null ? null : objectMapper.valueToTree(request.getPicklistValues()));
+        var response = unirest.put(FoDUrls.ATTRIBUTE)
+                .routeParam("attributeId", attributeId)
+                .header("Content-Type", "application/json")
+                .body(request)
+                .asObject(JsonNode.class)
+                .getBody();
+        if (response.has("success") && response.get("success").asBoolean()) {
+            return getAttributeDescriptor(unirest, attributeId, true);
+        } else {
+            throw new FcliSimpleException("Failed to update attribute: " + response.toString());
+        }
+    }
+
 }
