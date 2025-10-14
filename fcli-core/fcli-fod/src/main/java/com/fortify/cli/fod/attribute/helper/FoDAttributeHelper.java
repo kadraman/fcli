@@ -197,7 +197,7 @@ public class FoDAttributeHelper {
         if (response.has("success") && response.get("success").asBoolean()) {
             return getAttributeDescriptor(unirest, attributeId, true);
         } else {
-            throw new FcliSimpleException("Failed to create attribute: " + response.toString());
+            throw new FcliSimpleException("Failed to update attribute: " + response.toString());
         }
 
     }
