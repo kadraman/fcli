@@ -25,8 +25,10 @@ public class FoDAttributeCreateRequest {
     private String name;
     private String attributeType;
     private String attributeDataType;
-    private Boolean isRequired;
-    private Boolean isRestricted;
+    @Builder.Default
+    private Boolean isRequired = false;
+    @Builder.Default
+    private Boolean isRestricted = false;
     private List<FoDPicklistSortedValue> picklistValues;
 }
 

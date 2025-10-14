@@ -171,43 +171,35 @@ public class FoDAttributeHelper {
     }
 
     public static FoDAttributeDescriptor createAttribute(UnirestInstance unirest, FoDAttributeCreateRequest request) {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("name", request.getName());
-        body.put("attributeType", request.getAttributeType());
-        body.put("attributeDataType", request.getAttributeDataType());
-        body.put("isRequired", request.getIsRequired());
-        body.put("isRestricted", request.getIsRestricted());
-        body.put("picklistValues", request.getPicklistValues()==null ? null : objectMapper.valueToTree(request.getPicklistValues()));
         var response =  unirest.post(FoDUrls.ATTRIBUTES)
                 .header("Content-Type", "application/json")
-                .body(body)
+                .body(request)
                 .asObject(JsonNode.class)
                 .getBody();
         if (response.has("success") && response.get("success").asBoolean()) {
-            var attributeId = response.get("id").asText();
+            if (!response.has("attributeId")) {
+                throw new FcliSimpleException("Response missing attributeId: " + response.toString());
+            }
+            var attributeId = response.get("attributeId").asText();
             return getAttributeDescriptor(unirest, attributeId, true);
         } else {
             throw new FcliSimpleException("Failed to create attribute: " + response.toString());
         }
+
     }
 
     public static FoDAttributeDescriptor updateAttribute(UnirestInstance unirest, String attributeId, FoDAttributeUpdateRequest request) {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("isRequired", request.getIsRequired());
-        body.put("isRestricted", request.getIsRestricted());
-        body.put("overwriteExistingValues", request.getOverwriteExistingValues());
-        body.put("picklistValues", request.getPicklistValues()==null ? null : objectMapper.valueToTree(request.getPicklistValues()));
         var response = unirest.put(FoDUrls.ATTRIBUTE)
                 .routeParam("attributeId", attributeId)
-                .header("Content-Type", "application/json")
                 .body(request)
                 .asObject(JsonNode.class)
                 .getBody();
         if (response.has("success") && response.get("success").asBoolean()) {
             return getAttributeDescriptor(unirest, attributeId, true);
         } else {
-            throw new FcliSimpleException("Failed to update attribute: " + response.toString());
+            throw new FcliSimpleException("Failed to create attribute: " + response.toString());
         }
+
     }
 
 }
