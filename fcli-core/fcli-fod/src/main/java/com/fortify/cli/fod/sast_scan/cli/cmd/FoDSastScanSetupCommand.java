@@ -151,7 +151,8 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
                 .includeThirdPartyLibraries(includeThirdPartyLibraries)
                 .useSourceControl(useSourceControl);
 
-        // Final OSS value priority: explicit --oss > explicit --no-oss > existing setup value
+        // Only one of --oss or --no-oss can be specified at a time.
+        // OSS value priority: if explicit --oss is specified, use it; else if explicit --no-oss is specified, use it; else use existing setup value.
         Boolean ossValue = null;
         if (performOpenSourceAnalysis != null) {
             ossValue = performOpenSourceAnalysis;
@@ -164,7 +165,8 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
             builder.performOpenSourceAnalysis(ossValue);
         }
 
-        // Final Aviator value priority: explicit --use-aviator > explicit --no-aviator > existing setup value
+        // Only one of --use-aviator or --no-aviator can be specified at a time (see lines 140-141).
+        // Final Aviator value priority: explicit --use-aviator if specified, otherwise explicit --no-aviator if specified, otherwise existing setup value
         Boolean aviatorValue = null;
         if (useAviator != null) {
             aviatorValue = useAviator;
@@ -204,9 +206,14 @@ public class FoDSastScanSetupCommand extends AbstractFoDScanSetupCommand<FoDScan
         } catch (JsonProcessingException ex) {
             throw new FcliTechnicalException(ex.getMessage());
         }
-        // Return null when not found so the field can be omitted from the request JSON
-        return lookupDescriptor==null ? null : Integer.valueOf(lookupDescriptor.getValue());
-    }
+        if (lookupDescriptor == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(lookupDescriptor.getValue());
+        } catch (NumberFormatException ex) {
+            throw new FcliTechnicalException("Failed to parse technology stack ID from lookup descriptor value: " + lookupDescriptor.getValue(), ex);
+        }
 
     private void validateEntitlement(FoDScanConfigSastDescriptor currentSetup, Integer entitlementIdToUse, String relId, FoDReleaseAssessmentTypeDescriptor atd) {
         // validate entitlement specified or currently in use against assessment type found
