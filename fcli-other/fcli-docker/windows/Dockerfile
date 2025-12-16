@@ -25,10 +25,12 @@ ARG SERVERCORE_BASE=mcr.microsoft.com/windows/servercore:ltsc2022
 # Stage: fcli-downloader
 # Downloads fcli, signature file, and VC++ redistributables
 # Uses .NET SDK image which has modern .NET 8+ with full crypto API support
+# Note: Uses Nano Server variant for faster builds (smaller image download)
 # ============================================================================
 FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022 AS fcli-downloader
 
-SHELL ["powershell", "-Command"]
+# Nano Server has PowerShell Core (pwsh) not Windows PowerShell (powershell)
+SHELL ["pwsh", "-Command"]
 
 # Build arguments
 ARG FCLI_VERSION
