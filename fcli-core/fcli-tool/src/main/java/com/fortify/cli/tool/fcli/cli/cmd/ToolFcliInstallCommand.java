@@ -12,17 +12,24 @@
  */
 package com.fortify.cli.tool.fcli.cli.cmd;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.util.FileUtils;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolInstallCommand;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstaller;
 import com.fortify.cli.tool._common.helper.ToolInstaller.BinScriptType;
 import com.fortify.cli.tool._common.helper.ToolInstaller.ToolInstallationResult;
+import com.fortify.cli.tool._common.helper.ToolRegistrationHelper;
+import com.fortify.cli.tool.fcli.helper.ToolFcliHelper;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -32,10 +39,14 @@ import picocli.CommandLine.Mixin;
 @Command(name = OutputHelperMixins.Install.CMD_NAME)
 public class ToolFcliInstallCommand extends AbstractToolInstallCommand {
     @Getter @Mixin private OutputHelperMixins.Install outputHelper;
-    @Getter private String toolName = ToolFcliCommands.TOOL_NAME;
     
     @Override
-    protected String getDefaultArtifactType() {
+    protected final Tool getTool() {
+        return Tool.FCLI;
+    }
+    
+    @Override
+    protected String getFallbackPlatform() {
         return "java";
     }
     
@@ -68,5 +79,28 @@ public class ToolFcliInstallCommand extends AbstractToolInstallCommand {
             installer.installGlobalBinScript(BinScriptType.bash, "fcli", "bin/fcli");
             installer.installGlobalBinScript(BinScriptType.bat, "fcli.bat", "bin/fcli.exe");
         }
+    }
+    
+    @Override
+    protected BiFunction<ToolInstaller, File, String> getToolVersionDetectorCallback() {
+        // Fcli-specific version detection: try install descriptor first, then execute fcli --version
+        return (installer, installDir) -> {
+            File sourceBinary = ToolFcliHelper.resolveBinaryFromExplicitPath(installDir);
+            return ToolFcliHelper.detectVersion(sourceBinary);
+        };
+    }
+    
+    @Override
+    protected Function<File, File> getInstallDirResolver() {
+        // For fcli, resolve install dir from any path (executable, bin dir, or install dir)
+        return path -> {
+            try {
+                File sourceBinary = ToolFcliHelper.resolveBinaryFromExplicitPath(path);
+                return ToolRegistrationHelper.resolveInstallDir(sourceBinary);
+            } catch (FcliSimpleException e) {
+                // If binary resolution fails, fall back to default behavior
+                return ToolRegistrationHelper.resolveInstallDir(path);
+            }
+        };
     }
 }

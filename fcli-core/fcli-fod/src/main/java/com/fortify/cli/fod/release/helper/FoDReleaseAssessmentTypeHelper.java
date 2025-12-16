@@ -15,6 +15,7 @@ package com.fortify.cli.fod.release.helper;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public final class FoDReleaseAssessmentTypeHelper {
         UnirestInstance unirest, String relId, 
         FoDScanType scanType, EntitlementFrequencyType entFreqType, String assessmentType) {
         // support both assessment type id and name
-        java.util.function.Predicate<FoDReleaseAssessmentTypeDescriptor> predicate;
+        Predicate<FoDReleaseAssessmentTypeDescriptor> predicate;
         try {
             int assessmentTypeId = Integer.parseInt(assessmentType);
             predicate = n -> n.getAssessmentTypeId().equals(assessmentTypeId);
@@ -73,7 +74,7 @@ public final class FoDReleaseAssessmentTypeHelper {
                     unirest, relId, scanType, entFreqType, false, true))
                 .filter(predicate)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new FcliSimpleException(
                     "Cannot find appropriate assessment type for specified options."));
     }
 

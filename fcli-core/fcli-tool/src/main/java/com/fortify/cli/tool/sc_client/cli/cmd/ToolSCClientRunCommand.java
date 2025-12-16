@@ -18,11 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fortify.cli.common.util.DebugHelper;
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
-import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
+import com.fortify.cli.tool._common.helper.ToolJreResolver;
 
-import lombok.Getter;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -31,7 +32,12 @@ import picocli.CommandLine.Option;
 public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     @Option(names="--logdir", required=false)
     private Path logDir;
-    @Getter private String toolName = ToolSCClientCommands.TOOL_NAME;
+    private String detectedJavaHome;
+    
+    @Override
+    protected final Tool getTool() {
+        return Tool.SC_CLIENT;
+    }
     
     @Override
     public List<String> getToolArgs() {
@@ -48,21 +54,31 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
 
     @Override
     protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
-        var ext = ToolPlatformHelper.isWindows() ? ".bat" : "";
+        var ext = PlatformHelper.isWindows() ? ".bat" : "";
         return List.of(descriptor.getBinPath().resolve("scancentral"+ext).toString());
     }
     
     @Override
-    protected List<String> getJavaHomeEnvVarNames() {
-        return List.of("SCANCENTRAL_JAVA_HOME", "JAVA_HOME");
-    }
-    
-    @Override
     protected List<String> getJavaBaseCommand(ToolInstallationDescriptor descriptor) {
-        var cmd = new ArrayList<String>(super.getJavaBaseCommand(descriptor));
+        // Use generalized JRE resolver
+        var resolveConfig = ToolJreResolver.JreResolveConfig.builder()
+            .descriptor(descriptor)
+            .envVarPrefixes(new String[]{"SC_CLIENT", "SCANCENTRAL"})
+            .compatibleVersions(new String[]{"21", "17", "11", "8"})
+            .javaExecutableName(PlatformHelper.isWindows() ? "java.exe" : "java")
+            .includeGenericJavaHome(true)
+            .build();
+        
+        var resolveResult = ToolJreResolver.resolveJavaCommand(resolveConfig);
+        detectedJavaHome = resolveResult.getJavaHome();
+        
+        var cmd = new ArrayList<String>();
+        cmd.add(resolveResult.getJavaCommand());
         if ( logDir!=null ) {
-            cmd.add(1, "-Dlog4j.dir="+logDir.toAbsolutePath().normalize().toString());
+            cmd.add("-Dlog4j.dir="+logDir.toAbsolutePath().normalize().toString());
         }
+        cmd.add("-jar");
+        cmd.add(getJar(descriptor));
         return cmd;
     }
     
@@ -70,6 +86,10 @@ public class ToolSCClientRunCommand extends AbstractToolRunShellOrJavaCommand {
     protected void updateProcessBuilder(ProcessBuilder pb) {
         if ( logDir!=null ) {
             pb.environment().put("SCANCENTRAL_LOG", logDir.toAbsolutePath().normalize().toString());
+        }
+        // Set SCANCENTRAL_JAVA_HOME if we detected a Java home
+        if ( detectedJavaHome!=null ) {
+            pb.environment().put("SCANCENTRAL_JAVA_HOME", detectedJavaHome);
         }
     }
     

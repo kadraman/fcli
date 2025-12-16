@@ -19,7 +19,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,11 +43,13 @@ import com.fortify.cli.common.util.DisableTest.TestType;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.FileUtils;
 import com.fortify.cli.common.variable.DefaultVariablePropertyName;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool._common.helper.ToolInstallationHelper;
 import com.fortify.cli.tool._common.helper.ToolInstaller;
 import com.fortify.cli.tool._common.helper.ToolInstaller.DigestMismatchAction;
 import com.fortify.cli.tool._common.helper.ToolInstaller.ToolInstallationResult;
+import com.fortify.cli.tool._common.helper.ToolRegistrationHelper;
 import com.fortify.cli.tool._common.helper.ToolUninstaller;
 import com.fortify.cli.tool.definitions.helper.ToolDefinitionVersionDescriptor;
 
@@ -58,7 +62,7 @@ import picocli.CommandLine.Option;
 @CommandGroup("install") @DefaultVariablePropertyName("version")
 public abstract class AbstractToolInstallCommand extends AbstractOutputCommand implements IJsonNodeSupplier, IActionCommandResultSupplier {
     private static final ObjectMapper OBJECTMAPPER = JsonHelper.getObjectMapper();
-    @Option(names={"-v", "--version"}, required = true, descriptionKey="fcli.tool.install.version", defaultValue = "latest") 
+    @Option(names={"-v", "--version"}, required = false, descriptionKey="fcli.tool.install.version", defaultValue = "latest") 
     private String version;
     @ArgGroup(exclusive = true)
     private InstallOrBaseDirArgGroup installOrBaseDirArgGroup = new InstallOrBaseDirArgGroup();
@@ -71,6 +75,8 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
     private Set<String> versionsToUninstall = new HashSet<>();
     @Option(names={"--no-global-bin"}, required = false, negatable = true, descriptionKey="fcli.tool.install.global-bin")
     private boolean installGlobalBin = true;
+    @Option(names={"--copy-if-matching"}, required = false, hidden = true, descriptionKey="fcli.tool.install.copy-if-matching")
+    private File copyIfMatchingPath;
     @Mixin private CommonOptionMixins.RequireConfirmation requireConfirmation;
     @Mixin private ProgressWriterFactoryMixin progressWriterFactory;
     
@@ -96,24 +102,86 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
         return true;
     }
     
-    protected abstract String getToolName();
+    protected abstract Tool getTool();
     protected abstract void postInstall(ToolInstaller toolInstaller, ToolInstallationResult installationResult);
-    protected abstract String getDefaultArtifactType();
+    protected abstract String getFallbackPlatform();
+    
+    /**
+     * Get the default binary name for this tool (platform-specific).
+     * This is used when --copy-if-matching is specified to locate the binary to copy.
+     * Subclasses that support --copy-if-matching can override getTool() to provide the tool enum.
+     * The default binary name is obtained from the tool enum.
+     * 
+     * @return Binary name (e.g., "fcli", "scancentral", "FodUpload.jar"), or null if copy-if-matching not supported
+     */
+    protected String getDefaultBinaryName() {
+        return getTool().getDefaultBinaryName();
+    }
+    
+    /**
+     * Check if copy-if-matching mode is enabled
+     */
+    protected final boolean isCopyIfMatchingMode() {
+        return copyIfMatchingPath != null;
+    }
+    
+    /**
+     * Get the copy-if-matching path if specified
+     */
+    protected final File getCopyIfMatchingPath() {
+        return copyIfMatchingPath;
+    }
+    
+    /**
+     * Subclasses can override this to customize the ToolInstaller builder before installation.
+     * This allows registration of hooks for custom version detection or installation logic.
+     * 
+     * @param builder The ToolInstaller builder to configure
+     */
+    protected void configureToolInstallerBuilder(ToolInstaller.ToolInstallerBuilder builder) {
+        if (isCopyIfMatchingMode()) {
+            if (getTool().getDefaultBinaryName() == null) {
+                throw new FcliSimpleException("--copy-if-matching is not supported for " + getTool().getToolName());
+            }
+            ToolInstaller.configureCopyIfMatching(builder, copyIfMatchingPath, 
+                getInstallDirResolver(),
+                getToolVersionDetectorCallback());
+        }
+    }
+    
+    /**
+     * Get the install directory resolver for copy-if-matching.
+     * Default implementation uses ToolRegistrationHelper.resolveInstallDir.
+     * Subclasses can override to provide custom resolution logic.
+     */
+    protected Function<File, File> getInstallDirResolver() {
+        return ToolRegistrationHelper::resolveInstallDir;
+    }
+    
+    /**
+     * Get the tool-specific version detector callback for copy-if-matching.
+     * Default implementation returns null (only use install descriptor).
+     * Subclasses can override to provide custom version detection.
+     */
+    protected BiFunction<ToolInstaller, File, String> getToolVersionDetectorCallback() {
+        return null;
+    }
     
     private final ArrayNode install() {
         try ( var progressWriter = progressWriterFactory.create() ) {
             var preparer = new ToolInstallationPreparer();
-            var installer = ToolInstaller.builder()
-                    .defaultPlatform(getDefaultArtifactType())
+            var builder = ToolInstaller.builder()
+                    .fallbackPlatform(getFallbackPlatform())
                     .onDigestMismatch(onDigestMismatch)
                     .preInstallAction(preparer)
                     .postInstallAction(this::postInstall)
                     .progressWriter(progressWriter)
                     .targetPathProvider(this::getTargetPath)
                     .globalBinPathProvider(this::getGlobalBinPath)
-                    .toolName(getToolName())
-                    .requestedVersion(version)
-                    .build();
+                    .toolName(getTool().getToolName())
+                    .requestedVersion(version);
+            configureToolInstallerBuilder(builder);
+            var installer = builder.build();
             var installResult = StringUtils.isBlank(platform) ? installer.install() : installer.install(platform);
             var result = OBJECTMAPPER.createArrayNode();
             result.add(OBJECTMAPPER.valueToTree(installResult.asOutputDescriptor()));
@@ -142,11 +210,10 @@ public abstract class AbstractToolInstallCommand extends AbstractOutputCommand i
         var installPath = getInstallPath();
         Path result = null;
         if ( installPath!=null ) {
-            toolInstaller.getProgressWriter().writeWarning("WARN: --install-dir option is deprecated");
             result = installPath;
         } else {
             var basePath = getBasePath();
-            result = basePath.resolve(String.format("%s/%s", getToolName(), toolInstaller.getToolVersion()));
+            result = basePath.resolve(String.format("%s/%s", getTool().getToolName(), toolInstaller.getToolVersion()));
         }
         return result.normalize().toAbsolutePath();
     }

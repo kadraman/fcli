@@ -14,15 +14,18 @@ package com.fortify.cli.ssc._common.rest.ssc.bulk;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.RawValue;
+import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.exception.FcliTechnicalException;
 
 import kong.unirest.Body;
@@ -84,7 +87,7 @@ public class SSCBulkRequestBuilder {
     /**
      * Add a request to the list of bulk requests to be executed, identified
      * by the given name. If a request with the given name has already been 
-     * added, an {@link IllegalArgumentException} will be thrown.
+     * added, an {@link FcliBugException} will be thrown.
      * 
      * @param name for this request
      * @param request {@link HttpRequest} to be added to the list of bulk requests
@@ -93,7 +96,7 @@ public class SSCBulkRequestBuilder {
     public SSCBulkRequestBuilder request(String name, HttpRequest<?> request) {
         if ( request==null ) { return this; }
         if ( nameToIndexMap.containsKey(name) ) {
-            throw new FcliTechnicalException(String.format("Request name '%s' was already added to bulk request", name));
+            throw new FcliBugException(String.format("Request name '%s' was already added to bulk request", name));
         }
         String uri = request.getUrl();
         nameToIndexMap.put(name, requests.size());
@@ -149,8 +152,8 @@ public class SSCBulkRequestBuilder {
 
     private record Batch(int start, int end) {}
 
-    private java.util.List<Batch> batches(int totalRequests, int batchSize) {
-        return java.util.stream.IntStream.range(0, totalRequests)
+    private List<Batch> batches(int totalRequests, int batchSize) {
+        return IntStream.range(0, totalRequests)
                 .filter(i -> i % batchSize == 0)
                 .mapToObj(i -> new Batch(i, Math.min(i + batchSize, totalRequests)))
                 .toList();

@@ -16,17 +16,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
-import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
 
-import lombok.Getter;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
 
 @Command(name = "run")
 public class ToolFcliRunCommand extends AbstractToolRunShellOrJavaCommand {
-    @Getter private String toolName = ToolFcliCommands.TOOL_NAME;
+    
+    @Override
+    protected final Tool getTool() {
+        return Tool.FCLI;
+    }
 
     @Override
     protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
@@ -35,7 +39,7 @@ public class ToolFcliRunCommand extends AbstractToolRunShellOrJavaCommand {
         var fcliExePath = binPath.resolve("fcli.exe");
         var fcliPath = binPath.resolve("fcli");
         Path resultPath;
-        if ( ToolPlatformHelper.isWindows() && Files.exists(fcliBatPath) ) {
+        if ( PlatformHelper.isWindows() && Files.exists(fcliBatPath) ) {
             resultPath = fcliBatPath;
         } else if ( Files.exists(fcliExePath) ) {
             resultPath = fcliExePath;

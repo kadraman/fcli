@@ -19,6 +19,7 @@ import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.workflow;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.Year;
@@ -422,11 +423,17 @@ public class ActionSpelFunctions {
         for (var elt : elts) {
             var names = elt.split("=");
             var envValue = EnvHelper.env(names[1]);
-            if (StringUtils.isNotBlank(envValue)) {
-                output.add(String.format("\"%s=%s\"", names[0], envValue));
+            var opt = opt(names[0], envValue);
+            if (StringUtils.isNotBlank(opt)) {
+                output.add(opt);
             }
         }
         return String.join(" ", output);
+    }
+    
+    public static final String opt(String name, String value) {
+        if ( StringUtils.isBlank(value) ) { return ""; }
+        return String.format("\"%s=%s\"", name, value);
     }
 
     @SpelFunction(cat=workflow,
@@ -656,7 +663,7 @@ public class ActionSpelFunctions {
                         pathPart = idx>=0 ? cleaned.substring(idx+1) : cleaned;
                     } else {
                         try {
-                            var uri = java.net.URI.create(cleaned);
+                            var uri = URI.create(cleaned);
                             pathPart = uri.getPath();
                             if (pathPart==null) { pathPart = cleaned; }
                         } catch (Exception ex) { pathPart = cleaned; }

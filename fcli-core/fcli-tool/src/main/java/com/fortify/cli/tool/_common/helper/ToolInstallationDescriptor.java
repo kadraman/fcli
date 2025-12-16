@@ -46,10 +46,24 @@ import lombok.NoArgsConstructor;
 @Reflectable @NoArgsConstructor @AllArgsConstructor
 @Data
 public class ToolInstallationDescriptor {
+    public enum JreSource {
+        /** JRE was explicitly specified via --jre option by user */
+        EXPLICIT,
+        /** JRE was auto-detected from environment variable */
+        ENV_VAR,
+        /** JRE was installed automatically via --with-jre */
+        EMBEDDED
+    }
+    
     private static final Logger LOG = LoggerFactory.getLogger(ToolInstallationDescriptor.class);
     private String installDir;
     private String binDir;
     private String globalBinDir;
+    private String jreHome;
+    /** How the JRE was specified (null for backward compatibility with old descriptors) */
+    private JreSource jreSource;
+    /** Environment variable name from which JRE was detected (only set when jreSource==ENV_VAR) */
+    private String jreEnvVar;
     
     public ToolInstallationDescriptor(Path installPath, Path binPath, Path globalBinPath) {
         this.installDir = installPath==null ? null : installPath.toAbsolutePath().normalize().toString();
@@ -84,13 +98,18 @@ public class ToolInstallationDescriptor {
     public static final ToolInstallationDescriptor loadLastModified(String toolName) {
         var installDescriptorsDir = getInstallDescriptorsDirPath(toolName).toFile();
         var descriptorFiles = installDescriptorsDir.listFiles(File::isFile);
-        if ( descriptorFiles!=null ) {
+        if ( descriptorFiles!=null && descriptorFiles.length > 0 ) {
             Optional<File> lastModifiedFile = Arrays.stream(descriptorFiles)
                     .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
-            return lastModifiedFile.map(File::toPath)
+            ToolInstallationDescriptor result = lastModifiedFile
+                    .map(File::toPath)
                     .map(ToolInstallationDescriptor::load)
-                    // The load method may delete stale descriptors, in which case we need to look for the next one
-                    .orElseGet(()->loadLastModified(toolName));
+                    .orElse(null);
+            // The load method may delete stale descriptors, in which case we need to look for the next one
+            if ( result == null && descriptorFiles.length > 1 ) {
+                return loadLastModified(toolName);
+            }
+            return result;
         }
         return null;
     }
@@ -99,6 +118,13 @@ public class ToolInstallationDescriptor {
         delete(getInstallDescriptorPath(toolName, versionDescriptor.getVersion()));
     }
     
+    /**
+     * Save this installation descriptor. CRITICAL: This method writes/updates the descriptor file,
+     * which updates its file system timestamp. The loadLastModified() method uses these timestamps
+     * to determine which tool version should be used by default (e.g., 'fcli tool <name> run' without
+     * --version flag). Always call this method when registering or installing a tool to ensure it
+     * becomes the default version for subsequent commands.
+     */
     public final void save(String toolName, ToolDefinitionVersionDescriptor versionDescriptor) {
         Path installDescriptorPath = getInstallDescriptorPath(toolName, versionDescriptor.getVersion());
         FcliDataHelper.saveFile(installDescriptorPath, this, true);
@@ -125,7 +151,7 @@ public class ToolInstallationDescriptor {
     }
     
     public Path getGlobalBinPath() {
-        return asPath(binDir);
+        return asPath(globalBinDir);
     }
     
     private static final ToolInstallationDescriptor load(Path descriptorPath) {

@@ -13,25 +13,28 @@
 package com.fortify.cli.tool._common.cli.cmd;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.cli.cmd.AbstractOutputCommand;
 import com.fortify.cli.common.output.cli.cmd.IJsonNodeSupplier;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
 import com.fortify.cli.tool._common.helper.ToolInstallationOutputDescriptor;
+import com.fortify.cli.tool._common.helper.ToolInstallationsResolver;
+import com.fortify.cli.tool._common.helper.ToolInstallationsResolver.ToolInstallationRecord;
+import com.fortify.cli.tool._common.helper.ToolInstallationsResolver.ToolInstallations;
 import com.fortify.cli.tool.definitions.helper.ToolDefinitionVersionDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionsHelper;
 
 public abstract class AbstractToolListCommand extends AbstractOutputCommand implements IJsonNodeSupplier {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     
     @Override
     public final JsonNode getJsonNode() {
-        return ToolDefinitionsHelper.getToolDefinitionRootDescriptor(getToolName()).getVersionsStream()
-                .map(this::createToolOutputDescriptor)
-                .map(objectMapper::<ObjectNode>valueToTree)
-                .collect(JsonHelper.arrayNodeCollector());
+        var toolName = getTool().getToolName();
+        ToolInstallations installations = ToolInstallationsResolver.resolve(getTool());
+        return installations.stream()
+            .map(record -> createToolOutputDescriptor(toolName, record))
+            .map(JsonHelper.getObjectMapper()::<ObjectNode>valueToTree)
+            .collect(JsonHelper.arrayNodeCollector());
     }
     
     @Override
@@ -39,11 +42,11 @@ public abstract class AbstractToolListCommand extends AbstractOutputCommand impl
         return false;
     }
     
-    protected abstract String getToolName();
+    protected abstract Tool getTool();
     
-    private ToolInstallationOutputDescriptor createToolOutputDescriptor(ToolDefinitionVersionDescriptor versionDescriptor) {
-        var toolName = getToolName();
-        var installationDescriptor = ToolInstallationDescriptor.load(toolName, versionDescriptor);
-        return new ToolInstallationOutputDescriptor(toolName, versionDescriptor, installationDescriptor, "");
+    private ToolInstallationOutputDescriptor createToolOutputDescriptor(String toolName, ToolInstallationRecord record) {
+        ToolDefinitionVersionDescriptor versionDescriptor = record.versionDescriptor();
+        ToolInstallationDescriptor installationDescriptor = record.installationDescriptor();
+        return new ToolInstallationOutputDescriptor(toolName, versionDescriptor, installationDescriptor, "", record.isDefault());
     }
 }

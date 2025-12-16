@@ -17,8 +17,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.fortify.cli.common.util.EnvHelper;
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
-import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
 
 import picocli.CommandLine.Option;
 
@@ -53,7 +53,7 @@ public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunC
     }
     
     private final String getJavaCommand(ToolInstallationDescriptor descriptor) {
-        var baseJavaCmd = ToolPlatformHelper.isWindows() ? "java.exe" : "java";
+        var baseJavaCmd = PlatformHelper.isWindows() ? "java.exe" : "java";
         var embeddedJavaCmdPath = descriptor.getInstallPath().resolve("jre/bin").resolve(baseJavaCmd);
         if ( Files.exists(embeddedJavaCmdPath) ) { // Look for java command in embedded JRE
             return embeddedJavaCmdPath.toString();
@@ -70,7 +70,7 @@ public abstract class AbstractToolRunShellOrJavaCommand extends AbstractToolRunC
     }
     
     protected List<String> getJavaHomeEnvVarNames() {
-        return List.of(getToolName().toUpperCase().replace('-', '_')+"JAVA_HOME", "JAVA_HOME");
+        return List.of(getTool().getToolName().toUpperCase().replace('-', '_')+"JAVA_HOME", "JAVA_HOME");
     }
     protected abstract List<String> getBaseCommand(ToolInstallationDescriptor descriptor);
     protected abstract String getJar(ToolInstallationDescriptor descriptor);

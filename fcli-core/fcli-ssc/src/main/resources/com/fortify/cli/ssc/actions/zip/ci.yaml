@@ -2,7 +2,7 @@
 
 author: Fortify
 usage:
-  header: (PREVIEW) Run SSC CI pipeline
+  header: Run SSC CI pipeline
   description: |
     This action can be used to run a full, standardized CI pipeline that performs the
     following activities:
@@ -37,9 +37,9 @@ steps:
       
   # Run ci-vars action to obtain CI data
   - run.fcli:
-      ci-vars: 
-        group: ci-vars
-        cmd: ${#actionCmd('CI_VARS', module, 'ci-vars')}
+      detect-env: 
+        group: detect-env
+        cmd: fcli action run detect-env
         status.check: true   # Fail immediately if this step fails, as it doesn't make sense to continue
         on.success:
           - var.set:
@@ -74,7 +74,7 @@ steps:
         }
       aviator.loginOpts: --url=AVIATOR_URL
       aviator.app: ${#env('AVIATOR_APP')?:'::av::application.name'}
-      wait.skipReason: > # Enabled by default, unless explicitly disabled through DO_WAIT or DO_SAST_WAIT (deprecated)
+      wait.skipReason: >- # Enabled by default, unless explicitly disabled through DO_WAIT or DO_SAST_WAIT (deprecated)
         ${
             #fcliCmdSkipFromEnvReason('WAIT', false)
             ?:#fcliCmdSkipFromEnvReason('SAST_WAIT', false) 
@@ -82,10 +82,7 @@ steps:
       # Post-scan tasks will be skipped if wait is skipped or if no scans were completed
       # successfully. Post-scan skip reason will be reset to null once the wait task for
       # any scan completed successfully. 
-      postScan.skipReason: >
-        ${
-            wait.skipReason?:'No scans have been run because they failed or were skipped'
-        }
+      postScan.skipReason: ${#ifBlank(wait.skipReason,'No scans have been run because they failed or were skipped')}
 
   # Set up Aviator session if necessary
   - with:
@@ -140,8 +137,7 @@ steps:
                 "--branch=${global.ci.sourceBranch}"
                 "--av=${global.ci.av}"
                 "--debricked-token=${#env('DEBRICKED_ACCESS_TOKEN')}"
-                "--cli-version=${#env('DEBRICKED_CLI_VERSION')?:'latest'}"
-                "--tool-definitions=${#env('TOOL_DEFINITIONS')?:''}"
+                "--cli-version=${#env('DEBRICKED_CLI_VERSION')?:'auto'}"
                 "--skip-wait=true"
               skip.if-reason:
                 - ${debricked.skipReason}                # Skip if Debricked scan is skipped
