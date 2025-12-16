@@ -49,18 +49,7 @@ RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
 # Verify signature using .NET crypto
 RUN $ErrorActionPreference = 'Stop'; \
     Write-Host 'Verifying signature...'; \
-    $publicKeyPem = @'
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArij9U9yJVNc53oEMFWYp
-NrXUG1UoRZseDh/p34q1uywD70RGKKWZvXIcUAZZwbZtCu4i0UzsrKRJeUwqanbc
-woJvYanp6lc3DccXUN1w1Y0WOHOaBxiiK3B1TtEIH1cK/X+ZzazPG5nX7TSGh8Tp
-/uxQzUFli2mDVLqaP62/fB9uJ2joX9Gtw8sZfuPGNMRoc8IdhjagbFkhFT7WCZnk
-FH/4Co007lmXLAe12lQQqR/pOTeHJv1sfda1xaHtj4/Tcrq04Kx0ZmGAd5D9lA92
-8pdBbzoe/mI5/Sk+nIY3AHkLXB9YAaKJf//Wb1yiP1/hchtVkfXyIaGM+cVyn7AN
-VQIDAQAB
------END PUBLIC KEY-----
-'@; \
-    $publicKeyBase64 = ($publicKeyPem -replace '-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s', ''); \
+    $publicKeyBase64 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArij9U9yJVNc53oEMFWYpNrXUG1UoRZseDh/p34q1uywD70RGKKWZvXIcUAZZwbZtCu4i0UzsrKRJeUwqanbcwoJvYanp6lc3DccXUN1w1Y0WOHOaBxiiK3B1TtEIH1cK/X+ZzazPG5nX7TSGh8Tp/uxQzUFli2mDVLqaP62/fB9uJ2joX9Gtw8sZfuPGNMRoc8IdhjagbFkhFT7WCZnkFH/4Co007lmXLAe12lQQqR/pOTeHJv1sfda1xaHtj4/Tcrq04Kx0ZmGAd5D9lA928pdBbzoe/mI5/Sk+nIY3AHkLXB9YAaKJf//Wb1yiP1/hchtVkfXyIaGM+cVyn7ANVQIDAQAB'; \
     $publicKeyBytes = [Convert]::FromBase64String($publicKeyBase64); \
     $rsa = [System.Security.Cryptography.RSA]::Create(); \
     $rsa.ImportSubjectPublicKeyInfo($publicKeyBytes, [ref]$null); \
@@ -107,13 +96,20 @@ RUN $ErrorActionPreference = 'Stop'; \
     Start-Process -FilePath C:\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait; \
     Remove-Item C:\vc_redist.x64.exe -Force
 
+# Create non-admin user for security (matching Linux approach)
+RUN $ErrorActionPreference = 'Stop'; \
+    net user fcli /add; \
+    icacls C:\bin /grant fcli:RX; \
+    icacls C:\data /grant fcli:F
+
 # Add data directory (same structure as Linux)
 ADD data.tgz C:/
 
-# Configure environment
+# Configure environment and PATH
 WORKDIR C:/data
 ENV FCLI_USER_HOME=C:/data
-ENV PATH=$PATH:C:\bin
+RUN $ErrorActionPreference = 'Stop'; \
+    [Environment]::SetEnvironmentVariable('PATH', "$env:PATH;C:\bin", [EnvironmentVariableTarget]::Machine)
 
 # OCI standard labels (multi-line for optimization)
 LABEL org.opencontainers.image.vendor="Fortify" \
@@ -126,9 +122,12 @@ LABEL org.opencontainers.image.vendor="Fortify" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.base.name="${SERVERCORE_BASE}"
 
-# Test that fcli works
+# Test that fcli works (before switching to non-admin user)
 RUN $ErrorActionPreference = 'Stop'; \
     C:\bin\fcli.exe --version
+
+# Switch to non-admin user
+USER fcli
 
 # Default to PowerShell for full scripting capability
 CMD ["powershell.exe"]

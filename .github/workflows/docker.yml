@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: 'redhat/ubi9:9.7'
+      servercoreBase:
+        description: 'Windows Server Core base image (default: mcr.microsoft.com/windows/servercore:ltsc2022)'
+        required: false
+        type: string
+        default: 'mcr.microsoft.com/windows/servercore:ltsc2022'
       updateBaseImages:
         description: 'Update base images for already-released fcli version (advanced: republish with new base images)'
         required: false
@@ -303,7 +308,8 @@ jobs:
           docker build . `
             --target fcli-ltsc2022 `
             -t fcli-windows:test `
-            --build-arg FCLI_VERSION=${{ inputs.releaseTag }}
+            --build-arg FCLI_VERSION=${{ inputs.releaseTag }} `
+            --build-arg SERVERCORE_BASE=${{ inputs.servercoreBase }}
           
           Write-Host "✓ Windows image build completed"
       

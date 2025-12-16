@@ -47,8 +47,10 @@ docker run --rm fortifydocker/fcli:latest-ubi9 bash -c "fcli --version && fcli t
 
 #### 4. **fcli-windows**
 - Built and tested on Windows runners
-- **Base:** Windows Nano Server
+- **Base:** Windows Server Core ltsc2022
+- **Shell:** PowerShell
 - Not published; prototype only
+- Provides full PowerShell and package management capability
 
 ## Image Tags
 
