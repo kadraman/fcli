@@ -60,6 +60,75 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
+      - name: Check for newer base images
+        continue-on-error: true
+        run: |
+          echo "Checking for newer base image versions..."
+          
+          check_dockerhub_image() {
+            local repo=$1
+            local current=$2
+            local pattern=$3
+            local name=$4
+            
+            echo "Checking $name..."
+            local latest=$(curl -fsSL "https://registry.hub.docker.com/v2/repositories/$repo/tags?page_size=100" | \
+              jq -r '.results[].name' | grep -E "$pattern" | sort -V | tail -1)
+            
+            if [[ -z "$latest" ]]; then
+              echo "::warning::Failed to check $name updates"
+              return
+            fi
+            
+            local current_tag="${current##*:}"
+            if [[ "$latest" != "$current_tag" ]]; then
+              echo "::warning::Newer $name version available: ${repo##*/}:$latest (current: $current)"
+            else
+              echo "✓ $name is up to date: $current"
+            fi
+          }
+          
+          check_mcr_image() {
+            local image=$1
+            local current=$2
+            local pattern=$3
+            local name=$4
+            
+            echo "Checking $name..."
+            # Get auth token from MCR
+            local token=$(curl -fsSL "https://mcr.microsoft.com/v2/token?scope=repository:${image}:pull" | jq -r '.token')
+            if [[ -z "$token" ]]; then
+              echo "::warning::Failed to authenticate with MCR for $name"
+              return
+            fi
+            
+            # Get tags list
+            local latest=$(curl -fsSL -H "Authorization: Bearer $token" \
+              "https://mcr.microsoft.com/v2/${image}/tags/list" | \
+              jq -r '.tags[]' | grep -E "$pattern" | sort -V | tail -1)
+            
+            if [[ -z "$latest" ]]; then
+              echo "::notice::Could not determine latest $name version (current: $current)"
+              return
+            fi
+            
+            local current_tag="${current##*:}"
+            if [[ "$latest" != "$current_tag" ]]; then
+              echo "::warning::Newer $name version available: $latest (current: $current)"
+            else
+              echo "✓ $name is up to date: $current"
+            fi
+          }
+          
+          # Check Linux base images (Docker Hub)
+          check_dockerhub_image "library/alpine" "${{ inputs.alpineBase }}" "^3\.[0-9]+\.[0-9]+$" "Alpine"
+          check_dockerhub_image "redhat/ubi9" "${{ inputs.ubiBase }}" "^9\.[0-9]+$" "Red Hat UBI9"
+          
+          # Check Windows base image (MCR)
+          echo ""
+          SERVERCORE_DEFAULT="mcr.microsoft.com/windows/servercore:ltsc2022"
+          check_mcr_image "windows/servercore" "$SERVERCORE_DEFAULT" "^ltsc[0-9]+$" "Windows Server Core"
+      
       - name: Extract metadata
         id: meta
         run: |
