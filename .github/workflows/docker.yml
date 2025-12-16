@@ -2,123 +2,247 @@ name: Build and publish Docker images
 on:
   workflow_dispatch:
     inputs: 
-      releaseTag: # Accessible through ${{ inputs.releaseTag }}
-        description: 'Required fcli release tag for which to build and release Docker images'
+      releaseTag:
+        description: 'Required fcli release tag for which to build and release Docker images (e.g., v3.14.0)'
         required: true
         type: string
       doPublish:
-        description: 'Boolean indicating whether images should be published to Docker Hub'
+        description: 'Publish images to Docker Hub'
         required: true
         type: boolean
-          
+        default: false
+      alpineBase:
+        description: 'Alpine base image (default: alpine:3.23.0)'
+        required: false
+        type: string
+        default: 'alpine:3.23.0'
+      ubiBase:
+        description: 'Red Hat UBI base image (default: redhat/ubi9:9.7)'
+        required: false
+        type: string
+        default: 'redhat/ubi9:9.7'
+      updateBaseImages:
+        description: 'Update base images for already-released fcli version (advanced: republish with new base images)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+  
 jobs:
-  # For now, we only publish fcli-scratch image, but we do build the other images just for testing
   docker-linux:
+    name: Build & Publish Linux Images
     runs-on: ubuntu-latest
     env:
-      DOCKER_SRC_LINUX: fcli-other/fcli-docker/linux
+      DOCKER_SRC: fcli-other/fcli-docker/linux
+      REGISTRY: docker.io
+      IMAGE_NAME: fortifydocker/fcli
     steps:
-        - name: Check-out source code
-          uses: actions/checkout@v4
-          with:
-            ref: ${{ inputs.releaseTag }}
-            fetch-tags: true
-            
-        - name: Set up Docker
-          uses: docker/setup-docker-action@v4
-          with:
-            daemon-config: |
-              {
-                  "debug": true,
-                  "features": {
-                    "containerd-snapshotter": true
-                  }
-              }
-    
-        - name: Build & test Linux images
-          shell: bash
-          run: |
-            cd ${DOCKER_SRC_LINUX}
-            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-linux.tgz | tar -zxv
-            for i in scratch alpine ubi9
-            do
-              docker buildx build --target fcli-${i} -t fcli-${i} --attest type=provenance,mode=max --sbom=true .
-              mkdir ${PWD}/${i}
-              docker run --rm -u $(id -u):$(id -g) -v ${PWD}/${i}:/data fcli-${i} fcli tool sc-client install
-              test -f ${PWD}/${i}/fortify/tools/bin/scancentral
-            done
-        
-        # For now, we only release scratch and GitLab Installer Service images
-        - name: Tag images
-          shell: bash
-          run: |
-           for v in $(git tag --points-at ${{ inputs.releaseTag }})
-            do
-              echo Tagging ${v}
-              docker tag fcli-scratch fortifydocker/fcli:${v#v}
-            done
-            
-        - name: Docker Login
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-        
-        # TODO Should we sign the images as well?
-        - name: Publish Linux Docker images
-          if: ${{ inputs.doPublish }}
-          shell: bash 
-          run: | 
-            docker push --all-tags fortifydocker/fcli
+      - name: Check-out source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.releaseTag }}
+          fetch-tags: true
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+      
+      - name: Docker Login
+        if: ${{ inputs.doPublish }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata
+        id: meta
+        run: |
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION="${{ inputs.releaseTag }}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          
+          # Determine tags
+          TAGS="${{ env.IMAGE_NAME }}:${VERSION}"
+          
+          # Add 'latest' tag only for non-dev versions and when not updating base images
+          if [[ ! "$VERSION" =~ ^dev_ ]] && [[ "${{ inputs.updateBaseImages }}" != "true" ]]; then
+            TAGS="${TAGS},${{ env.IMAGE_NAME }}:latest"
+          fi
+          
+          # Add timestamp suffix if updating base images
+          if [[ "${{ inputs.updateBaseImages }}" == "true" ]]; then
+            DATE=$(date +%Y%m%d)
+            TAGS="${TAGS},${{ env.IMAGE_NAME }}:${VERSION}-${DATE}"
+          fi
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Generated tags: ${TAGS}"
+      
+      # Build and push fcli-scratch image (preferred/primary image)
+      - name: Build and push fcli-scratch
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.DOCKER_SRC }}
+          file: ${{ env.DOCKER_SRC }}/Dockerfile
+          target: fcli-scratch
+          platforms: linux/amd64
+          push: ${{ inputs.doPublish }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+          build-args: |
+            FCLI_VERSION=${{ inputs.releaseTag }}
+            ALPINE_BASE=${{ inputs.alpineBase }}
+            UBI_BASE=${{ inputs.ubiBase }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Build and push fcli-ubi9 image (secondary shell-based image)
+      - name: Extract UBI9 metadata
+        id: meta-ubi9
+        run: |
+          VERSION="${{ inputs.releaseTag }}"
+          VERSION="${VERSION#v}"
+          TAGS="${{ env.IMAGE_NAME }}:${VERSION}-ubi9"
+          
+          if [[ "${{ inputs.updateBaseImages }}" == "true" ]]; then
+            DATE=$(date +%Y%m%d)
+            TAGS="${TAGS},${{ env.IMAGE_NAME }}:${VERSION}-ubi9-${DATE}"
+          fi
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Generated UBI9 tags: ${TAGS}"
+      
+      - name: Build and push fcli-ubi9
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.DOCKER_SRC }}
+          file: ${{ env.DOCKER_SRC }}/Dockerfile
+          target: fcli-ubi9
+          platforms: linux/amd64
+          push: ${{ inputs.doPublish }}
+          tags: ${{ steps.meta-ubi9.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+          build-args: |
+            FCLI_VERSION=${{ inputs.releaseTag }}
+            ALPINE_BASE=${{ inputs.alpineBase }}
+            UBI_BASE=${{ inputs.ubiBase }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Build (but don't push) Alpine image for testing
+      - name: Build fcli-alpine (test only)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.DOCKER_SRC }}
+          file: ${{ env.DOCKER_SRC }}/Dockerfile
+          target: fcli-alpine
+          platforms: linux/amd64
+          push: false
+          tags: fcli-alpine:test
+          build-args: |
+            FCLI_VERSION=${{ inputs.releaseTag }}
+            ALPINE_BASE=${{ inputs.alpineBase }}
+            UBI_BASE=${{ inputs.ubiBase }}
+          load: true
+      
+      # Test images
+      - name: Test fcli-scratch image
+        run: |
+          docker pull ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} || \
+            docker tag $(docker images -q ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} | head -1) ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          
+          mkdir -p ${PWD}/test-scratch
+          docker run --rm -u $(id -u):$(id -g) -v ${PWD}/test-scratch:/data \
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} tool sc-client install
+          
+          test -f ${PWD}/test-scratch/fortify/tools/bin/scancentral
+          echo "✓ fcli-scratch image test passed"
+      
+      - name: Test fcli-ubi9 image
+        run: |
+          docker pull ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-ubi9 || \
+            docker tag $(docker images -q ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-ubi9 | head -1) ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-ubi9
+          
+          mkdir -p ${PWD}/test-ubi9
+          docker run --rm -u $(id -u):$(id -g) -v ${PWD}/test-ubi9:/data \
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-ubi9 fcli tool sc-client install
+          
+          test -f ${PWD}/test-ubi9/fortify/tools/bin/scancentral
+          echo "✓ fcli-ubi9 image test passed"
+      
+      - name: Test fcli-alpine image
+        run: |
+          mkdir -p ${PWD}/test-alpine
+          docker run --rm -u $(id -u):$(id -g) -v ${PWD}/test-alpine:/data \
+            fcli-alpine:test fcli tool sc-client install
+          
+          test -f ${PWD}/test-alpine/fortify/tools/bin/scancentral
+          echo "✓ fcli-alpine image test passed"
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**fcli Version:** ${{ inputs.releaseTag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Published:** ${{ inputs.doPublish }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Alpine Base:** ${{ inputs.alpineBase }}" >> $GITHUB_STEP_SUMMARY
+          echo "**UBI Base:** ${{ inputs.ubiBase }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published Images" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}\` (scratch)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}-ubi9\` (ubi9)" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.updateBaseImages }}" != "true" ]] && [[ ! "${{ inputs.releaseTag }}" =~ ^dev_ ]]; then
+            echo "- \`${{ env.IMAGE_NAME }}:latest\` (scratch)" >> $GITHUB_STEP_SUMMARY
+          fi
   
-  # For now, we only publish Linux-based images, but we do build the Windows images just for testing
-  docker-win:
+  # Windows images: build only for testing, do not publish
+  docker-windows:
+    name: Build Windows Images (Test Only)
     runs-on: windows-2022
     env:
       DOCKER_SRC: fcli-other/fcli-docker/windows
     steps:
-        - name: Check-out source code
-          uses: actions/checkout@v4
-          with:
-            ref: ${{ inputs.releaseTag }}
-            fetch-tags: true
-    
-        - name: Build & test Windows images
-          shell: bash
-          run: |
-            cd ${DOCKER_SRC}
-            curl -L https://github.com/fortify/fcli/releases/download/${{ inputs.releaseTag }}/fcli-windows.zip -o fcli-windows.zip 
-            unzip fcli-windows.zip
-            rm fcli-windows.zip
-            
-            for i in ltsc2022
-            do
-              docker build . --target fcli-${i} -t fcli-${i}
-              # Following doesn't work yet, hence the echo statements instead of actually running these.
-              # Likely, we need to pass Windows-style paths to volume mappings in docker run command 
-              mkdir ${PWD}/${i}
-              echo docker run --rm -v ${PWD}/${i}:/data fcli-${i} fcli tool sc-client install
-              echo test -f ${PWD}/${i}/fortify/tools/bin/scancentral
-            done
-        
-        # For now, we only release scratch and GitLab Installer Service images
-        - name: Tag images
-          shell: bash
-          run: |
-            for v in $(git tag --points-at ${{ inputs.releaseTag }})
-            do
-              echo Tagging ${v}
-              docker tag fcli-ltsc2022 fortifydocker/fcli:${v#v}-ltsc2022
-            done
-        #- name: Docker Login
-        #  if: needs.build.outputs.do_release
-        #  uses: docker/login-action@v3
-        #  with:
-        #    username: ${{ secrets.DOCKER_USERNAME }}
-        #    password: ${{ secrets.DOCKER_PASSWORD }}
-        # TODO Should we sign the images as well?
-        #- name: Publish Linux Docker images
-        #  if: needs.build.outputs.do_release
-        #  shell: bash 
-        #  run: | 
-        #    docker push --all-tags fortifydocker/fcli
+      - name: Check-out source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.releaseTag }}
+          fetch-tags: true
+      
+      - name: Build Windows image
+        shell: pwsh
+        run: |
+          cd $env:DOCKER_SRC
+          
+          docker build . `
+            --target fcli-ltsc2022 `
+            -t fcli-windows:test `
+            --build-arg FCLI_VERSION=${{ inputs.releaseTag }}
+          
+          Write-Host "✓ Windows image build completed"
+      
+      - name: Test Windows image
+        shell: pwsh
+        run: |
+          # Basic test: check fcli version
+          docker run --rm fcli-windows:test fcli --version
+          
+          Write-Host "✓ Windows image test passed"
+          Write-Host "Note: Windows images are built for testing only and are not published"
