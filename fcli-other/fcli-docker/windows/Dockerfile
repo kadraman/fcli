@@ -24,8 +24,9 @@ ARG SERVERCORE_BASE=mcr.microsoft.com/windows/servercore:ltsc2022
 # ============================================================================
 # Stage: fcli-downloader
 # Downloads fcli, signature file, and VC++ redistributables
+# Uses .NET SDK image which has modern .NET 8+ with full crypto API support
 # ============================================================================
-FROM ${SERVERCORE_BASE} as fcli-downloader
+FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022 AS fcli-downloader
 
 SHELL ["powershell", "-Command"]
 
@@ -46,20 +47,17 @@ RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
     Write-Host \"Downloading signature...\"; \
     Invoke-WebRequest -Uri $sigUrl -OutFile C:\fcli-windows.zip.rsa_sha256
 
-# Verify signature using certutil and .NET crypto (compatible with .NET Framework)
+# Verify signature using .NET 8+ crypto APIs
 RUN $ErrorActionPreference = 'Stop'; \
     Write-Host 'Verifying signature...'; \
-    $pubKeyPem = @\"\nBEGIN PUBLIC KEY\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArij9U9yJVNc53oEMFWYp\nNrXUG1UoRZseDh/p34q1uywD70RGKKWZvXIcUAZZwbZtCu4i0UzsrKRJeUwqanbc\nwoJvYanp6lc3DccXUN1w1Y0WOHOaBxiiK3B1TtEIH1cK/X+ZzazPG5nX7TSGh8Tp\n/uxQzUFli2mDVLqaP62/fB9uJ2joX9Gtw8sZfuPGNMRoc8IdhjagbFkhFT7WCZnk\nFH/4Co007lmXLAe12lQQqR/pOTeHJv1sfda1xaHtj4/Tcrq04Kx0ZmGAd5D9lA92\n8pdBbzoe/mI5/Sk+nIY3AHkLXB9YAaKJf//Wb1yiP1/hchtVkfXyIaGM+cVyn7AN\nVQIDAQAB\nEND PUBLIC KEY\n\"@; \
-    Set-Content -Path C:\pubkey.b64 -Value $pubKeyPem -NoNewline; \
-    certutil -decode C:\pubkey.b64 C:\pubkey.der | Out-Null; \
-    $publicKeyBytes = [System.IO.File]::ReadAllBytes('C:\pubkey.der'); \
-    $rsa = [System.Security.Cryptography.RSACryptoServiceProvider]::new(); \
-    $rsa.ImportCspBlob($publicKeyBytes); \
+    $publicKeyBase64 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArij9U9yJVNc53oEMFWYpNrXUG1UoRZseDh/p34q1uywD70RGKKWZvXIcUAZZwbZtCu4i0UzsrKRJeUwqanbcwoJvYanp6lc3DccXUN1w1Y0WOHOaBxiiK3B1TtEIH1cK/X+ZzazPG5nX7TSGh8Tp/uxQzUFli2mDVLqaP62/fB9uJ2joX9Gtw8sZfuPGNMRoc8IdhjagbFkhFT7WCZnkFH/4Co007lmXLAe12lQQqR/pOTeHJv1sfda1xaHtj4/Tcrq04Kx0ZmGAd5D9lA928pdBbzoe/mI5/Sk+nIY3AHkLXB9YAaKJf//Wb1yiP1/hchtVkfXyIaGM+cVyn7ANVQIDAQAB'; \
+    $publicKeyBytes = [Convert]::FromBase64String($publicKeyBase64); \
+    $rsa = [System.Security.Cryptography.RSA]::Create(); \
+    $rsa.ImportSubjectPublicKeyInfo($publicKeyBytes, [ref]$null); \
     $signature = [System.IO.File]::ReadAllBytes('C:\fcli-windows.zip.rsa_sha256'); \
     $fileBytes = [System.IO.File]::ReadAllBytes('C:\fcli-windows.zip'); \
     $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($fileBytes); \
-    $verified = $rsa.VerifyHash($hash, [System.Security.Cryptography.CryptoConfig]::MapNameToOID('SHA256'), $signature); \
-    Remove-Item C:\pubkey.b64, C:\pubkey.der -Force; \
+    $verified = $rsa.VerifyHash($hash, $signature, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1); \
     if (-not $verified) { throw 'Signature verification failed' }; \
     Write-Host '✓ Signature verification successful'
 

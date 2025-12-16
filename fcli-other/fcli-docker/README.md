@@ -229,11 +229,15 @@ exit
 
 ### Signature Verification
 
-All Docker builds:
+All Docker builds (Linux and Windows):
 1. Download fcli binary from GitHub releases
 2. Download corresponding `.rsa_sha256` signature file
 3. Verify signature using Fortify's public RSA key
 4. Build fails if signature verification fails
+
+**Implementation details:**
+- **Linux**: Uses OpenSSL in Alpine-based downloader stage
+- **Windows**: Uses .NET 8 SDK image for downloader stage (has modern crypto APIs), then copies verified fcli to Server Core final image
 
 Public key is embedded in Dockerfiles and matches the key used by `fortify-setup-js`.
 
