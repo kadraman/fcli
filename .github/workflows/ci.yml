@@ -396,18 +396,16 @@ jobs:
     if: always() && needs.build.result == 'success' && needs.release.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Check-out source code
-        uses: actions/checkout@v4
-      - run: | 
-          # Use branch output from build job if available, otherwise fall back to GITHUB_REF
-          if [ -n "${{ needs.build.outputs.branch }}" ]; then
-            ref="${{ needs.build.outputs.branch }}"
-          else
-            ref="${GITHUB_REF}"
-          fi
-          gh workflow run docker.yml --ref "${ref}" -f "releaseTag=${{ needs.build.outputs.release_tag }}" -f doPublish=${{ needs.build.outputs.do_release }}
+      - name: Trigger Docker image builds in fcli-docker repository
+        run: | 
+          gh workflow run docker.yml \
+            --repo fortify/fcli-docker \
+            --ref main \
+            -f "releaseTag=${{ needs.build.outputs.release_tag }}" \
+            -f "doPublish=${{ needs.build.outputs.do_release }}"
+          echo "✓ Docker build triggered in fortify/fcli-docker repository"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          GITHUB_TOKEN: ${{ secrets.FCLI_DOCKER_TRIGGER_TOKEN }}  
      
   publishPages:
     name: publishPages
