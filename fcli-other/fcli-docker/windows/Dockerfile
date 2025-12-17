@@ -64,12 +64,12 @@ RUN $ErrorActionPreference = 'Stop'; \
     if (-not $verified) { throw 'Signature verification failed' }; \
     Write-Host '✓ Signature verification successful'
 
-# Extract fcli
+# Extract fcli to temp directory
 RUN $ErrorActionPreference = 'Stop'; \
     Write-Host 'Extracting fcli...'; \
-    Expand-Archive -Path C:\temp\fcli-windows.zip -DestinationPath C:\fcli-bin; \
-    if (-not (Test-Path C:\fcli-bin\fcli.exe)) { throw 'fcli.exe not found after extraction' }; \
-    C:\fcli-bin\fcli.exe --version
+    Expand-Archive -Path C:\temp\fcli-windows.zip -DestinationPath C:\temp\fcli-bin; \
+    if (-not (Test-Path C:\temp\fcli-bin\fcli.exe)) { throw 'fcli.exe not found after extraction' }; \
+    C:\temp\fcli-bin\fcli.exe --version
 
 # Download VC++ redistributable
 RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
@@ -91,7 +91,7 @@ ARG SERVERCORE_BASE
 SHELL ["powershell", "-Command"]
 
 # Copy fcli and VC++ redistributable from download stage
-COPY --from=fcli-downloader C:/fcli-bin/fcli.exe C:/bin/fcli.exe
+COPY --from=fcli-downloader C:/temp/fcli-bin/fcli.exe C:/bin/fcli.exe
 COPY --from=fcli-downloader C:\temp\vc_redist.x64.exe C:\vc_redist.x64.exe
 
 # Install VC++ redistributables and clean up
