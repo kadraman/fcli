@@ -39,15 +39,16 @@ ARG FCLI_VERSION
 RUN $ErrorActionPreference = 'Stop'; \
     if (-not $env:FCLI_VERSION) { throw 'ERROR: FCLI_VERSION build argument is required' }
 
-# Download fcli and signature
+# Create temp directory and download fcli with signature
 RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
+    New-Item -ItemType Directory -Path C:\temp -Force | Out-Null; \
     Write-Host \"Downloading fcli $env:FCLI_VERSION...\"; \
     $url = \"https://github.com/fortify/fcli/releases/download/$env:FCLI_VERSION/fcli-windows.zip\"; \
     $sigUrl = \"$url.rsa_sha256\"; \
     Write-Host \"Download URL: $url\"; \
-    Invoke-WebRequest -Uri $url -OutFile C:\fcli-windows.zip; \
+    Invoke-WebRequest -Uri $url -OutFile C:\temp\fcli-windows.zip; \
     Write-Host \"Downloading signature...\"; \
-    Invoke-WebRequest -Uri $sigUrl -OutFile C:\fcli-windows.zip.rsa_sha256
+    Invoke-WebRequest -Uri $sigUrl -OutFile C:\temp\fcli-windows.zip.rsa_sha256
 
 # Verify signature using .NET 8+ crypto APIs
 RUN $ErrorActionPreference = 'Stop'; \
@@ -56,8 +57,8 @@ RUN $ErrorActionPreference = 'Stop'; \
     $publicKeyBytes = [Convert]::FromBase64String($publicKeyBase64); \
     $rsa = [System.Security.Cryptography.RSA]::Create(); \
     $rsa.ImportSubjectPublicKeyInfo($publicKeyBytes, [ref]$null); \
-    $signature = [System.IO.File]::ReadAllBytes('C:\fcli-windows.zip.rsa_sha256'); \
-    $fileBytes = [System.IO.File]::ReadAllBytes('C:\fcli-windows.zip'); \
+    $signature = [System.IO.File]::ReadAllBytes('C:\temp\fcli-windows.zip.rsa_sha256'); \
+    $fileBytes = [System.IO.File]::ReadAllBytes('C:\temp\fcli-windows.zip'); \
     $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($fileBytes); \
     $verified = $rsa.VerifyHash($hash, $signature, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1); \
     if (-not $verified) { throw 'Signature verification failed' }; \
@@ -66,14 +67,14 @@ RUN $ErrorActionPreference = 'Stop'; \
 # Extract fcli
 RUN $ErrorActionPreference = 'Stop'; \
     Write-Host 'Extracting fcli...'; \
-    Expand-Archive -Path C:\fcli-windows.zip -DestinationPath C:\fcli-bin; \
+    Expand-Archive -Path C:\temp\fcli-windows.zip -DestinationPath C:\fcli-bin; \
     if (-not (Test-Path C:\fcli-bin\fcli.exe)) { throw 'fcli.exe not found after extraction' }; \
     C:\fcli-bin\fcli.exe --version
 
 # Download VC++ redistributable
 RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
     Write-Host 'Downloading Visual C++ Redistributable...'; \
-    Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile C:\vc_redist.x64.exe
+    Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile C:\temp\vc_redist.x64.exe
 
 # ============================================================================
 # Stage: fcli-ltsc2022
@@ -91,7 +92,7 @@ SHELL ["powershell", "-Command"]
 
 # Copy fcli and VC++ redistributable from download stage
 COPY --from=fcli-downloader C:/fcli-bin/fcli.exe C:/bin/fcli.exe
-COPY --from=fcli-downloader C:\vc_redist.x64.exe C:\vc_redist.x64.exe
+COPY --from=fcli-downloader C:\temp\vc_redist.x64.exe C:\vc_redist.x64.exe
 
 # Install VC++ redistributables and clean up
 RUN $ErrorActionPreference = 'Stop'; \
