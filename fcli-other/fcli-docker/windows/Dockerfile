@@ -99,14 +99,12 @@ RUN $ErrorActionPreference = 'Stop'; \
     Start-Process -FilePath C:\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait; \
     Remove-Item C:\vc_redist.x64.exe -Force
 
-# Create non-admin user for security (matching Linux approach)
+# Create data directory and non-admin user for security (matching Linux approach)
 RUN $ErrorActionPreference = 'Stop'; \
+    New-Item -ItemType Directory -Path C:\data -Force | Out-Null; \
     net user fcli /add; \
     icacls C:\bin /grant fcli:RX; \
     icacls C:\data /grant fcli:F
-
-# Add data directory (same structure as Linux)
-ADD data.tgz C:/
 
 # Configure environment and PATH
 WORKDIR C:/data
