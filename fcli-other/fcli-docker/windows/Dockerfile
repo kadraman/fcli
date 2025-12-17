@@ -68,7 +68,7 @@ RUN $ErrorActionPreference = 'Stop'; \
 RUN $ErrorActionPreference = 'Stop'; \
     Write-Host 'Extracting fcli...'; \
     Expand-Archive -Path C:\temp\fcli-windows.zip -DestinationPath C:\temp; \
-    if (-not (Test-Path C:\temp\fcli.exe)) { throw 'fcli.exe not found after extraction' }; \
+    if (-not (Test-Path C:\temp\fcli.exe)) { throw 'fcli.exe not found after extraction' };
 
 # Download VC++ redistributable
 RUN $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
