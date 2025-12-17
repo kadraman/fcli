@@ -109,8 +109,7 @@ RUN $ErrorActionPreference = 'Stop'; \
 # Configure environment and PATH
 WORKDIR C:/data
 ENV FCLI_USER_HOME=C:/data
-RUN $ErrorActionPreference = 'Stop'; \
-    [Environment]::SetEnvironmentVariable('PATH', "$env:PATH;C:\bin", [EnvironmentVariableTarget]::Machine)
+ENV PATH="C:\bin;${PATH}"
 
 # OCI standard labels (multi-line for optimization)
 LABEL org.opencontainers.image.vendor="Fortify" \
