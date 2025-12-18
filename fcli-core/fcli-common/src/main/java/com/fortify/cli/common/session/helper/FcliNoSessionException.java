@@ -15,6 +15,7 @@ package com.fortify.cli.common.session.helper;
 import java.util.regex.Pattern;
 
 import com.fortify.cli.common.exception.FcliSimpleException;
+import com.fortify.cli.common.util.FcliDockerHelper;
 
 public class FcliNoSessionException extends FcliSessionException {
     private static final long serialVersionUID = 1L;
@@ -28,7 +29,12 @@ public class FcliNoSessionException extends FcliSessionException {
 
     private static String createMessage(String loginCmd, String fmt, Object[] args) {
         var baseMsg = String.format(fmt, args);
-        return String.format("%s\nPlease log in using the '%s' command", baseMsg, loginCmd);
+        var result = String.format("%s\nPlease log in using the '%s' command", baseMsg, loginCmd);
+        if (FcliDockerHelper.isRunningInContainer()) {
+            result += "\nNote: Sessions are stored in the container filesystem and will be lost\nbetween 'docker run' commands unless persistent volumes are used";
+        }
+        return result;
+
     }
     
     public static final String getLoginCmd(String s) {

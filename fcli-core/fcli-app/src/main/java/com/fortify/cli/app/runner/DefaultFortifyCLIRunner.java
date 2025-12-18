@@ -15,6 +15,7 @@ package com.fortify.cli.app.runner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import com.fortify.cli.app._main.cli.cmd.FCLIRootCommands;
 import com.fortify.cli.app.runner.util.FortifyCLIDefaultValueProvider;
@@ -25,6 +26,7 @@ import com.fortify.cli.common.cli.util.FcliExecutionStrategyFactory;
 import com.fortify.cli.common.cli.util.FcliWrappedHelpExclude;
 import com.fortify.cli.common.exception.FcliExecutionExceptionHandler;
 import com.fortify.cli.common.output.writer.CommandSpecMessageResolver;
+import com.fortify.cli.common.util.FcliDockerHelper;
 import com.fortify.cli.common.variable.FcliVariableHelper;
 
 import picocli.CommandLine;
@@ -114,6 +116,19 @@ public final class DefaultFortifyCLIRunner {
         @Override
         public String description(Object... params) {
             return super.description(params).trim();
+        }
+        
+        @Override
+        public String footer(Object... params) {
+            int width = commandSpec().usageMessage().width();
+            String dockerNotice = FcliDockerHelper.getDockerHelpNotice(width);
+            String[] footerStrings = commandSpec().usageMessage().footer();
+            String[] combinedFooters = dockerNotice.isBlank() 
+                ? footerStrings 
+                : Stream.concat(Stream.of(dockerNotice), Arrays.stream(footerStrings)).toArray(String[]::new);
+            return join(ansi(), width, 
+                commandSpec().usageMessage().adjustLineBreaksForWideCJKCharacters(), 
+                combinedFooters, new StringBuilder(), params).toString();
         }
         
         @Override
