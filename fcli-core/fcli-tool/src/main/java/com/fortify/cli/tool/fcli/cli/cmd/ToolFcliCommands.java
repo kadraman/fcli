@@ -22,6 +22,8 @@ import picocli.CommandLine.Command;
                 ToolFcliInstallCommand.class,
                 ToolFcliListCommand.class,
                 ToolFcliListPlatformsCommand.class,
+                ToolFcliGetCommand.class,
+                ToolFcliRegisterCommand.class,
                 ToolFcliRunCommand.class,
                 ToolFcliUninstallCommand.class
         }
@@ -29,4 +31,5 @@ import picocli.CommandLine.Command;
 )
 public class ToolFcliCommands extends AbstractContainerCommand {
     static final String TOOL_NAME = "fcli";
+    static final String[] TOOL_ENV_VAR_PREFIXES = {"FCLI"};
 }

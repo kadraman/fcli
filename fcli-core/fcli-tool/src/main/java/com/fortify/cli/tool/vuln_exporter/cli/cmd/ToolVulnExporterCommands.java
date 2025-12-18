@@ -23,6 +23,8 @@ import picocli.CommandLine.Command;
                 ToolVulnExporterInstallCommand.class,
                 ToolVulnExporterListCommand.class,
                 ToolVulnExporterListPlatformsCommand.class,
+                ToolVulnExporterGetCommand.class,
+                ToolVulnExporterRegisterCommand.class,
                 ToolVulnExporterRunCommand.class,
                 ToolVulnExporterUninstallCommand.class
         }
@@ -30,4 +32,5 @@ import picocli.CommandLine.Command;
 )
 public class ToolVulnExporterCommands extends AbstractContainerCommand {
     static final String TOOL_NAME = "vuln-exporter";
+    static final String[] TOOL_ENV_VAR_PREFIXES = {"VULN_EXPORTER", "FVE"};
 }

@@ -14,21 +14,25 @@ package com.fortify.cli.tool.fod_uploader.cli.cmd;
 
 import java.util.List;
 
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolRunShellOrJavaCommand;
+import com.fortify.cli.tool._common.helper.Tool;
 import com.fortify.cli.tool._common.helper.ToolInstallationDescriptor;
-import com.fortify.cli.tool._common.helper.ToolPlatformHelper;
 
-import lombok.Getter;
 import lombok.SneakyThrows;
 import picocli.CommandLine.Command;
 
 @Command(name = "run")
 public class ToolFoDUploaderRunCommand extends AbstractToolRunShellOrJavaCommand {
-    @Getter private String toolName = ToolFoDUploaderCommands.TOOL_NAME;
+    
+    @Override
+    protected final Tool getTool() {
+        return Tool.FOD_UPLOADER;
+    }
 
     @Override
     protected List<String> getBaseCommand(ToolInstallationDescriptor descriptor) {
-        var ext = ToolPlatformHelper.isWindows() ? ".bat" : "";
+        var ext = PlatformHelper.isWindows() ? ".bat" : "";
         return List.of(descriptor.getBinPath().resolve("FoDUpload"+ext).toString());
     }
     

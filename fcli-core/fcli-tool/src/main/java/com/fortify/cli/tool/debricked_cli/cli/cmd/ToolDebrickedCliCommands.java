@@ -23,6 +23,8 @@ import picocli.CommandLine.Command;
                 ToolDebrickedCliInstallCommand.class,
                 ToolDebrickedCliListCommand.class,
                 ToolDebrickedCliListPlatformsCommand.class,
+                ToolDebrickedCliGetCommand.class,
+                ToolDebrickedCliRegisterCommand.class,
                 ToolDebrickedCliRunCommand.class,
                 ToolDebrickedCliUninstallCommand.class
         }
@@ -30,4 +32,5 @@ import picocli.CommandLine.Command;
 )
 public class ToolDebrickedCliCommands extends AbstractContainerCommand {
     static final String TOOL_NAME = "debricked-cli";
+    static final String[] TOOL_ENV_VAR_PREFIXES = {"DEBRICKED_CLI", "DEBRICKED"};
 }

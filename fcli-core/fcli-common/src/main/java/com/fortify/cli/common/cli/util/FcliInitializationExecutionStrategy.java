@@ -22,6 +22,7 @@ import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.rest.unirest.IUnirestContextAware;
 import com.fortify.cli.common.rest.unirest.UnirestContext;
 import com.fortify.cli.common.util.FcliBuildProperties;
+import com.fortify.cli.common.util.FcliDockerHelper;
 import com.fortify.cli.common.util.JavaHelper;
 import com.fortify.cli.common.util.NonClosingPrintStream;
 
@@ -93,6 +94,7 @@ public final class FcliInitializationExecutionStrategy implements IExecutionStra
     private static void logVersionAndArgs(CommandSpec commandSpec) {
         log.info("fcli version: {} ", FcliBuildProperties.INSTANCE.getFcliBuildInfo());
         log.info("fcli arguments: {} {} ", commandSpec.qualifiedName(), commandSpec.commandLine().getParseResult().expandedArgs());
+        log.debug("Running in Docker container: {}", FcliDockerHelper.isRunningInContainer());
     }
 
     private static void registerLogMasks(CommandSpec commandSpec) {

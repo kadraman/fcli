@@ -40,27 +40,40 @@ public class ToolInstallationOutputDescriptor {
     private final String aliasesString;
     private final String stable;
     private Map<String, ToolDefinitionArtifactDescriptor> binaries;
+    private Map<String, String> extraProperties;
     private final String installDir;
     private final String binDir;
     private final String globalBinDir;
     private final String installed;
+    private final boolean isDefault;
+    private final String isDefaultMarker;
     private final String __action__;
     
     public ToolInstallationOutputDescriptor(String toolName, ToolDefinitionVersionDescriptor versionDescriptor, ToolInstallationDescriptor installationDescriptor, String action) {
+        this(toolName, versionDescriptor, installationDescriptor, action, false);
+    }
+    
+    public ToolInstallationOutputDescriptor(String toolName, ToolDefinitionVersionDescriptor versionDescriptor, ToolInstallationDescriptor installationDescriptor, String action, boolean isDefault) {
         this.name = toolName;
         this.version = versionDescriptor.getVersion();
         this.aliases = reverse(versionDescriptor.getAliases());
         this.aliasesString = String.join(", ", aliases);
         this.stable = versionDescriptor.isStable()?"Yes":"No";
         this.binaries = versionDescriptor.getBinaries();
+        this.extraProperties = versionDescriptor.getExtraProperties();
         this.installDir = installationDescriptor==null ? null : installationDescriptor.getInstallDir();
         this.binDir = installationDescriptor==null ? null : installationDescriptor.getBinDir();
         this.globalBinDir = installationDescriptor==null ? null : installationDescriptor.getGlobalBinDir();
         this.installed = StringUtils.isBlank(this.installDir) ? "No" : "Yes";
+        this.isDefault = isDefault;
+        this.isDefaultMarker = isDefault ? "*" : "";
         this.__action__ = action;
     }
     
     private static final String[] reverse(String[] array) {
+        if (array == null) {
+            return new String[0];
+        }
         List<String> list = Arrays.asList(array);
         Collections.reverse(list);
         return list.toArray(String[]::new);
