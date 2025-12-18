@@ -31,6 +31,7 @@ class SSCIssueTemplateSpec extends FcliBaseSpec {
     @Shared @TempFile("issueTemplateSpec/download.xml") String downloadedTemplateFile
     private static final String random = System.currentTimeMillis()
     private static final String templateName = "fcli-test-Template"+random
+    private static final String updatedTemplateName = "fcli-test-TemplateUpdated"+random
     @Shared SSCCustomTagSupplier tagSupplier = new SSCCustomTagSupplier()
 
     def "list"() {
@@ -81,13 +82,13 @@ class SSCIssueTemplateSpec extends FcliBaseSpec {
     }
     
     def "update"() {
-        def args = "ssc issue update-template ::template::id -n updatedName -d updatedDescr --set-as-default -o table=id,name,inUse,defaultTemplate,publishVersion,originalFileName,description"
+        def args = "ssc issue update-template ::template::id -n $updatedTemplateName -d updatedDescr --set-as-default -o table=id,name,inUse,defaultTemplate,publishVersion,originalFileName,description"
         when:
             def result = Fcli.run(args)
         then:
             verifyAll(result.stdout) {
                 size()>0
-                it[1].replace(" ", "").contains("updatedNamefalsetrue")
+                it[1].replace(" ", "").contains("${updatedTemplateName}falsetrue")
                 it[1].contains("updatedDescr")
             }
     }
@@ -99,7 +100,7 @@ class SSCIssueTemplateSpec extends FcliBaseSpec {
         then:
             verifyAll(result.stdout) {
                 size()>0
-                it[2].equals("name: updatedName")
+                it[2].equals("name: " + updatedTemplateName)
             }
     }
     
