@@ -1,5 +1,45 @@
 # Changelog
 
+## [3.14.0](https://github.com/fortify/fcli/compare/v3.13.1...v3.14.0) (2025-12-18)
+
+
+### Features
+
+* `fcli tool * get`: New commands for displaying detailed information about a specific installed tool version ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool * install`: Add hidden `--copy-if-matching` option (internal use by `fcli tool env init`) to copy from existing installation instead of downloading ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool * install`: Tool installations now show action status (installed/copied/registered/skipped) for better visibility ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool * register`: New commands for registering existing tool installations with automatic version detection (supports binary path, bin directory, or installation directory) ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool definitions update`: Add `--force` option to update definitions even if they are up-to-date ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool definitions update`: Add `--max-age` option to only update definitions if older than specified period (e.g., `1h`, `4h`, `1d`) ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool env init`: New command for automatically setting up one or more Fortify tools (auto-detects pre-installed tools, downloads if necessary, supports air-gapped environments, and platform-specific tool caching) ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool env shell|powershell|github|gitlab|ado|expr`: New commands for generating environment variable exports for installed or registered tools in various shell or CI/CD-specific formats ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool sc-client install`: Add `--jre` option to specify custom JRE home directory for use with `fcli tool sc-client run` command ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* `fcli tool sc-client install`: Improve JRE handling with automatic detection from environment variables (`SC_CLIENT_JRE_HOME`, `SCANCENTRAL_JRE_HOME`) ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* Action SpEL functions: Add `#opt(name, value)` function for conditionally formatting command-line options ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* Add fcli state persistency information in help output and 'session not found' errors when running in Docker containers ([7c72c8a](https://github.com/fortify/fcli/commit/7c72c8a531d9a77176f1197177cd74f84f37d304))
+* Add UBI9 images for fortifydocker/fcli ([b26962d](https://github.com/fortify/fcli/commit/b26962d557a206df96142ed0babf87d703de3fc6))
+* fcli `ci` action: Add support for `PREINSTALLED` environment variable to require all tools to be pre-installed, preventing automatic downloads ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `ci` action: Add support for pre-installed tools via `SC_CLIENT_HOME` and `DEBRICKED_HOME` environment variables, complementing existing dynamic installation ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `debricked-scan` action: Change default `--cli-version` from `latest` to `auto` for smarter version resolution ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `debricked-scan` action: Simplify tool setup by using `fcli tool env init` instead of separate update/install steps ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `detect-env` action: Renamed from `ci-vars` and updated to provide general environment detection capabilities (CI platform, Git repository, ...) ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `package` action: Change default `--sc-client-version` from `latest` to `auto` for smarter version resolution ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `package` action: Simplify tool setup by using `fcli tool env init` instead of separate update/install steps ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* Publish shell-based UBI9 variant of fortifydocker/fcli to allow for interactive use ([7c72c8a](https://github.com/fortify/fcli/commit/7c72c8a531d9a77176f1197177cd74f84f37d304))
+
+
+### Bug Fixes
+
+* `fcli * action sign`: Remove ability to generate private key to avoid the use of weak encryption algorithms ([d04e38a](https://github.com/fortify/fcli/commit/d04e38a571e31e700ba78c9e41c2086a294d87ad))
+* `fcli aviator`: Correct filtering logic to prevent valid issues from being skipped during audit ([dd253b5](https://github.com/fortify/fcli/commit/dd253b5eb4740e828dff3c05673c76243e27d445))
+* `fcli aviator`: Ensure consistent file hash generation across different builds ([dd253b5](https://github.com/fortify/fcli/commit/dd253b5eb4740e828dff3c05673c76243e27d445))
+* `fcli fod sast-scan setup`: Keep existing settings for "aviator" and "oss" unless explicit `--[no-]oss` or `--[no-]use-aviator` specified (fixes [#885](https://github.com/fortify/fcli/issues/885)) ([649cd88](https://github.com/fortify/fcli/commit/649cd88cc423c8a1ada94ce5e136902db4646c81))
+* `fcli ssc session login`: Fail with proper error if supplied token is invalid ([09ce146](https://github.com/fortify/fcli/commit/09ce146e63a95ef67a5eacdc3c227b87e836edfa))
+* fcli `ci` action: Post-scan tasks (check-policy, release-summary, pr-comment, export) are now properly skipped if no scans were run ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+* fcli `debricked-scan` action: Mask Debricked token in console output ([b28d342](https://github.com/fortify/fcli/commit/b28d34217288194b501f902f1bacaac8d647c406))
+* fcli `debricked-scan` action: Show Debricked output both on successful run and in case of errors ([b28d342](https://github.com/fortify/fcli/commit/b28d34217288194b501f902f1bacaac8d647c406))
+* Improve error handling and error output ([737f39a](https://github.com/fortify/fcli/commit/737f39aeeb31f2b34b8bbcf29c09c9d63fcaa5c5))
+
 ## [3.13.1](https://github.com/fortify/fcli/compare/v3.13.0...v3.13.1) (2025-11-07)
 
 
