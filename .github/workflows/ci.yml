@@ -402,7 +402,8 @@ jobs:
             --repo fortify/fcli-docker \
             --ref main \
             -f "releaseTag=${{ needs.build.outputs.release_tag }}" \
-            -f "doPublish=${{ needs.build.outputs.do_release }}"
+            -f "doPublish=${{ needs.build.outputs.do_release }}" \
+            -f "isLatest=${{ needs.build.outputs.do_prod_release }}"
           echo "✓ Docker build triggered in fortify/fcli-docker repository"
         env:
           GITHUB_TOKEN: ${{ secrets.FCLI_DOCKER_TRIGGER_TOKEN }}  
