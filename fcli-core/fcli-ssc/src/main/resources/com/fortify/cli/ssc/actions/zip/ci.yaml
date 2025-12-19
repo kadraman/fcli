@@ -251,8 +251,13 @@ steps:
                   ciSummaryWriter: {fmt: ciEntry}
               - var.set:
                   exitCode: ${exitCode+(ciEntry.value.exitCode?:0)}
+  - var.set:
+      formattedSummary: {fmt: summary}
   - out.write:
-      stdout: {fmt: summary}
+      stdout: ${formattedSummary}
+  - if: ${#isNotBlank(global.ci.jobSummaryFile)}
+    out.write:
+      ${global.ci.jobSummaryFile}: ${formattedSummary}
   - exit: ${exitCode}
 
 formatters:

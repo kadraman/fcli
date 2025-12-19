@@ -29,6 +29,7 @@ steps:
           global.ci.sourceBranch:          # The current branch being processed/scanned 
           global.ci.commitSHA:             # Commit SHA for current commit
           global.ci.sourceDir:             # Directory containing source files to be scanned
+          global.ci.jobSummaryFile:        ${#env('JOB_SUMMARY_FILE')} # Job summary file path; can be overridden by CI-specific value
           # The following are set by default at the end, but may be overridden by individual CI configurations
           global.fod.prCommentAction:   # FoD PR comment action
           global.ssc.prCommentAction:   # SSC PR comment action
@@ -48,6 +49,7 @@ steps:
           global.ci.sourceBranch:        ${#env('GITHUB_HEAD_REF')?:#env('GITHUB_REF_NAME')}
           global.ci.commitSHA:           ${#env('GITHUB_SHA')}
           global.ci.sourceDir:           ${#env('SOURCE_DIR')?:#env('GITHUB_WORKSPACE')?:'.'}
+          global.ci.jobSummaryFile:      ${#ifBlank(global.ci.jobSummaryFile,#env('GITHUB_STEP_SUMMARY'))}
           
       # GitLab
       - if: ${#env('GITLAB_CI')=='true'}
