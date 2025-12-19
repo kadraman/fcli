@@ -67,6 +67,8 @@ public class ActionRunner {
                 processAndPrintCheckStatuses(ctx.getCheckStatuses());
                 overallCheckstatus = processAndPrintCheckStatuses(checkStatuses);
             }
+            // Retrieve exit code set by action's exit step (if any)
+            exitCode = ctx.getExitCode();
         }
         // Determine final exit code
         return exitCode==0 && overallCheckstatus==CheckStatus.FAIL ? 100 : exitCode;
