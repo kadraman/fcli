@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.14.1](https://github.com/fortify/fcli/compare/v3.14.0...v3.14.1) (2025-12-19)
+
+
+### Bug Fixes
+
+* `ci` action: Write job summary to GitHub Actions job summary ([9688fc6](https://github.com/fortify/fcli/commit/9688fc6f6e12165308f1c89926e7576ed6127f41))
+* Action framework: Return proper exit code as set by `exit` instruction ([4a44f45](https://github.com/fortify/fcli/commit/4a44f45f67d93d403edbd374c3b0fc45a375b015))
+
 ## [3.14.0](https://github.com/fortify/fcli/compare/v3.13.1...v3.14.0) (2025-12-18)
 
 
