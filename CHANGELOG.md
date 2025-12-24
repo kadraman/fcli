@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.14.2](https://github.com/fortify/fcli/compare/v3.14.1...v3.14.2) (2025-12-24)
+
+
+### Bug Fixes
+
+* Update dependencies ([aeab071](https://github.com/fortify/fcli/commit/aeab071272e7748ad636c13cfb6dcd4ad4d7bc2b))
+* Update MCP SDK to avoid VS Code Copilot plugin errors ([aeab071](https://github.com/fortify/fcli/commit/aeab071272e7748ad636c13cfb6dcd4ad4d7bc2b))
+
 ## [3.14.1](https://github.com/fortify/fcli/compare/v3.14.0...v3.14.1) (2025-12-19)
 
 
