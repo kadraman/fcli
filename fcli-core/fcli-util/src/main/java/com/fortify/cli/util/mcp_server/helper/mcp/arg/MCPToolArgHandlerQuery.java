@@ -20,13 +20,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.cli.util.FcliCommandSpecHelper;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.json.transform.PropertyPathFormatter;
 import com.fortify.cli.common.json.transform.fields.SelectedFieldsTransformer;
-import com.networknt.schema.utils.StringUtils;
 
 import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import lombok.SneakyThrows;

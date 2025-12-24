@@ -14,10 +14,11 @@ package com.fortify.cli.tool.env.cli.mixin;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.tool._common.helper.Tool;
-import com.networknt.schema.utils.StringUtils;
 
 import lombok.Getter;
 import picocli.CommandLine.Option;
