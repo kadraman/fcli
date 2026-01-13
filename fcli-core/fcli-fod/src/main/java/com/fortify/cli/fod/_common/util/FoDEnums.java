@@ -456,7 +456,9 @@ public class FoDEnums {
         Application(1),
         Vulnerability(2),
         Microservice(3),
-        Release(4);
+        Release(4),
+        Issue(5),
+        Scan(6);
 
         private final int _val;
 
@@ -470,8 +472,6 @@ public class FoDEnums {
 
         public String toString() {
             switch (this._val) {
-                case 0:
-                    return "All";
                 case 1:
                     return "Application";
                 case 2:
@@ -479,8 +479,13 @@ public class FoDEnums {
                 case 3:
                     return "Microservice";
                 case 4:
-                default:
                     return "Release";
+                case 5:
+                    return "Issue";
+                case 6:
+                    return "Scan";
+                default:
+                    return "All";
             }
         }
 
@@ -493,7 +498,7 @@ public class FoDEnums {
                 case 2:
                     return Vulnerability;
                 case 3:
-                    return Microservice;    
+                    return Microservice;
                 case 4:
                 default:
                     return Release;
@@ -564,7 +569,7 @@ public class FoDEnums {
         //Suspicious("Suspicious"),
         //ProposedNotAnIssue("Proposed Not an Issue"),
         RiskAccepted("Risk Accepted"),
-        NotAnIssue("Not an Issues");
+        NotAnIssue("Not an Issue");
 
         public final String value;
 
