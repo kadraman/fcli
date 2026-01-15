@@ -76,18 +76,14 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
         int totalCount = 0;
         int skippedCount = 0;
         if ( vulnIds != null && !vulnIds.isEmpty() ) {
-            try {
-                var vulnFilterResult = FoDIssueHelper.filterRequestedVulnIds(unirest, releaseDescriptor.getReleaseId(), vulnIds);
-                totalCount = vulnFilterResult.totalCount();
-                issueUpdateCount = vulnFilterResult.kept().size();
-                skippedCount = vulnFilterResult.skipped().size();
-                vulnIds = new ArrayList<>(vulnFilterResult.kept());
-                if (!vulnFilterResult.skipped().isEmpty()) {
-                    LOG.debug("Skipped vulnerabilities: {}", vulnFilterResult.skipped());
-                    vulnFilterResult.skipped().forEach(vid -> LOG.warn("Vulnerability {} not found in release {}, skipping", vid, releaseDescriptor.getReleaseId()));
-                }
-            } catch (Exception e) {
-                throw new com.fortify.cli.common.exception.FcliTechnicalException("Error retrieving vulnerabilities for release", e);
+            var vulnFilterResult = FoDIssueHelper.filterRequestedVulnIds(unirest, releaseDescriptor.getReleaseId(), vulnIds);
+            totalCount = vulnFilterResult.totalCount();
+            issueUpdateCount = vulnFilterResult.kept().size();
+            skippedCount = vulnFilterResult.skipped().size();
+            vulnIds = new ArrayList<>(vulnFilterResult.kept());
+            if (!vulnFilterResult.skipped().isEmpty()) {
+                LOG.debug("Skipped vulnerabilities: {}", vulnFilterResult.skipped());
+                vulnFilterResult.skipped().forEach(vid -> LOG.warn("Vulnerability {} not found in release {}, skipping", vid, releaseDescriptor.getReleaseId()));
             }
         }
 

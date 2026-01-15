@@ -58,22 +58,38 @@ public class FoDIssueHelper {
      */
     public static synchronized void loadAllAttributes(UnirestInstance unirest) {
         if ( attributesPrefetched ) return;
-        var request = unirest.get(FoDUrls.ATTRIBUTES);
-        var body = request.asObject(ObjectNode.class).getBody();
-        var items = body.get("items");
-        if ( items!=null && items.isArray() ) {
-            for (var item : items) {
-                FoDAttributeDescriptor desc = JsonHelper.treeToValue(item, FoDAttributeDescriptor.class);
-                if ( desc!=null ) {
-                    ATTR_CACHE_BY_ID.putIfAbsent(desc.getId(), desc);
-                    if ( desc.getName()!=null ) {
-                        ATTR_CACHE_BY_NAME.putIfAbsent(desc.getName(), desc);
-                        ATTR_CACHE_BY_NAME.putIfAbsent(desc.getName().trim(), desc);
+        // Use local temporary maps to build the cache so a failed fetch/parse doesn't leave partial data
+        var tmpById = new java.util.HashMap<Integer, FoDAttributeDescriptor>();
+        var tmpByName = new java.util.HashMap<String, FoDAttributeDescriptor>();
+        try {
+            var request = unirest.get(FoDUrls.ATTRIBUTES);
+            var body = request.asObject(ObjectNode.class).getBody();
+            var items = body.get("items");
+            if ( items!=null && items.isArray() ) {
+                for (var item : items) {
+                    FoDAttributeDescriptor desc = JsonHelper.treeToValue(item, FoDAttributeDescriptor.class);
+                    if ( desc!=null ) {
+                        tmpById.putIfAbsent(desc.getId(), desc);
+                        if ( desc.getName()!=null ) {
+                            tmpByName.putIfAbsent(desc.getName(), desc);
+                            tmpByName.putIfAbsent(desc.getName().trim(), desc);
+                        }
                     }
                 }
             }
+            // Merge into the concurrent caches; preserve any existing descriptors using putIfAbsent
+            for ( var e : tmpById.entrySet() ) {
+                ATTR_CACHE_BY_ID.putIfAbsent(e.getKey(), e.getValue());
+            }
+            for ( var e : tmpByName.entrySet() ) {
+                ATTR_CACHE_BY_NAME.putIfAbsent(e.getKey(), e.getValue());
+            }
+            attributesPrefetched = true; // set only after successful population
+        } catch (kong.unirest.UnirestException e) {
+            throw new com.fortify.cli.common.exception.FcliTechnicalException("Error loading attribute descriptors", e);
+        } catch (Exception e) {
+            throw new com.fortify.cli.common.exception.FcliTechnicalException("Error processing attribute descriptors", e);
         }
-        attributesPrefetched = true;
     }
 
     public static void clearAttributesCache() {
@@ -350,6 +366,24 @@ public class FoDIssueHelper {
      */
     public static String resolveStatusValue(UnirestInstance unirest, String providedValue, String[] attributeNames, String optionName) {
         if ( providedValue==null || providedValue.isBlank() ) { return null; }
+        // Preserve original for error messages
+        String originalProvided = providedValue;
+        // Allow legacy enum-style inputs (camel-case names) for developer/auditor statuses by mapping
+        // them to their user-facing display values when possible. The calling code passes optionName
+        // as either "developer-status" or "auditor-status" so use that to determine which enum to try.
+        String candidate = providedValue.trim();
+        try {
+            if ( optionName!=null && optionName.toLowerCase().contains("developer") ) {
+                var resolved = FoDEnums.DeveloperStatusType.resolveValue(candidate);
+                if ( resolved.isPresent() ) { candidate = resolved.get(); }
+            } else if ( optionName!=null && optionName.toLowerCase().contains("auditor") ) {
+                var resolved = FoDEnums.AuditorStatusType.resolveValue(candidate);
+                if ( resolved.isPresent() ) { candidate = resolved.get(); }
+            }
+        } catch (Exception e) {
+            // Ignore resolution errors and continue with original candidate
+            LOG.debug("Error resolving enum-style status value for {}: {}", optionName, e.getMessage());
+        }
         // Try each candidate attribute name until we find matching picklist values
         for (String attrName: attributeNames) {
             var desc = FoDAttributeHelper.getAttributeDescriptor(unirest, attrName, false);
@@ -357,13 +391,13 @@ public class FoDIssueHelper {
             var picklist = desc.getPicklistValues();
             if ( picklist==null || picklist.isEmpty() ) continue;
             for (var pv : picklist) {
-                if ( pv.getName()!=null && pv.getName().equalsIgnoreCase(providedValue) ) {
+                if ( pv.getName()!=null && pv.getName().equalsIgnoreCase(candidate) ) {
                     return pv.getName();
                 }
             }
             // if provided value looks like an id, try matching by id
             try {
-                int providedId = Integer.parseInt(providedValue);
+                int providedId = Integer.parseInt(candidate);
                 for (var pv : picklist) {
                     if ( java.util.Objects.equals(pv.getId(), providedId) ) {
                         return pv.getName();
@@ -382,7 +416,7 @@ public class FoDIssueHelper {
                 allowed.add(pv.getName());
             }
         }
-        throw new com.fortify.cli.common.exception.FcliSimpleException(String.format("Invalid %s '%s'. Allowed values: %s", optionName, providedValue, String.join(", ", allowed)));
+        throw new com.fortify.cli.common.exception.FcliSimpleException(String.format("Invalid %s '%s'. Allowed values: %s", optionName, originalProvided, String.join(", ", allowed)));
     }
 
     /**
@@ -403,29 +437,15 @@ public class FoDIssueHelper {
         // Build normalized requested set for lookup/early-exit
         var requestedSet = new java.util.HashSet<String>();
         for ( String vid : requested ) {
-            String normalized = vid==null ? null : vid.trim();
-            if ( normalized!=null && normalized.length()>=2 ) {
-                char f = normalized.charAt(0);
-                char l = normalized.charAt(normalized.length()-1);
-                if ((f=='\'' && l=='\'') || (f=='"' && l=='"')) {
-                    normalized = normalized.substring(1, normalized.length()-1).trim();
-                }
-            }
+            String normalized = normalizeVulnId(vid);
             if ( normalized!=null ) { requestedSet.add(normalized); }
         }
-        // Fetch ids (early-exit aware)
-        var found = getVulnIdsForRelease(unirest, releaseId, requestedSet);
-        var kept = new ArrayList<String>();
-        var skipped = new ArrayList<String>();
+         // Fetch ids (early-exit aware)
+         var found = getVulnIdsForRelease(unirest, releaseId, requestedSet);
+         var kept = new ArrayList<String>();
+         var skipped = new ArrayList<String>();
         for ( String vid : requested ) {
-            String normalized = vid==null ? null : vid.trim();
-            if ( normalized!=null && normalized.length()>=2 ) {
-                char f = normalized.charAt(0);
-                char l = normalized.charAt(normalized.length()-1);
-                if ((f=='\'' && l=='\'') || (f=='"' && l=='"')) {
-                    normalized = normalized.substring(1, normalized.length()-1).trim();
-                }
-            }
+            String normalized = normalizeVulnId(vid);
             if ( normalized!=null && found.contains(normalized) ) {
                 kept.add(normalized);
             } else {
@@ -433,6 +453,22 @@ public class FoDIssueHelper {
             }
         }
         return new VulnFilterResult(kept, skipped, totalCount);
+    }
+
+    /**
+     * Normalize a vulnerability identifier supplied by the user: trim and strip surrounding single or double quotes.
+     */
+    private static String normalizeVulnId(String id) {
+        if ( id==null ) return null;
+        String v = id.trim();
+        if ( v.length() >= 2 ) {
+            char f = v.charAt(0);
+            char l = v.charAt(v.length()-1);
+            if ((f=='\'' && l=='\'') || (f=='"' && l=='"')) {
+                v = v.substring(1, v.length()-1).trim();
+            }
+        }
+        return v.isEmpty() ? null : v;
     }
 
     /**
@@ -448,7 +484,8 @@ public class FoDIssueHelper {
             String attrName = e.getKey();
             String value = e.getValue();
             FoDAttributeDescriptor attributeDescriptor = getAttributeDescriptorFromCache(unirest, attrName, true);
-            if ( FoDEnums.AttributeTypes.Issue.getValue() == 0 || attributeDescriptor.getAttributeTypeId() == FoDEnums.AttributeTypes.Issue.getValue() ) {
+            // Only include attributes that are Issue-scoped (AttributeTypes.Issue)
+            if ( attributeDescriptor!=null && attributeDescriptor.getAttributeTypeId() == FoDEnums.AttributeTypes.Issue.getValue() ) {
                 var obj = JsonHelper.getObjectMapper().createObjectNode();
                 obj.put("id", attributeDescriptor.getId());
                 obj.put("value", value);

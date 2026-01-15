@@ -557,6 +557,36 @@ public class FoDEnums {
         public String getValue() {
             return this.value;
         }
+
+        /**
+         * Resolve an input string which may be either the enum constant name (e.g. "InRemediation")
+         * or the user-facing value (e.g. "In Remediation") to the canonical user-facing value.
+         * Comparison for the enum name is case-insensitive. If no match is found an empty
+         * Optional is returned.
+         */
+        public static java.util.Optional<String> resolveValue(String input) {
+            if (input == null) return java.util.Optional.empty();
+            var trimmed = input.trim();
+            if (trimmed.isEmpty()) return java.util.Optional.empty();
+            // First try matching enum constant name (case-insensitive)
+            for (DeveloperStatusType t : values()) {
+                if (t.name().equalsIgnoreCase(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            // Then try matching the display value exactly (case-sensitive and case-insensitive fallback)
+            for (DeveloperStatusType t : values()) {
+                if (t.getValue().equals(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            for (DeveloperStatusType t : values()) {
+                if (t.getValue().equalsIgnoreCase(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            return java.util.Optional.empty();
+        }
     }
 
     public enum AuditorStatusType {
@@ -579,6 +609,35 @@ public class FoDEnums {
 
         public String getValue() {
             return this.value;
+        }
+
+        /**
+         * Resolve an input string which may be either the enum constant name (e.g. "PendingReview")
+         * or the user-facing value (e.g. "Pending Review") to the canonical user-facing value.
+         * Comparison for the enum name is case-insensitive. Returns an empty Optional when no match.
+         */
+        public static java.util.Optional<String> resolveValue(String input) {
+            if (input == null) return java.util.Optional.empty();
+            var trimmed = input.trim();
+            if (trimmed.isEmpty()) return java.util.Optional.empty();
+            // Try matching enum constant name first
+            for (AuditorStatusType t : values()) {
+                if (t.name().equalsIgnoreCase(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            // Then match display value
+            for (AuditorStatusType t : values()) {
+                if (t.getValue().equals(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            for (AuditorStatusType t : values()) {
+                if (t.getValue().equalsIgnoreCase(trimmed)) {
+                    return java.util.Optional.of(t.getValue());
+                }
+            }
+            return java.util.Optional.empty();
         }
     }
 
