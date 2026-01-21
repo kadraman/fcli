@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.json.transform.fields.RenameFieldsTransformer;
 import com.fortify.cli.fod._common.rest.FoDUrls;
@@ -365,26 +366,38 @@ public class FoDIssueHelper {
      * Returns the canonical picklist name when found, or throws a FcliSimpleException listing allowed values.
      */
     public static String resolveStatusValue(UnirestInstance unirest, String providedValue, String[] attributeNames, String optionName) {
+        // Maintain compatibility by delegating to the generic overload; try to infer enum when optionName indicates developer/auditor
+        FoDEnums.DeveloperStatusType[] devEnum = FoDEnums.DeveloperStatusType.values();
+        FoDEnums.AuditorStatusType[] audEnum = FoDEnums.AuditorStatusType.values();
+        if ( optionName!=null && optionName.toLowerCase().contains("developer") ) {
+            return resolveStatusValue(unirest, providedValue, attributeNames, optionName, devEnum);
+        } else if ( optionName!=null && optionName.toLowerCase().contains("auditor") ) {
+            return resolveStatusValue(unirest, providedValue, attributeNames, optionName, audEnum);
+        }
+        return resolveStatusValue(unirest, providedValue, attributeNames, optionName, (FoDEnums.DeveloperStatusType[])null);
+    }
+
+    public static <T extends Enum<T> & FoDEnums.IFoDEnumValueSupplier<String>> String resolveStatusValue(UnirestInstance unirest, String providedValue, String[] attributeNames, String optionName, T[] enumValues) {
         if ( providedValue==null || providedValue.isBlank() ) { return null; }
-        // Preserve original for error messages
         String originalProvided = providedValue;
-        // Allow legacy enum-style inputs (camel-case names) for developer/auditor statuses by mapping
-        // them to their user-facing display values when possible. The calling code passes optionName
-        // as either "developer-status" or "auditor-status" so use that to determine which enum to try.
         String candidate = providedValue.trim();
         try {
-            if ( optionName!=null && optionName.toLowerCase().contains("developer") ) {
-                var resolved = FoDEnums.DeveloperStatusType.resolveValue(candidate);
-                if ( resolved.isPresent() ) { candidate = resolved.get(); }
-            } else if ( optionName!=null && optionName.toLowerCase().contains("auditor") ) {
-                var resolved = FoDEnums.AuditorStatusType.resolveValue(candidate);
+            if ( enumValues!=null ) {
+                var resolved = FoDEnums.IFoDEnumValueSupplier.resolveEnumValue(candidate, enumValues);
                 if ( resolved.isPresent() ) { candidate = resolved.get(); }
             }
         } catch (Exception e) {
-            // Ignore resolution errors and continue with original candidate
             LOG.debug("Error resolving enum-style status value for {}: {}", optionName, e.getMessage());
         }
-        // Try each candidate attribute name until we find matching picklist values
+
+        String attrResolved = tryResolveAgainstAttributes(unirest, attributeNames, candidate);
+        if ( attrResolved!=null ) return attrResolved;
+
+        var allowed = collectAllowedAttributeValues(unirest, attributeNames);
+        throw new FcliSimpleException(String.format("Invalid %s '%s'. Allowed values: %s", optionName, originalProvided, String.join(", ", allowed)));
+    }
+
+    private static String tryResolveAgainstAttributes(UnirestInstance unirest, String[] attributeNames, String candidate) {
         for (String attrName: attributeNames) {
             var desc = FoDAttributeHelper.getAttributeDescriptor(unirest, attrName, false);
             if ( desc==null ) continue;
@@ -405,7 +418,10 @@ public class FoDIssueHelper {
                 }
             } catch (NumberFormatException ignored) {}
         }
-        // Not found — collect allowed values to show in error
+        return null;
+    }
+
+    private static List<String> collectAllowedAttributeValues(UnirestInstance unirest, String[] attributeNames) {
         var allowed = new ArrayList<String>();
         for (String attrName: attributeNames) {
             var desc = FoDAttributeHelper.getAttributeDescriptor(unirest, attrName, false);
@@ -416,7 +432,7 @@ public class FoDIssueHelper {
                 allowed.add(pv.getName());
             }
         }
-        throw new com.fortify.cli.common.exception.FcliSimpleException(String.format("Invalid %s '%s'. Allowed values: %s", optionName, originalProvided, String.join(", ", allowed)));
+        return allowed;
     }
 
     /**

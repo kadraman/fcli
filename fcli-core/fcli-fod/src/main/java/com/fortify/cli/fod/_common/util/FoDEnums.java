@@ -13,6 +13,7 @@
 package com.fortify.cli.fod._common.util;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -442,6 +443,37 @@ public class FoDEnums {
         }
     }
 
+    public interface IFoDEnumValueSupplier<V> {
+        V getValue();
+
+        static <E extends Enum<E> & IFoDEnumValueSupplier<V>, V> Optional<V> resolveEnumValue(String input, E[] values) {
+            if (input == null) return Optional.empty();
+            String trimmed = input.trim();
+            if (trimmed.isEmpty()) return Optional.empty();
+            // First try matching enum constant name (case-insensitive)
+            for (E t : values) {
+                if (t.name().equalsIgnoreCase(trimmed)) {
+                    return Optional.ofNullable(t.getValue());
+                }
+            }
+            // Then try matching the display value exactly (case-sensitive)
+            for (E t : values) {
+                V val = t.getValue();
+                if (val != null && val.equals(trimmed)) {
+                    return Optional.of(val);
+                }
+            }
+            // Then try case-insensitive match on display value
+            for (E t : values) {
+                V val = t.getValue();
+                if (val != null && val.toString().equalsIgnoreCase(trimmed)) {
+                    return Optional.of(val);
+                }
+            }
+            return Optional.empty();
+        }
+    }
+
     public enum ApiSchemeType {
         @JsonProperty("http")
         HTTP,
@@ -540,7 +572,7 @@ public class FoDEnums {
         }
     }
 
-    public enum DeveloperStatusType {
+    public enum DeveloperStatusType implements IFoDEnumValueSupplier<String> {
         // no internal integer id representation
         Open("Open"),
         InRemediation("In Remediation"),
@@ -565,31 +597,11 @@ public class FoDEnums {
          * Optional is returned.
          */
         public static java.util.Optional<String> resolveValue(String input) {
-            if (input == null) return java.util.Optional.empty();
-            var trimmed = input.trim();
-            if (trimmed.isEmpty()) return java.util.Optional.empty();
-            // First try matching enum constant name (case-insensitive)
-            for (DeveloperStatusType t : values()) {
-                if (t.name().equalsIgnoreCase(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            // Then try matching the display value exactly (case-sensitive and case-insensitive fallback)
-            for (DeveloperStatusType t : values()) {
-                if (t.getValue().equals(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            for (DeveloperStatusType t : values()) {
-                if (t.getValue().equalsIgnoreCase(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            return java.util.Optional.empty();
+            return IFoDEnumValueSupplier.resolveEnumValue(input, values());
         }
     }
 
-    public enum AuditorStatusType {
+    public enum AuditorStatusType implements IFoDEnumValueSupplier<String> {
         // no internal integer id representation
         PendingReview("Pending Review"),
         RemediationRequired("Remediation Required"),
@@ -617,27 +629,7 @@ public class FoDEnums {
          * Comparison for the enum name is case-insensitive. Returns an empty Optional when no match.
          */
         public static java.util.Optional<String> resolveValue(String input) {
-            if (input == null) return java.util.Optional.empty();
-            var trimmed = input.trim();
-            if (trimmed.isEmpty()) return java.util.Optional.empty();
-            // Try matching enum constant name first
-            for (AuditorStatusType t : values()) {
-                if (t.name().equalsIgnoreCase(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            // Then match display value
-            for (AuditorStatusType t : values()) {
-                if (t.getValue().equals(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            for (AuditorStatusType t : values()) {
-                if (t.getValue().equalsIgnoreCase(trimmed)) {
-                    return java.util.Optional.of(t.getValue());
-                }
-            }
-            return java.util.Optional.empty();
+            return IFoDEnumValueSupplier.resolveEnumValue(input, values());
         }
     }
 

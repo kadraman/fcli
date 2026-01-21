@@ -25,6 +25,8 @@ import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.output.transform.IActionCommandResultSupplier;
 import com.fortify.cli.fod._common.cli.mixin.FoDDelimiterMixin;
 import com.fortify.cli.fod._common.output.cli.cmd.AbstractFoDJsonNodeOutputCommand;
+import com.fortify.cli.fod._common.util.FoDEnums.AuditorStatusType;
+import com.fortify.cli.fod._common.util.FoDEnums.DeveloperStatusType;
 import com.fortify.cli.fod._common.util.FoDEnums.VulnerabilitySeverityType;
 import com.fortify.cli.fod.attribute.cli.mixin.FoDAttributeUpdateOptions;
 import com.fortify.cli.fod.issue.helper.FoDBulkIssueUpdateRequest;
@@ -109,13 +111,13 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
         if ( auditorStatus != null && !auditorStatus.isBlank() ) {
             auditorStatusValue = FoDIssueHelper.resolveStatusValue(unirest, auditorStatus, new String[]{
                 "Auditor Status (Non suppressed)", "Auditor Status (Suppressed)"
-            }, "auditor-status");
+            }, "auditor-status", AuditorStatusType.values());
         }
         String developerStatusValue = null;
         if ( developerStatus != null && !developerStatus.isBlank() ) {
             developerStatusValue = FoDIssueHelper.resolveStatusValue(unirest, developerStatus, new String[]{
                 "Developer Status (Open)", "Developer Status (Closed)"
-            }, "developer-status");
+            }, "developer-status", DeveloperStatusType.values());
         }
         return new ResolvedStatuses(developerStatusValue, auditorStatusValue);
     }
