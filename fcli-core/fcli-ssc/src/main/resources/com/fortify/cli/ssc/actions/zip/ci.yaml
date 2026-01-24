@@ -116,9 +116,7 @@ steps:
                 - ${#actionCmdSkipFromEnvReason('SETUP', false)} # Skip if DO_SETUP==false
                   
             PACKAGE_ACTION:
-              # Maybe use similar approach as DEBRICKED_SCAN_ACTION, explicitly passing all options?
-              # If we decide to do so, we should do the same in FoD ci action 
-              cmd: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')} "--source-dir=${global.ci.sourceDir}"
+              cmd: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')} "--source-dir=${global.ci.sourceDir}" "--av=${global.ci.av}"
               skip.if-reason:
                 - ${sast.skipReason} # Skip if SAST scan is skipped
                   
@@ -230,7 +228,7 @@ steps:
             DEBRICKED_EXPORT:
               cmd: ${#actionCmd('DEBRICKED_EXPORT', 'ssc', global.ci.ssc_scaExportAction)} "--av=${global.ci.av}"
               skip.if-reason:
-                - ${DEBRICKED_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
+                - ${DEBRICKED_WAIT.dependencySkipReason}                    # Skip if DEBRICKED_WAIT was skipped or failed
                 - ${#actionCmdSkipFromEnvReason('DEBRICKED_EXPORT', false)} # Skip if DO_DEBRICKED_EXPORT==false
                 - ${#actionCmdSkipNoActionReason('DEBRICKED_EXPORT', 'ssc', global.ci.ssc_scaExportAction)}
           
