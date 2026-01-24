@@ -439,7 +439,15 @@ public class ActionSpelFunctions {
         return String.join(" ", output);
     }
     
-    public static final String opt(String name, String value) {
+    @SpelFunction(cat=workflow, desc = """
+            Returns a formatted option string in the form `"name=value"` if the value is not blank, \
+            or an empty string if the value is blank. This is useful for conditionally including \
+            command-line options based on whether environment variables or other values are set.
+            """,
+            returns="Formatted option string `\"name=value\"` if value is not blank, empty string otherwise")
+    public static final String opt(
+            @SpelFunctionParam(name="name", desc="the option name") String name, 
+            @SpelFunctionParam(name="value", desc="the option value; if blank, function returns empty string") String value) {
         if ( StringUtils.isBlank(value) ) { return ""; }
         return String.format("\"%s=%s\"", name, value);
     }

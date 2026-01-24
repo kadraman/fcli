@@ -41,7 +41,7 @@ cli.options:
     names: --source-dir, -d
     description: |
       Specify the source directory to be packaged. Defaults to the value of the SOURCE_DIR environment variable, or current working directory if not specified.
-    default: ${#env('SOURCE_DIR')?:'.'}
+    default: ${#ifBlank(#env('SOURCE_DIR'),'.')}
     required: true
   toolDefinitions:
     names: --tool-definitions
@@ -64,7 +64,7 @@ cli.options:
       
 steps:
   - var.set:
-      global.package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
+      global.package.output: ${#resolveAgainstCurrentWorkDir(#ifBlank(cli.usePackage,cli.output))}
   - if: ${#isBlank(cli.usePackage)}
     steps:
       - if: ${#isBlank(cli.scClientVersion) || cli.scClientVersion=='auto'}
@@ -86,7 +86,7 @@ steps:
                   DETECT_SC_CLIENT_VERSION.dependencySkipReason:  # Clear to allow downstream steps
                   DETECT_SC_CLIENT_VERSION.exitCode: 0            # Don't contribute to final exit code
       - var.set:
-          effectiveScClientVersion: ${cli.scClientVersion?:'auto'}
+          effectiveScClientVersion: ${#ifBlank(cli.scClientVersion,'auto')}
       - if: "${effectiveScClientVersion=='auto' && #isNotBlank(detectedScClientVersion)}"
         var.set:
           effectiveScClientVersion: ${detectedScClientVersion}

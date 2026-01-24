@@ -13,6 +13,10 @@ Fcli is a modular CLI tool for interacting with Fortify products (FoD, SSC, Scan
 
 ## Development Workflow
 - **Build:** `cd` to project root, run `./gradlew build` (don't run from subdirectories)
+  - This creates the shadow jar at `fcli-core/fcli-app/build/libs/fcli.jar` and copies it to `build/libs/fcli.jar`
+  - Module-specific tasks like `shadowJar`, `dist`, or `distAll` do NOT create the root `build/libs/fcli.jar`
+  - **Testing changes:** Always run `./gradlew build` first to ensure the complete jar is built before manual testing
+  - If a local convenience script exists for testing, it likely depends on `build/libs/fcli.jar` being up-to-date
 - **Validation:** After edits, use `get_errors` tool first, then full Gradle build to catch warnings
 - **Testing:** Located in `src/test`; command structure validated in `FortifyCLITest`
 
@@ -46,6 +50,65 @@ Fcli is a modular CLI tool for interacting with Fortify products (FoD, SSC, Scan
 - Schema version tracked in `gradle.properties` (`fcliActionSchemaVersion`)
 - Steps like: `run.fcli` (execute fcli commands), `rest.call` (HTTP), `var.set` (variables), `for-each` (iteration)
 - Action commands extend `AbstractActionRunCommand`; parsed options passed to `ActionRunner`
+
+## Editing Action YAML Files
+
+**Schema discovery and validation:**
+- Every action YAML file must declare its schema version using either:
+  - `$schema: <url>` property at the top of the file, OR
+  - `# yaml-language-server: $schema=<url>` comment at the top
+- Access schema information programmatically:
+  - Action model classes in `com.fortify.cli.common.action.model` package define YAML structure
+  - `ActionSchemaDescriptorFactory.getActionSchemaDescriptor()` provides structured schema info
+  - `SpelFunctionDescriptorsFactory.getActionSpelFunctionsDescriptors()` lists all available SpEL functions with signatures and descriptions
+- VS Code YAML extension automatically validates against declared schema URL
+- Use `semantic_search` to find example usage in existing action YAML files
+- Use `list_code_usages` to find action model class definitions for specific YAML properties
+
+**Where SpEL expressions can be used:**
+- `cli.options::<option>::default` — default values for CLI options (evaluated before action steps run)
+- `steps` section — all step instructions and their properties (evaluated during action execution)
+- Many other YAML properties accept `TemplateExpression`:
+  - Step-level: `if`, `var.set`, `var.rm`, `log.*`, `out.write`, `records.for-each::from`, `records.for-each::breakIf`
+  - REST calls: `rest.target::baseUrl`, `rest.target::headers`, `rest.call::uri`, `rest.call::query`, `rest.call::body`, pagination expressions
+  - Writers: `out.write::to`, `out.write::type`, `out.write::type-args`, `out.write::style`
+  - Other step types: `with.session::login`, `with.session::logout`, `run.fcli::cmd`, `run.fcli::skip.if-reason`
+  - See action model classes in `com.fortify.cli.common.action.model` for complete list
+
+**Available SpEL functions by context:**
+- **In `cli.options::<option>::default`:** Standard SpEL functions + `ActionSpelFunctions` only
+  - Evaluated using `ActionRunnerConfig.getSpelEvaluator()` before action context is created
+  - `ActionRunnerContextSpelFunctions` (prefixed with `action.`) is NOT available here
+  - Product-specific functions (e.g., `fod.*`, `ssc.*`) are NOT available here
+  - Can access environment variables via `#env()`, but not action variables or execution context
+- **In `steps` section:** All SpEL functions available
+  - Standard SpEL functions + `ActionSpelFunctions` + `ActionRunnerContextSpelFunctions` + product-specific + CI-specific
+  - Evaluated using `ActionRunnerContext.getSpelEvaluator()` during action execution
+  - Full access to action variables (`${cli.option}`, `${varName}`), execution context (`${action.*}`), and CI metadata
+  - Product-specific functions: `fod.*` (FoD module only), `ssc.*` (SSC module only)
+
+**SpEL expression syntax in YAML:**
+- SpEL expressions may contain characters with special YAML meaning, causing parse errors:
+  - `#` starts SpEL function calls (e.g., `#opt()`) but means comment in YAML
+  - `:` in ternary operator (e.g., `a ? b : c`) but means key-value separator in YAML
+- **Workaround strategies:**
+  1. Remove spaces around special characters: `a?b:#c()` often works, `a ? b : #c()` won't
+  2. Quote the entire expression: `"${a ? b : #c()}"` ensures YAML treats it as a string
+  3. Use SpEL function alternatives to avoid problematic operators (e.g., `#ifBlank(value, default)` instead of ternary)
+- **Best practices:**
+  - **ALWAYS quote expressions containing `#` or `:` characters** - this is the most common source of action YAML parse errors
+  - Test complex expressions with `get_errors` tool after editing
+  - Look for YAML parse errors in fcli build output
+  - Prefer quoted expressions when in doubt
+  - Use `#opt()` and `#ifBlank()` SpEL functions to conditionally include values without ternary operators
+  - Run tests after editing action YAML: `./gradlew :fcli-core:fcli-<product>:test` (e.g., `fcli-ssc`, `fcli-fod`)
+
+**Common SpEL functions for actions:**
+- `#opt(name, value)` — returns `"name=value"` if value is not blank, empty string otherwise
+- `#ifBlank(value, default)` — returns default if value is blank
+- `#extraOpts(prefix)` — retrieves `<prefix>_EXTRA_OPTS` environment variable
+- `#env(name)` — retrieves environment variable
+- See `ActionSpelFunctions`, `ActionRunnerContextSpelFunctions`, and product-specific `*ActionSpelFunctions` classes for complete list
 
 ## Picocli Command Implementation Details
 - Most leaf commands should extend from `Abstract<product>OutputCommand` or (legacy) `Abstract<product>[JsonNode|Request]OutputCommand`. Command name and output helper are usually defined through `OutputHelperMixins` (or a product-specific variant).
