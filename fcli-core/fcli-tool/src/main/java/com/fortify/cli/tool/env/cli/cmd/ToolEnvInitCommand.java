@@ -42,6 +42,7 @@ import com.fortify.cli.tool.env.cli.mixin.ToolEnvInitMixin;
 import com.fortify.cli.tool.env.cli.mixin.ToolEnvInitMixin.ToolSetupSpec;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -57,18 +58,38 @@ public class ToolEnvInitCommand extends AbstractOutputCommand implements IAction
     @Mixin
     private ProgressWriterFactoryMixin progressWriterFactory;
     
-    // Record to hold setup result information
+    // Class to hold setup result information
     @Reflectable
+    @Data
     @Builder
-    private static record ToolSetupResult(String name, String version, String binDir, String installDir, String __action__) {}
+    private static class ToolSetupResult {
+        private final String name;
+        private final String version;
+        private final String binDir;
+        private final String installDir;
+        private final String __action__;
+    }
     
-    // Record to hold registration result
+    // Class to hold registration result
+    @Reflectable
+    @Data
     @Builder
-    private static record RegistrationResult(String version, String binDir, String installDir, boolean success) {}
+    private static class RegistrationResult {
+        private final String version;
+        private final String binDir;
+        private final String installDir;
+        private final boolean success;
+    }
     
-    // Record to hold install result
+    // Class to hold install result
+    @Reflectable
+    @Data
     @Builder
-    private static record InstallResult(String binDir, String installDir, String action) {}
+    private static class InstallResult {
+        private final String binDir;
+        private final String installDir;
+        private final String action;
+    }
     
     @Override
     public boolean isSingular() {
@@ -124,14 +145,14 @@ public class ToolEnvInitCommand extends AbstractOutputCommand implements IAction
         
         // Try to register first
         RegistrationResult regResult = tryRegisterTool(spec);
-        if (regResult.success()) {
+        if (regResult.isSuccess()) {
             progressWriter.writeProgress("Tool " + toolName + " registered successfully");
-            String displayVersion = spec.hasPath() ? "preinstalled" : regResult.version();
+            String displayVersion = spec.hasPath() ? "preinstalled" : regResult.getVersion();
             return ToolSetupResult.builder()
                     .name(toolName)
                     .version(displayVersion)
-                    .binDir(regResult.binDir())
-                    .installDir(regResult.installDir())
+                    .binDir(regResult.getBinDir())
+                    .installDir(regResult.getInstallDir())
                     .__action__("REGISTERED")
                     .build();
         }
@@ -144,13 +165,13 @@ public class ToolEnvInitCommand extends AbstractOutputCommand implements IAction
         // If registration failed and not in preinstalled mode, try to install
         if (!toolsMixin.isPreinstalledMode()) {
             InstallResult installResult = installTool(spec, progressWriter);
-            progressWriter.writeProgress("Tool " + toolName + " " + installResult.action() + " successfully");
+            progressWriter.writeProgress("Tool " + toolName + " " + installResult.getAction() + " successfully");
             return ToolSetupResult.builder()
                     .name(toolName)
                     .version(spec.getEffectiveVersion())
-                    .binDir(installResult.binDir())
-                    .installDir(installResult.installDir())
-                    .__action__(installResult.action())
+                    .binDir(installResult.getBinDir())
+                    .installDir(installResult.getInstallDir())
+                    .__action__(installResult.getAction())
                     .build();
         } else {
             throw new FcliSimpleException("Tool " + toolName + " version '" + requestedVersion + "' not found and preinstalled mode prevents installation");
