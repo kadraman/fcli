@@ -749,7 +749,7 @@ formatters:
             fcli-component:
               filePattern: fcli-component.adoc
               doc:
-                title: Fortify GitLab fcli Component
+                title: Fortify/components/fcli
                 description: Bootstrap fcli  for custom CI/CD workflows in GitLab.
                 contents: |
                   == Overview
@@ -921,7 +921,7 @@ formatters:
               filePattern: ast-scan-$eval{product}.adoc
               products: ${{'fod', 'ssc'}}
               doc:
-                title: Fortify GitLab AST Scan Component
+                title: Fortify/components/ast-scan
                 description: Run OpenText Application Security Testing (AST) scans in GitLab CI/CD pipelines
                 contents: |
                   == Overview
@@ -1144,7 +1144,7 @@ formatters:
               filePattern: ast-workflow-$eval{product}.adoc
               products: ${{'fod', 'ssc'}}
               doc:
-                title: Fortify Azure DevOps Integration
+                title: ast-workflow-script
                 description: Script-based AST scanning workflow for Azure DevOps pipelines
                 contents: |
                   == Overview
@@ -1273,6 +1273,12 @@ formatters:
     ssc: OpenText Application Security (Fortify Software Security Center)
     fod: OpenText Core Application Security (Fortify on Demand)
   
+  # Short product names for browser tab titles
+  
+  productShortNames:
+    ssc: SSC
+    fod: FoD
+  
   # ============================================================================
   # BOOTSTRAP COMPONENT ENV VAR DESCRIPTIONS
   # ============================================================================
@@ -1376,7 +1382,7 @@ formatters:
 
   ciSystemDoc: |
     = ${docTitle}
-    ${#isBlank(docSubtitle)?'':(':subtitle: '+docSubtitle+'\n')}:fcli-version: ${#fcliBuildProperties().fcliVersion}
+    ${#isBlank(docSubtitle)?'':(':subtitle: '+docSubtitle+'\n')}${#isBlank(tabSubtitle)?'':(':tabsubtitle: '+tabSubtitle+'\n')}:fcli-version: ${#fcliBuildProperties().fcliVersion}
     :bootstrap-component-title: ${bootstrapComponentTitle}
     :bootstrap-component-version: ${bootstrapComponentVersion}
     :ci-system: ${ciSystemKey}
@@ -1568,6 +1574,7 @@ steps:
   - var.set:
       fcliVersion: ${#fcliBuildProperties().fcliVersion}
       productNames: {fmt: productNames}
+      productShortNames: {fmt: productShortNames}
       ciSystems: {fmt: ciSystems}
       bootstrapComponents: {fmt: bootstrapComponents}
       fcliCiAction: {fmt: fcliCiAction}
@@ -1741,6 +1748,7 @@ steps:
                       product: ${product=='none'?'':product}  # Normalize 'none' to empty string
                       fortifyProductName: ${#isBlank(product)?'':productNames[product]}
                       docSubtitle: ${fortifyProductName}
+                      tabSubtitle: ${#isBlank(product)?'':productShortNames[product]}
                       outputFile: ${#action.docRenderer().processEvalExpressions(outputFilePattern, 1)}
                       
                   # Build snippets, combining generic and product-specific snippets
