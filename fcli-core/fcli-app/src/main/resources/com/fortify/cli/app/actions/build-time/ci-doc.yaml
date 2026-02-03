@@ -164,9 +164,10 @@ formatters:
               MBS file to be scanned.
           - names: USE_PACKAGE\nPACKAGE_EXTRA_OPTS\nSC_CLIENT_VERSION\nSC_CLIENT_HOME\nSOURCE_DIR
             desc: >-
-              These environment variables define packaging behavior. If `USE_PACKAGE` is specified, packaging will be skipped
-              and the given package or MBS file (which must already exist) will be used. To pass additional options to the
-              `scancentral package` command like `-bt` or `-bf`, use `PACKAGE_EXTRA_OPTS`.\n\nBy default:
+              These environment variables define packaging behavior. If `USE_PACKAGE` is specified, packaging will be skipped and the given package or MBS
+              file (which must already exist) will be used. To pass additional options to the `scancentral package` command
+              like `-bt` or `-bf`, use `PACKAGE_EXTRA_OPTS`. Note that the `-oss` option will be automatically added if Software Composition Analysis in enabled
+              in FoD SAST scan settings.\n\nBy default:
               \n* If `SC_CLIENT_HOME` is specified, the pre-installed ScanCentral Client at that location will be registered
               and used, skipping automatic installation. The path should point to the installation directory or binary.
               \n* `SC_CLIENT_VERSION` may be specified to request a specific ScanCentral Client version to be used. Allowed values:

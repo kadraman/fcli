@@ -33,6 +33,11 @@ cli.options:
       - `auto` (default) to use a pre-installed version if available, otherwise installs latest
     required: true
     default: ${#ifBlank(#env('SC_CLIENT_HOME'),#ifBlank(#env('SC_CLIENT_VERSION'),'auto'))}
+  rel:
+    names: --rel
+    description: |
+      Optional FoD release identifier for automatic detection of Software Composition Analysis (OSS scanning) requirements. When provided, the action will query the release SAST configuration to determine if the `-oss` flag should be added to the packaging command.
+    required: false
   sourceDir:
     names: --source-dir, -d
     description: |
@@ -63,7 +68,28 @@ steps:
       global.package.output: ${#resolveAgainstCurrentWorkDir(#isNotBlank(cli.usePackage)?cli.usePackage:cli.output)}
   - if: ${#isBlank(cli.usePackage)}
     steps:
+      - if: "${#isNotBlank(cli.rel) && !cli.extraOpts.contains('-oss') && !cli.extraOpts.contains(\"'-oss'\") && !cli.extraOpts.contains('\"-oss\"')}"
+        run.fcli:
+          DETECT_OSS_ENABLED:
+            cmd: fcli fod sast get-config --rel "${cli.rel}"
+            records.for-each:
+              record.var-name: sastConfig
+              do:
+                - var.set:
+                    package.ossEnabled: ${sastConfig.performOpenSourceAnalysis?:false}
+            on.success:
+              - log.info: 'Software Composition Analysis (OSS scanning) is ${package.ossEnabled?"enabled":"disabled"} in FoD release configuration${package.ossEnabled?", adding -oss flag to packaging command":""}'
+            on.fail:
+              - log.info: 'Unable to detect OSS scanning configuration, continuing without -oss flag'
+              - var.set:
+                  DETECT_OSS_ENABLED.status: 'WARNING'
+                  DETECT_OSS_ENABLED.statusReason: 'Unable to detect OSS scanning configuration'
+                  DETECT_OSS_ENABLED.dependencySkipReason:  # Clear to allow downstream steps
+                  DETECT_OSS_ENABLED.exitCode: 0            # Don't contribute to final exit code
+                  package.ossEnabled: false
+      - var.set:
+          effectiveExtraOpts: ${cli.extraOpts}${package.ossEnabled?' -oss':''}
       - run.fcli:
           SETUP_TOOLS: fcli tool env init "--tools=sc-client:${cli.scClientVersion}" ${#opt("--tool-definitions", cli.toolDefinitions)}
-          RUN_SC_CLIENT: fcli tool sc-client run --workdir ${cli.sourceDir} --logdir . -- package -o "${global.package.output}" ${cli.extraOpts}
+          RUN_SC_CLIENT: fcli tool sc-client run --workdir ${cli.sourceDir} --logdir . -- package -o "${global.package.output}" ${effectiveExtraOpts}
       

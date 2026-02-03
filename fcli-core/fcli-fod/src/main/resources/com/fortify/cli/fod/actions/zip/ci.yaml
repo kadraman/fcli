@@ -89,7 +89,7 @@ steps:
           - ${#actionCmdSkipFromEnvReason('SETUP', false)} # Skip if DO_SETUP==false
           
       PACKAGE_ACTION: 
-        cmd: ${#actionCmd('PACKAGE_ACTION', 'fod', 'package')} "--source-dir=${global.ci.sourceDir}"
+        cmd: ${#actionCmd('PACKAGE_ACTION', 'fod', 'package')} "--source-dir=${global.ci.sourceDir}" "--rel=${global.ci.rel}"
         skip.if-reason:
           - ${sast.skipReason} # Skip if SAST scan is skipped
           
