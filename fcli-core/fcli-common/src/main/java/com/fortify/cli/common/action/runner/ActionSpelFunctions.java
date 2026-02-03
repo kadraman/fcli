@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.runner;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.date;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.fcli;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.fortify;
+import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.internal;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.txt;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.workflow;
@@ -472,7 +473,14 @@ public class ActionSpelFunctions {
         var mapper = JsonHelper.getObjectMapper();
         var result = mapper.createArrayNode();
         o.properties()
-                .forEach(p -> result.add(mapper.createObjectNode().put("key", p.getKey()).set("value", p.getValue())));
+                .forEach(p -> {
+                    var entry = mapper.createObjectNode()
+                            .put("key", p.getKey());
+                    // Unwrap JsonNodeWrapper if present to avoid property access issues
+                    var value = p.getValue();
+                    entry.set("value", value);
+                    result.add(entry);
+                });
         return result;
     }
 
@@ -547,7 +555,7 @@ public class ActionSpelFunctions {
         return String.format("Copyright (c) %s Open Text", Year.now().getValue());
     }
     
-    @SpelFunction(cat=util, desc="""
+    @SpelFunction(cat=internal, desc="""
                 Returns basic information about the local git repository for the given source directory, or null if the
                 directory is not inside a git working tree. Only constant-time lookups are performed (HEAD commit only).
                 Structure:
@@ -726,6 +734,8 @@ public class ActionSpelFunctions {
             }
 
     }
+    
+
     
     private static final class ActionSpelFunctionsHelper {
         private static final String envOrDefault(String prefix, String suffix, String defaultValue) {
