@@ -1859,7 +1859,7 @@ steps:
       
       - var.set:
           ciSystemSections..: |
-            === link:${ciSystemKey}/index.html[${ciSystemTitle}]
+            == link:${ciSystemKey}/index.html[${ciSystemTitle}]
             
             ${#ifBlank(ciSystemDef.description, '')}
             
@@ -1929,13 +1929,13 @@ steps:
                 steps:
                 - var.set:
                     productSections..: |
-                      ==== ${fortifyProductName}
+                      === ${fortifyProductName}
                       
                       ${#join("\n", docListEntries)}
           
           - var.set:
               versionSections..: |
-                === link:${ciSystemIntegrationVersion}/index.html[${versionTitle}]
+                == link:${ciSystemIntegrationVersion}/index.html[${versionTitle}]
                 
                 ${#join("\n\n", productSections)}
       
@@ -1990,7 +1990,7 @@ steps:
                 steps:
                 - var.set:
                     productSections..: |
-                      === ${fortifyProductName}
+                      == ${fortifyProductName}
                       
                       ${#join("\n", docListEntries)}
           
