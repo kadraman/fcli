@@ -69,6 +69,18 @@ cli.options:
 # 6. Base table/cell formatters (low-level plumbing, rarely changed)
 
 formatters:
+# ============================================================================
+  # PRODUCT NAMES
+  # ============================================================================
+  # Full & short product names for documentation titles
+  
+  productNames:
+    ssc: OpenText Application Security (Fortify Software Security Center)
+    fod: OpenText Core Application Security (Fortify on Demand)
+  productShortNames:
+    ssc: SSC
+    fod: FoD
+
   # ============================================================================
   # FCLI CI ACTION CONFIGURATION STRUCTURE
   # ============================================================================
@@ -461,6 +473,13 @@ formatters:
       description: Seamless integration of OpenText Fortify Application Security Testing into GitHub Actions workflows
       versions:
         v3.0.x:
+          resources:
+            - title: Marketplace Listing
+              url: https://github.com/marketplace/actions/fortify-ast-scan
+            - title: Action Repository
+              url: https://www.github.com/fortify/github-action
+            - title: Starter workflow
+              url: https://github.com/actions/starter-workflows/blob/main/code-scanning/fortify.yml
           bootstrap:
             component: fortifySetup
             version: v2.1.x
@@ -531,6 +550,8 @@ formatters:
                   == Migrating from fortify/github-action/setup@v2
 
                   $eval{snippets.migrationSectionContents}
+
+                  $eval{resourcesSection}
                 snippets:
                   generic:
                     bootstrapNotes: |
@@ -628,6 +649,8 @@ formatters:
                   == Migrating from fortify/github-action@v2
 
                   $eval{snippets.migrationSectionContents}
+
+                  $eval{resourcesSection}
                 snippets:
                   generic:
                     bootstrapNotes: |
@@ -726,7 +749,7 @@ formatters:
       title: Fortify GitLab Components
       description: Seamless integration of OpenText Fortify Application Security Testing into GitLab CI/CD pipelines
       versions:
-        # IMPORTANT: For v3.0.x and later, add GITLAB_TOKEN requirement to documentation
+        # IMPORTANT: For v3.0.x and later, add GITLAB_TOKEN requirement to documentation (assuming fcli-based report publishing)
         v2.0.x:
           bootstrap:
             component: fortifyGitLabFcli
@@ -893,6 +916,8 @@ formatters:
                     script:
                       - ${FCLI} -V
                   ----
+
+                  $eval{resourcesSection}
                 snippets:
                   generic:
                     bootstrapNotes: |
@@ -1055,6 +1080,8 @@ formatters:
                   Debug output publication is controlled by the `debug` component input. When enabled, the
                   `<job-name>-publish-debug-output` job will collect and publish logs, package files, and FPR files
                   as GitLab artifacts.
+
+                  $eval{resourcesSection}
                 snippets:
                   generic:
                     bootstrapNotes: |
@@ -1264,20 +1291,6 @@ formatters:
                                 # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
                                 FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.1 for stability
                       ----
-  # ============================================================================
-  # PRODUCT NAMES
-  # ============================================================================
-  # Full product names for documentation titles
-  
-  productNames:
-    ssc: OpenText Application Security (Fortify Software Security Center)
-    fod: OpenText Core Application Security (Fortify on Demand)
-  
-  # Short product names for browser tab titles
-  
-  productShortNames:
-    ssc: SSC
-    fod: FoD
   
   # ============================================================================
   # BOOTSTRAP COMPONENT ENV VAR DESCRIPTIONS
@@ -1441,7 +1454,7 @@ formatters:
 
     ${#join("", bootstrapEnvVarCells)}${#join("", fcliEnvVarCells)}
     |===
-  
+    
   asciiDocFragmentBootstrapSection: |
     === Bootstrap & Setup
 
@@ -1475,7 +1488,12 @@ formatters:
     
     * Any fcli action references in this table refer to actions in the `fcli ${product}` module; please see
       `fcli ${product} action help <action-name>` for more information.
+
+  asciiDocResourceEntry: |
+    * ${resource.title}: link:${#action.docRenderer().processEvalExpressions(resource.url, 1)}[${#action.docRenderer().processEvalExpressions(resource.url, 1)}]
   
+  asciiDocResourcesSection: |
+    ${#isEmpty(outputResources)?'':'== Resources\n\n'+#join("", outputResources)}
 
 steps:
   # ==========================================================================
@@ -1779,6 +1797,25 @@ steps:
                   # Set fcliCiActionSections for current product
                   - var.set:
                       fcliCiActionSections: ${#this['fcliCiAction_'+product+'_sessionAsciiDocSections']+'\n\n'+#this['fcliCiAction_'+product+'_defaultAsciiDocSections']}
+
+                  # Build resources section
+                  - var.rm: [outputResources]
+                  - if: ${ciSystemIntegrationVersionDef.resources != null}
+                    records.for-each:
+                      from: ${ciSystemIntegrationVersionDef.resources}
+                      record.var-name: resource
+                      do:
+                      - if: ${resource['if']==null}
+                        var.set:
+                          resourceIfCondition: true
+                      - if: ${resource['if']!=null}
+                        var.set:
+                          resourceIfCondition: ${#action.docRenderer().processEvalExpressions(resource['if'], 1)}
+                      - if: ${resourceIfCondition == true || resourceIfCondition == 'true'}
+                        var.set:
+                          outputResources..: {fmt: asciiDocResourceEntry}
+                  - var.set:
+                      resourcesSection: {fmt: asciiDocResourcesSection}
 
                   # Render document contents with CI context
                   - var.set:
