@@ -29,10 +29,6 @@ View all v3.x releases
 {% endfor %}
 </ul>
 </details>
-{% endif %}
-{% endfor %}
-</ul>
-</details>
 ++++
 
 ==== Legacy Versions
