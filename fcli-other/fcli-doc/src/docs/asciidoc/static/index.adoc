@@ -18,13 +18,14 @@ Note that in general, maintenance is performed on the latest release version onl
 <p style="margin-left: 20px; color: #666;">Always points to the newest v3.x release. <strong>Bookmark this link</strong> to stay up-to-date with the latest documentation.</p>
 
 <details style="margin-top: 20px;">
-<summary style="cursor: pointer; font-weight: bold; color: #0066cc; list-style-position: outside; padding-left: 5px;">
+<summary style="cursor: pointer; font-weight: bold; color: #0066cc; list-style: none; padding-left: 0;">
 ▶ View all v3.x releases
 </summary>
 <ul style="margin-top: 10px;">
 {% for version in site.data.versions.release %}
 {% if version contains 'v3' %}
-   <li><a href="{{ site.baseurl }}/{{ version }}">{{ version }}</a>{% if version == site.data.versions.release[0] %} <span style="color: #28a745; font-weight: bold;">(current)</span>{% endif %}</li>
+   <li style="display: inline;"><a href="{{ site.baseurl }}/{{ version }}">{{ version }}</a>{% if version == site.data.versions.release[0] %}<span style="color: #28a745; font-weight: bold;"> (current)</span>{% endif %}</li>
+   {% unless forloop.last %}{% if version contains 'v3' %}<br>{% endif %}{% endunless %}
 {% endif %}
 {% endfor %}
 </ul>
