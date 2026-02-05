@@ -1421,10 +1421,9 @@ formatters:
     Description: "${#action.docRenderer().text().render((envVar.realNode!=null?envVar.realNode:envVar).desc)}"
   
   asciiDocTable: |
-    [%autowidth]
+    [%autowidth,%header]
     |===
-    |Environment Variable|Description 
-    
+    |Environment Variable|Description
     ${#join("", asciiDocCells)}
     |===
   
@@ -1437,7 +1436,7 @@ formatters:
     
     ${#action.docRenderer().asciidoc().currentProduct(product).render(sectionDef.overview)}
     
-    [%autowidth]
+    [%autowidth,%header]
     |===
     |Environment Variable|Description
     ${#join("", asciiDocCells)}
@@ -1448,10 +1447,9 @@ formatters:
 
     ${bootstrapOverview}
 
-    [%autowidth]
+    [%autowidth,%header]
     |===
     |Environment Variable|Description
-
     ${#join("", bootstrapEnvVarCells)}${#join("", fcliEnvVarCells)}
     |===
     
@@ -1460,10 +1458,9 @@ formatters:
 
     The fcli `ci` action uses the following environment variables to control bootstrapping behavior for supporting tools.
 
-    [%autowidth]
+    [%autowidth,%header]
     |===
     |Environment Variable|Description
-
     ${#join("", fcliEnvVarCells)}
     |===
   
