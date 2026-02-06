@@ -127,9 +127,11 @@ public record GitLabEnvironment(
             ? CiPullRequest.active(EnvHelper.env(ENV_MR_IID), targetBranch)
             : CiPullRequest.inactive();
         
+        var pipelineIdValue = EnvHelper.env(ENV_PIPELINE_ID);
+        
         return GitLabEnvironment.builder()
             .projectId(projectIdStr)
-            .pipelineId(EnvHelper.env(ENV_PIPELINE_ID))
+            .pipelineId(StringUtils.isNotBlank(pipelineIdValue) ? pipelineIdValue : null)
             .ciRepository(ciRepository)
             .ciBranch(ciBranch)
             .ciCommit(ciCommit)

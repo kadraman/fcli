@@ -67,7 +67,7 @@ class BitbucketEnvironmentTest {
         assertNotNull(env);
         assertEquals("refs/pull-requests/42/merge", env.ciBranch().full());
         assertEquals(true, env.pullRequest().active());
-        assertEquals(42, env.pullRequest().id());
+        assertEquals("42", env.pullRequest().id());
         assertEquals("main", env.pullRequest().target());
     }
 

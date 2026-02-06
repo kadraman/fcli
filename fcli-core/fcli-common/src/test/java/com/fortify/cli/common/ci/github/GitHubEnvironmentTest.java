@@ -88,7 +88,7 @@ public class GitHubEnvironmentTest {
         
         assertNotNull(env.pullRequest());
         assertEquals(true, env.pullRequest().active());
-        assertEquals(123, env.pullRequest().id());
+        assertEquals("123", env.pullRequest().id());
         assertEquals("main", env.pullRequest().target());
     }
     

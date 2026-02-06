@@ -55,7 +55,7 @@ public class AdoEnvironmentTest {
         assertEquals("https://dev.azure.com/myorg/", env.organization());
         assertEquals("MyProject", env.project());
         assertEquals("11111111-2222-3333-4444-555555555555", env.repositoryId());
-        assertEquals(101, env.buildId());
+        assertEquals("101", env.buildId());
         
         assertNotNull(env.ciRepository());
         assertEquals("/home/vsts/work/1/s", env.ciRepository().workDir());
@@ -102,10 +102,10 @@ public class AdoEnvironmentTest {
         
         assertNotNull(env.pullRequest());
         assertEquals(true, env.pullRequest().active());
-        assertEquals(123, env.pullRequest().id());
+        assertEquals("123", env.pullRequest().id());
         assertEquals("develop", env.pullRequest().target());
         assertEquals("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", env.repositoryId());
-        assertEquals(202, env.buildId());
+        assertEquals("202", env.buildId());
     }
     
     @Test
