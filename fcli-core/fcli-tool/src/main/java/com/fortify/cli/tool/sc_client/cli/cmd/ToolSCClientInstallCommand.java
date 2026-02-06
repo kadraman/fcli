@@ -101,6 +101,9 @@ public class ToolSCClientInstallCommand extends AbstractToolInstallCommand {
             installJre(installer);
         }
         
+        // Save the descriptor with updated JRE information
+        descriptor.save(getTool().getToolName(), installer.getVersionDescriptor());
+        
         installer.installGlobalBinScript(BinScriptType.bash, "scancentral", "bin/scancentral");
         installer.installGlobalBinScript(BinScriptType.bat, "scancentral.bat", "bin/scancentral.bat");
         installer.installGlobalBinScript(BinScriptType.bash, "pwtool", "bin/pwtool");
