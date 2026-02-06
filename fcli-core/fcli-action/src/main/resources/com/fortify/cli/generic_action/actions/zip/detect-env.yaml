@@ -23,6 +23,9 @@ steps:
       # Set default ci values. Where possible, steps below should override these
       # variables with CI-specific values
       - var.set:
+          fcliBuildProps:                  ${#fcliBuildProperties()}
+          global.ci.fcliVersion:           ${fcliBuildProps.fcliVersion} # Fcli version
+          global.ci.fcliBuildInfo:         ${fcliBuildProps.fcliBuildInfo} # Fcli build information
           global.ci.name:                  # Name of current CI system
           global.ci.id:                    # Id of current CI system, used to look up <id>-* actions 
           global.ci.qualifiedRepoName:     # Fully qualified repository name
