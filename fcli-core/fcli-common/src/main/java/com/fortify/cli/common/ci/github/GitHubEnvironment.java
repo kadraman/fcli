@@ -118,7 +118,7 @@ public record GitHubEnvironment(
             .build();
         
         var pullRequest = isPr 
-            ? CiPullRequest.active(prInfo, targetBranch)
+            ? CiPullRequest.active(prInfo != null ? prInfo.toString() : null, targetBranch)
             : CiPullRequest.inactive();
         
         return GitHubEnvironment.builder()
