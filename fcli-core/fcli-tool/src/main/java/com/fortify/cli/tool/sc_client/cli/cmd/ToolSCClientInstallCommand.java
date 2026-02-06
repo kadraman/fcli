@@ -122,7 +122,7 @@ public class ToolSCClientInstallCommand extends AbstractToolInstallCommand {
     }
     
     private void installJre(ToolInstaller scClientInstaller) throws IOException {
-        var platform = StringUtils.isNotBlank(jrePlatform) ? jrePlatform : PlatformHelper.getPlatform();
+        var platform = StringUtils.isNotBlank(jrePlatform) ? jrePlatform : PlatformHelper.getPlatform(true);
         new SCClientJREInstaller(scClientInstaller).installJre(platform);
     }
     
