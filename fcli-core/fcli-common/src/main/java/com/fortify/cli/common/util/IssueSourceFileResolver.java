@@ -103,6 +103,32 @@ public class IssueSourceFileResolver {
         return FileUtils.pathToString(resolve(Path.of(issuePath)), separatorOnReturn.getSeparatorChar());
     }
     
+    /**
+     * Check if the given issue path can be resolved to an existing file at the specified line number.
+     * This is useful for validating issue locations before creating annotations or reports.
+     * 
+     * @param issuePath The Fortify-reported source file path
+     * @param lineNumber The line number to validate (1-based)
+     * @return true if sourcePath is null (no validation possible), or if the resolved file exists 
+     *         as a regular file and the line number is valid (>0)
+     */
+    public final boolean exists(String issuePath, int lineNumber) {
+        if ( sourcePath == null ) {
+            return true; // No validation possible without source path
+        }
+        if ( lineNumber <= 0 ) {
+            return false; // Invalid line number
+        }
+        var resolvedPath = resolve(Path.of(issuePath));
+        if ( resolvedPath == null ) {
+            return false;
+        }
+        var fullPath = sourcePath.resolve(resolvedPath);
+        return Files.exists(fullPath) && Files.isRegularFile(fullPath);
+        // Note: We don't validate the actual line count as it would require reading the entire file,
+        // which could be expensive for large codebases. GitHub will handle non-existent lines gracefully.
+    }
+    
     private final SourceFileIndex createIndexIfNull(SourceFileIndex index) {
         if ( index==null ) {
             index = new SourceFileIndex(sourcePath);

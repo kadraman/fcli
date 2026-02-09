@@ -112,8 +112,20 @@ steps:
   - if: ${cli.publish==true}
     steps:
       - var.set:
-          githubUpload: ${#github.uploadSarif(reportContents)}
-      - log.info: Report published to GitHub Code Scanning
+          uploadResult: ${#github.tryUploadSarif(reportContents)}
+      - if: ${uploadResult.success}
+        log.info: Report published to GitHub Code Scanning
+      - if: ${!uploadResult.success && uploadResult.reason=='ghas_unavailable'}
+        steps:
+          - var.set:
+              checkRunSummary: {fmt: checkRunSummary}
+          - var.set:
+              checkRunAnnotations..: {fmt: checkRunAnnotation}
+          - var.set:
+              checkRun: ${#github.createCheckRunWithAnnotations('Fortify SAST Scan', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+          - log.info: Published as GitHub Check Run (free tier - GHAS not available)
+      - if: ${!uploadResult.success && uploadResult.reason!='ghas_unavailable'}
+        throw: 'Failed to publish report: ${uploadResult.message}'
 
 formatters:
   github-sast-report:
@@ -206,3 +218,36 @@ formatters:
                 }] 
             }} 
         }
+        
+  # Check Run formatters for free-tier GitHub reporting
+  checkRunSummary: |
+    ## Fortify SAST Scan Results
+    
+    **Application:** ${av.project.name}  
+    **Version:** ${av.name}  
+    **Total Issues:** ${issues?.size()?:0}
+    
+    ### Issues by Severity
+    
+    | Severity | Count |
+    |----------|-------|
+    | Critical | ${issues?.^[friority=='Critical']?.size()?:0} |
+    | High | ${issues?.^[friority=='High']?.size()?:0} |
+    | Medium | ${issues?.^[friority=='Medium']?.size()?:0} |
+    | Low | ${issues?.^[friority=='Low']?.size()?:0} |
+    
+    See annotations below for detailed findings at specific file locations.
+    
+  checkRunAnnotation:
+    if: ${issueSourceFileResolver.exists(issue.fullFileName, issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber)}
+    path: ${issueSourceFileResolver.resolve(issue.fullFileName)}
+    start_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
+    end_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
+    annotation_level: ${(issue.friority matches "(Critical|High)") ? "warning":"notice"}
+    title: ${issue.issueName}
+    message: |
+      **${issue.issueName}** (Severity: ${issue.friority})
+      
+      ${issue.details?.brief}
+      
+      [View in SSC](${#ssc.issueBrowserUrl(issue,fs)})
