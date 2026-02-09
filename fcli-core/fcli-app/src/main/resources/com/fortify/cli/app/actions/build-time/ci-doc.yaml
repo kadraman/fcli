@@ -1245,7 +1245,13 @@ formatters:
                                 script: |
                                   # Bootstrap fcli and Fortify tools
                                   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                                  npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
+                                  # Add fcli to PATH
+                                  # - For bash tasks
+                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                                  # - For PowerShell tasks
+                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
+                                  # - To expose fcli path for subsequent tasks
+                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
                                   fcli action run ci  # Or any other fcli-based custom workflow
                               env:
                                 FOD_URL: $(FOD_URL)
@@ -1282,7 +1288,13 @@ formatters:
                                 script: |
                                   # Bootstrap fcli and Fortify tools
                                   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                                  npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
+                                  # Add fcli to PATH
+                                  # - For bash tasks
+                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                                  # - For PowerShell tasks
+                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
+                                  # - To expose fcli path for subsequent tasks
+                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
                                   fcli action run ci  # Or any other fcli-based custom workflow
                               env:
                                 SSC_URL: $(SSC_URL)
@@ -1759,8 +1771,8 @@ steps:
                   from: ${outputProducts}
                   record.var-name: product
                   do:
-                  # Clear all variables from previous product iteration
-                  - var.rm: [product, fortifyProductName, docSubtitle, tabSubtitle, outputFile, snippets, bootstrapEnvVarCells, fcliEnvVarCells, bootstrapOverview, bootstrapSection, fcliCiActionSections, outputResources, resourceIfCondition, resourcesSection, docContents]
+                  # Clear all variables from previous product iteration (except loop variable 'product')
+                  - var.rm: [fortifyProductName, docSubtitle, tabSubtitle, outputFile, snippets, bootstrapEnvVarCells, fcliEnvVarCells, bootstrapOverview, bootstrapSection, fcliCiActionSections, outputResources, resourceIfCondition, resourcesSection, docContents]
                   - var.set: # Set product-specific variables
                       product: ${product=='none'?'':product}  # Normalize 'none' to empty string
                       fortifyProductName: ${#isBlank(product)?'':productNames[product]}
