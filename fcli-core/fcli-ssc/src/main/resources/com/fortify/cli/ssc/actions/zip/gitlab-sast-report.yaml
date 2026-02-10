@@ -42,13 +42,13 @@ cli.options:
   sourceDir:
     names: --source-dir
     required: false
-    description: "(DEPRECATED: use --workspace-dir) Alias for --workspace-dir"
+    description: "Source directory that was scanned - used for prioritizing path matches when multiple files have the same name (e.g., index.js in src/ vs node_modules/)"
   
 steps:
   - var.set:
       av: ${#ssc.appVersion(cli.appversion)}
       fs: ${#ssc.filterSet(av, cli.filterset)}
-      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir?:cli.sourceDir})}
+      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
   - log.progress: Loading latest static scan
   - rest.call:
       artifacts:

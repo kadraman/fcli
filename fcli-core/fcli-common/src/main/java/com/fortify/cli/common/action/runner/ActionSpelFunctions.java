@@ -513,15 +513,20 @@ public class ActionSpelFunctions {
             """,
             returns="Issue source file resolver") 
     public static final POJONode issueSourceFileResolver(
-            @SpelFunctionParam(name="config", desc="configuration; must contain `workspaceDir` property (or deprecated `sourceDir` as fallback)") Map<String, String> config) 
+            @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {
-        // Use workspaceDir if present, otherwise fall back to sourceDir for backward compatibility
         var workspaceDir = config.get("workspaceDir");
-        if (StringUtils.isBlank(workspaceDir)) {
-            workspaceDir = config.get("sourceDir"); // Deprecated fallback
+        var sourceDir = config.get("sourceDir");
+        
+        // For backward compatibility: if only sourceDir provided (old usage), use it as workspaceDir
+        if (StringUtils.isBlank(workspaceDir) && StringUtils.isNotBlank(sourceDir)) {
+            workspaceDir = sourceDir;
+            sourceDir = null; // Don't use as sourcePath since it's also the workspace
         }
+        
         var builder = IssueSourceFileResolver.builder()
-                .workspacePath(StringUtils.isBlank(workspaceDir) ? null : Path.of(workspaceDir));
+                .workspacePath(StringUtils.isBlank(workspaceDir) ? null : Path.of(workspaceDir))
+                .sourcePath(StringUtils.isBlank(sourceDir) ? null : Path.of(sourceDir));
         return new POJONode(builder.build());
     }
 

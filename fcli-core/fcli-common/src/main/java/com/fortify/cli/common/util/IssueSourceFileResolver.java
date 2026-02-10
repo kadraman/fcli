@@ -15,7 +15,6 @@ package com.fortify.cli.common.util;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,6 +61,8 @@ public class IssueSourceFileResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IssueSourceFileResolver.class);
     /** Workspace/repository root directory path for indexing and resolving file paths */
     @Getter private final Path workspacePath;
+    /** Optional source directory that was scanned - used for prioritizing matches when multiple files have the same name */
+    @Getter private final Path sourcePath;
     @Builder.Default private final OnNoMatch onNoMatch = OnNoMatch.ORIGINAL;
     @Builder.Default private final FileSeparator separatorOnReturn = FileSeparator.LINUX;
     private final AtomicReference<SourceFileIndex> indexReference = new AtomicReference<>();
@@ -138,7 +139,7 @@ public class IssueSourceFileResolver {
     
     private final SourceFileIndex createIndexIfNull(SourceFileIndex index) {
         if ( index==null ) {
-            index = new SourceFileIndex(workspacePath);
+            index = new SourceFileIndex(workspacePath, sourcePath);
         }
         return index;
     }
@@ -155,14 +156,33 @@ public class IssueSourceFileResolver {
     }
     
     private static final class SourceFileIndex {
-        /** Full relative paths, like src/main/java/com/fortify/X.java */
-        private final Map<String,Path> fullRelativePathsIndex;
-        /** Full and partial relative paths, like src/main/java/com/fortify/X.java, com/fortify/X.java, X.java */ 
-        private final Map<String,Path> fullAndPartialRelativePathsIndex;
+        /** Full and partial relative paths, like src/main/java/com/fortify/X.java, com/fortify/X.java, X.java.
+         * Values are lists to handle multiple files with the same name (e.g., index.js in multiple directories) */ 
+        private final Map<String,java.util.List<Path>> fullAndPartialRelativePathsIndex;
+        /** Optional source path (relative to workspace) for prioritizing matches */
+        private final Path sourcePathRelative;
         
-        private SourceFileIndex(Path workspacePath) {
-            this.fullRelativePathsIndex = createFullRelativePathsIndex(workspacePath);
-            this.fullAndPartialRelativePathsIndex = createFullAndPartialRelativePathsIndex(fullRelativePathsIndex.values());
+        private SourceFileIndex(Path workspacePath, Path sourcePath) {
+            this.sourcePathRelative = computeSourcePathRelative(workspacePath, sourcePath);
+            this.fullAndPartialRelativePathsIndex = createFullAndPartialRelativePathsIndex(workspacePath);
+        }
+        
+        private static Path computeSourcePathRelative(Path workspacePath, Path sourcePath) {
+            if ( workspacePath==null || sourcePath==null ) { return null; }
+            
+            var normalizedWorkspace = workspacePath.normalize().toAbsolutePath();
+            var absoluteSource = sourcePath.isAbsolute() 
+                ? sourcePath.normalize() 
+                : normalizedWorkspace.resolve(sourcePath).normalize();
+            
+            if ( absoluteSource.startsWith(normalizedWorkspace) ) {
+                return normalizedWorkspace.relativize(absoluteSource);
+            } else {
+                if ( LOG.isWarnEnabled() ) {
+                    LOG.warn("sourceDir {} is not under workspaceDir {}, will not prioritize matches", absoluteSource, normalizedWorkspace);
+                }
+                return null;
+            }
         }
         
         /**
@@ -174,52 +194,80 @@ public class IssueSourceFileResolver {
          * <p>If no match is found in {@link #fullAndPartialRelativePathsIndex}, this method will then attempt to match any of 
          * the sub-paths in the given path against {@link #fullRelativePathsIndex}, which, given a source path
          * <code>src/main/java/com/fortify/X.java</code>, will match an input path like 
-         * <code>any/leading/dir/src/main/java/com/fortify/X.java</code>, but not <code>any/leading/dir/com/fortify/X.java</code>.</p> 
+         * <code>any/leading/dir/src/main/java/com/fortify/X.java</code>, but not <code>any/leading/dir/com/fortify/X.java</code>.</p>
+         * 
+         * <p>When multiple files match (e.g., both <code>src/index.js</code> and <code>src/node_modules/pkg/index.js</code>),
+         * this method prioritizes matches under {@link #sourcePath} if provided, then selects the shortest path.</p>
          */
         protected final Path resolve(Path path) {
             if ( path==null ) { return null; }
             var normalizedPath = path.normalize();
-            var result = fullAndPartialRelativePathsIndex.get(pathToString(normalizedPath));
-            return result!=null ? result : resolveSubPathFromFullRelativePathsIndex(path);
+            var candidates = fullAndPartialRelativePathsIndex.get(pathToString(normalizedPath));
+            return candidates!=null ? selectBestCandidate(candidates) : resolveByStrippingLeadingDirs(normalizedPath);
         }
 
-        private Path resolveSubPathFromFullRelativePathsIndex(Path normalizedPath) {
-            var result = fullRelativePathsIndex.get(pathToString(normalizedPath));
-            if ( result==null ) {
-                var nameCount = normalizedPath.getNameCount();
-                if ( nameCount > 1 ) {
-                    return resolveSubPathFromFullRelativePathsIndex(normalizedPath.subpath(1, nameCount));
+        /**
+         * Select the best candidate from a list of matching paths.
+         * Priority: 1) paths under sourcePath, 2) shortest path (fewest components)
+         */
+        private Path selectBestCandidate(java.util.List<Path> candidates) {
+            if ( candidates==null || candidates.isEmpty() ) { return null; }
+            if ( candidates.size()==1 ) { return candidates.get(0); }
+            
+            // Try to prefer paths under sourcePath if provided
+            if ( sourcePathRelative!=null ) {
+                var inSourceDir = candidates.stream()
+                    .filter(p -> p.startsWith(sourcePathRelative))
+                    .toList();
+                if ( !inSourceDir.isEmpty() ) {
+                    candidates = inSourceDir;
+                    if ( LOG.isDebugEnabled() && candidates.size() > 1 ) {
+                        LOG.debug("Multiple matches found under sourceDir {}: {}", sourcePathRelative, candidates);
+                    }
                 }
             }
+            
+            // Among remaining candidates, prefer shortest path
+            var result = candidates.stream()
+                .min(java.util.Comparator.comparingInt(Path::getNameCount))
+                .orElse(candidates.get(0));
+            
+            if ( LOG.isDebugEnabled() && candidates.size() > 1 ) {
+                LOG.debug("Selected {} from candidates: {}", result, candidates);
+            }
+            
             return result;
         }
 
+        private Path resolveByStrippingLeadingDirs(Path normalizedPath) {
+            var nameCount = normalizedPath.getNameCount();
+            if ( nameCount <= 1 ) { return null; }
+            
+            var subPath = normalizedPath.subpath(1, nameCount);
+            var candidates = fullAndPartialRelativePathsIndex.get(pathToString(subPath));
+            return candidates!=null ? selectBestCandidate(candidates) : resolveByStrippingLeadingDirs(subPath);
+        }
+
         @SneakyThrows
-        private static final Map<String, Path> createFullRelativePathsIndex(Path workspacePath) {
-            var result = new HashMap<String, Path>();
+        private static final Map<String, java.util.List<Path>> createFullAndPartialRelativePathsIndex(Path workspacePath) {
+            var result = new HashMap<String, java.util.List<Path>>();
             if ( workspacePath!=null && Files.isDirectory(workspacePath) ) {
                 var normalizedWorkspacePath = workspacePath.normalize();
                 try (Stream<Path> stream = Files.walk(normalizedWorkspacePath)) {
                     stream.filter(Files::isRegularFile)
-                        .forEach(p->addPathToFullRelativePathsIndex(result, normalizedWorkspacePath.relativize(p.normalize())));
+                        .forEach(p->{
+                            var fullRelativePath = normalizedWorkspacePath.relativize(p.normalize());
+                            if ( LOG.isTraceEnabled() ) { LOG.trace("Adding source path {} to index", fullRelativePath); }
+                            addPathToFullAndPartialRelativePathsIndex(result, fullRelativePath, fullRelativePath);
+                        });
                 }
             }
             return result;
         }
-
-        private static final void addPathToFullRelativePathsIndex(Map<String, Path> result, Path fullRelativePath) {
-            if ( LOG.isTraceEnabled() ) { LOG.trace("Adding source path {} to index", fullRelativePath); }
-            result.put(pathToString(fullRelativePath), fullRelativePath);
-        }
         
-        private static final Map<String, Path> createFullAndPartialRelativePathsIndex(Collection<Path> fullRelativePaths) {
-            var result = new HashMap<String, Path>();
-            fullRelativePaths.forEach(p->addPathToFullAndPartialRelativePathsIndex(result, p, p));
-            return result;
-        }
-        
-        private static final void addPathToFullAndPartialRelativePathsIndex(Map<String, Path> index, Path fullRelativePath, Path partialRelativePath) {
-            index.put(pathToString(partialRelativePath), fullRelativePath);
+        private static final void addPathToFullAndPartialRelativePathsIndex(Map<String, java.util.List<Path>> index, Path fullRelativePath, Path partialRelativePath) {
+            var key = pathToString(partialRelativePath);
+            index.computeIfAbsent(key, k -> new java.util.ArrayList<>()).add(fullRelativePath);
             var nameCount = partialRelativePath.getNameCount(); 
             if ( nameCount > 1 ) {
                 addPathToFullAndPartialRelativePathsIndex(index, fullRelativePath, partialRelativePath.subpath(1, nameCount));
