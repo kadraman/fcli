@@ -95,7 +95,7 @@ public record BitbucketEnvironment(
             EnvHelper.env(ENV_GIT_SSH_ORIGIN));
 
         var ciRepository = CiRepository.builder()
-            .workDir(workDir)
+            .workspaceDir(workDir)
             .remoteUrl(remoteUrl)
             .name(CiRepositoryName.builder()
                 .short_(repoSlug)

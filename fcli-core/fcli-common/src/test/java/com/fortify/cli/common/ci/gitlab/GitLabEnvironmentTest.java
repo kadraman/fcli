@@ -55,7 +55,7 @@ public class GitLabEnvironmentTest {
         assertEquals("9876", env.pipelineId());
         
         assertNotNull(env.ciRepository());
-        assertEquals("/builds/project", env.ciRepository().workDir());
+        assertEquals("/builds/project", env.ciRepository().workspaceDir());
         assertEquals("https://gitlab.example.com/group/myproject.git", env.ciRepository().remoteUrl());
         assertEquals("myproject", env.ciRepository().name().short_());
         assertEquals("group/myproject", env.ciRepository().name().full());

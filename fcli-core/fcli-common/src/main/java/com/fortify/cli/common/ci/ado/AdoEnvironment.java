@@ -103,7 +103,7 @@ public record AdoEnvironment(
         }
         
         var ciRepository = CiRepository.builder()
-            .workDir(EnvHelper.envOrDefault(ENV_SOURCES_DIRECTORY,
+            .workspaceDir(EnvHelper.envOrDefault(ENV_SOURCES_DIRECTORY,
                 EnvHelper.envOrDefault(ENV_DEFAULT_WORKING_DIRECTORY, ".")))
             .remoteUrl(null)  // Not readily available in environment
             .name(CiRepositoryName.builder()

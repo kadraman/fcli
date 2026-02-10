@@ -43,18 +43,25 @@ import lombok.SneakyThrows;
  * against an actual repository path.</p>
  * 
  * <p>To work around these issues, this class attempts to map Fortify-provided issue source file 
- * paths against local file system paths relative to a given source code directory, basically 
- * finding the longest matching path suffix.</p>
+ * paths against local file system paths relative to a given workspace/repository root directory, 
+ * using partial path matching to find the longest matching suffix. The {@link #workspacePath} should 
+ * be set to the workspace/repository root directory for proper resolution.</p>
+ * 
+ * <p><strong>Example:</strong> If the workspace is {@code /home/runner/workspace} containing 
+ * {@code sources/my-pkg/sub-path/test.js}, and Fortify scanned only {@code sources/my-pkg}, 
+ * Fortify will report {@code sub-path/test.js}. This resolver will match it against the indexed 
+ * {@code sources/my-pkg/sub-path/test.js} and return the full workspace-relative path.</p>
  *  
  * @author Ruud Senden
  */
 // TODO Also see TODO comments in IssueSourceFileResolverTest
-// TODO How to handle absolute paths? Always return as-is (or null if not existing and OnNoMatch.NULL)? Or try to resolve against sourcePath?
+// TODO How to handle absolute paths? Always return as-is (or null if not existing and OnNoMatch.NULL)? Or try to resolve against workspacePath?
 // TODO How to handle drive letters (with either absolute or relative path)?
 @Builder @Reflectable
 public class IssueSourceFileResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IssueSourceFileResolver.class);
-    @Getter private final Path sourcePath;
+    /** Workspace/repository root directory path for indexing and resolving file paths */
+    @Getter private final Path workspacePath;
     @Builder.Default private final OnNoMatch onNoMatch = OnNoMatch.ORIGINAL;
     @Builder.Default private final FileSeparator separatorOnReturn = FileSeparator.LINUX;
     private final AtomicReference<SourceFileIndex> indexReference = new AtomicReference<>();
@@ -109,11 +116,11 @@ public class IssueSourceFileResolver {
      * 
      * @param issuePath The Fortify-reported source file path
      * @param lineNumber The line number to validate (1-based)
-     * @return true if sourcePath is null (no validation possible), or if the resolved file exists 
+     * @return true if workspacePath is null (no validation possible), or if the resolved file exists 
      *         as a regular file and the line number is valid (>0)
      */
     public final boolean exists(String issuePath, int lineNumber) {
-        if ( sourcePath == null ) {
+        if ( workspacePath == null ) {
             return true; // No validation possible without source path
         }
         if ( lineNumber <= 0 ) {
@@ -123,7 +130,7 @@ public class IssueSourceFileResolver {
         if ( resolvedPath == null ) {
             return false;
         }
-        var fullPath = sourcePath.resolve(resolvedPath);
+        var fullPath = workspacePath.resolve(resolvedPath);
         return Files.exists(fullPath) && Files.isRegularFile(fullPath);
         // Note: We don't validate the actual line count as it would require reading the entire file,
         // which could be expensive for large codebases. GitHub will handle non-existent lines gracefully.
@@ -131,7 +138,7 @@ public class IssueSourceFileResolver {
     
     private final SourceFileIndex createIndexIfNull(SourceFileIndex index) {
         if ( index==null ) {
-            index = new SourceFileIndex(sourcePath);
+            index = new SourceFileIndex(workspacePath);
         }
         return index;
     }
@@ -153,8 +160,8 @@ public class IssueSourceFileResolver {
         /** Full and partial relative paths, like src/main/java/com/fortify/X.java, com/fortify/X.java, X.java */ 
         private final Map<String,Path> fullAndPartialRelativePathsIndex;
         
-        private SourceFileIndex(Path sourcePath) {
-            this.fullRelativePathsIndex = createFullRelativePathsIndex(sourcePath);
+        private SourceFileIndex(Path workspacePath) {
+            this.fullRelativePathsIndex = createFullRelativePathsIndex(workspacePath);
             this.fullAndPartialRelativePathsIndex = createFullAndPartialRelativePathsIndex(fullRelativePathsIndex.values());
         }
         
@@ -188,13 +195,13 @@ public class IssueSourceFileResolver {
         }
 
         @SneakyThrows
-        private static final Map<String, Path> createFullRelativePathsIndex(Path sourcePath) {
+        private static final Map<String, Path> createFullRelativePathsIndex(Path workspacePath) {
             var result = new HashMap<String, Path>();
-            if ( sourcePath!=null && Files.isDirectory(sourcePath) ) {
-                var normalizedSourcePath = sourcePath.normalize();
-                try (Stream<Path> stream = Files.walk(normalizedSourcePath)) {
+            if ( workspacePath!=null && Files.isDirectory(workspacePath) ) {
+                var normalizedWorkspacePath = workspacePath.normalize();
+                try (Stream<Path> stream = Files.walk(normalizedWorkspacePath)) {
                     stream.filter(Files::isRegularFile)
-                        .forEach(p->addPathToFullRelativePathsIndex(result, normalizedSourcePath.relativize(p.normalize())));
+                        .forEach(p->addPathToFullRelativePathsIndex(result, normalizedWorkspacePath.relativize(p.normalize())));
                 }
             }
             return result;

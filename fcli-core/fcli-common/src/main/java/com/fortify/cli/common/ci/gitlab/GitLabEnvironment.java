@@ -92,7 +92,7 @@ public record GitLabEnvironment(
         
         // Build standardized structures
         var ciRepository = CiRepository.builder()
-            .workDir(EnvHelper.envOrDefault(ENV_PROJECT_DIR, "."))
+            .workspaceDir(EnvHelper.envOrDefault(ENV_PROJECT_DIR, "."))
             .remoteUrl(EnvHelper.env(ENV_REPOSITORY_URL))
             .name(CiRepositoryName.builder()
                 .short_(projectName)

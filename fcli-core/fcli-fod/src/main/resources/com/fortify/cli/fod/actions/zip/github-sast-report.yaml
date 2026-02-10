@@ -34,18 +34,34 @@ cli.options:
     description: "Publish report to GitHub Code Scanning (requires GITHUB_TOKEN environment variable with 'security-events: write' permission)"
     required: false
     type: boolean
+  type:
+    names: --type
+    description: "Report type to generate/publish: 'sarif' (GHAS Code Scanning) or 'check-run' (free-tier Check Run). If not specified, tries SARIF first, falls back to Check Run if GHAS unavailable. For best performance, specify the report type that matches your repository's GitHub plan (GHAS vs free tier)."
+    required: false
+  dryrun:
+    names: --dryrun
+    description: "Set to true to load and format all data but output to stdout instead of publishing"
+    type: boolean
+    required: false
+    default: false
   release:
     names: --release, --rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
+  workspaceDir:
+    names: --workspace-dir
+    required: false
+    description: "Workspace/repository root directory for resolving Fortify source file paths to workspace-relative paths in reports"
   sourceDir:
     names: --source-dir
     required: false
-    description: "(PREVIEW) Optional local repository directory to convert Fortify-reported source file paths to actual repository file paths"
+    description: "(DEPRECATED: use --workspace-dir) Alias for --workspace-dir"
 
 steps:
   - var.set:
       rel: ${#fod.release(cli.release)}
-      issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
+      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir?:cli.sourceDir})}
+      doOutputSarif: ${cli.type==null || cli.type=='sarif'}
+      doOutputCheckRun: ${cli.type==null || cli.type=='check-run'}
   - log.progress: Loading static scan summary
   - rest.call:
       staticScanSummary:
@@ -74,12 +90,21 @@ steps:
             traces:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
           do:
-            - var.set:
+            - if: ${doOutputSarif}
+              var.set:
                 rules..: {fmt: rules, if: "${ruleCache==null || ruleCache[issue.checkId]==null}"}
                 ruleCache.${issue.checkId}: true
                 results..: {fmt: results}
-  - var.set:
+            - if: ${doOutputCheckRun}
+              var.set:
+                checkRunAnnotations..: {fmt: checkRunAnnotation}
+  - if: ${doOutputSarif}
+    var.set:
       reportContents: {fmt: github-sast-report}
+  - if: ${doOutputCheckRun}
+    var.set:
+      checkRunSummary: {fmt: checkRunSummary}
+  - var.set:
       reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gh-fortify-sast.sarif'}"
   - if: ${reportFile!=null}
     steps:
@@ -89,21 +114,41 @@ steps:
         log.info: Output written to ${reportFile}
   - if: ${cli.publish==true}
     steps:
-      - var.set:
-          uploadResult: ${#github.tryUploadSarif(reportContents)}
-      - if: ${uploadResult.success}
-        log.info: Report published to GitHub Code Scanning
-      - if: ${!uploadResult.success && uploadResult.reason=='ghas_unavailable'}
+      - if: ${cli.dryrun}
+        steps:
+          - if: ${doOutputSarif}
+            steps:
+              - log.info: |
+                  
+                  ===== SARIF contents =====
+                  ${reportContents}
+          - if: ${doOutputCheckRun}
+            steps:
+              - log.info: |
+                  
+                  ===== Check Run Summary =====
+                  ${checkRunSummary}
+                  
+                  ===== Check Run Annotations (${checkRunAnnotations?.getRealNode()?.size()?:0} total) =====
+                  ${checkRunAnnotations}
+      - if: ${!cli.dryrun && doOutputSarif}
         steps:
           - var.set:
-              checkRunSummary: {fmt: checkRunSummary}
-          - var.set:
-              checkRunAnnotations..: {fmt: checkRunAnnotation}
+              uploadResult: ${#github.tryUploadSarif(reportContents)}
+          - if: ${uploadResult.success}
+            log.info: Report published to GitHub Code Scanning
+          - if: ${!uploadResult.success && uploadResult.reason=='ghas_unavailable' && cli.type==null}
+            steps:
+              - var.set:
+                  checkRun: ${#github.createCheckRunWithAnnotations('Fortify SAST Scan', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+              - log.info: Published as GitHub Check Run (free tier - GHAS not available)
+          - if: ${!uploadResult.success && uploadResult.reason!='ghas_unavailable'}
+            throw: 'Failed to publish report: ${uploadResult.message}'
+      - if: ${!cli.dryrun && cli.type=='check-run'}
+        steps:
           - var.set:
               checkRun: ${#github.createCheckRunWithAnnotations('Fortify SAST Scan', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
-          - log.info: Published as GitHub Check Run (free tier - GHAS not available)
-      - if: ${!uploadResult.success && uploadResult.reason!='ghas_unavailable'}
-        throw: 'Failed to publish report: ${uploadResult.message}'
+          - log.info: Published as GitHub Check Run
 
 formatters:
   github-sast-report:
@@ -200,16 +245,16 @@ formatters:
     
     **Application:** ${rel.applicationName}  
     **Release:** ${rel.releaseName}  
-    **Total Issues:** ${issues?.size()?:0}
+    **Total Issues:** ${issues?.getRealNode()?.size()?:0}
     
     ### Issues by Severity
     
     | Severity | Count |
     |----------|-------|
-    | Critical | ${issues?.^[severityString=='Critical']?.size()?:0} |
-    | High | ${issues?.^[severityString=='High']?.size()?:0} |
-    | Medium | ${issues?.^[severityString=='Medium']?.size()?:0} |
-    | Low | ${issues?.^[severityString=='Low']?.size()?:0} |
+    | Critical | ${issues?.^[severityString=='Critical']?.getRealNode()?.size()?:0} |
+    | High | ${issues?.^[severityString=='High']?.getRealNode()?.size()?:0} |
+    | Medium | ${issues?.^[severityString=='Medium']?.getRealNode()?.size()?:0} |
+    | Low | ${issues?.^[severityString=='Low']?.getRealNode()?.size()?:0} |
     
     See annotations below for detailed findings at specific file locations.
     

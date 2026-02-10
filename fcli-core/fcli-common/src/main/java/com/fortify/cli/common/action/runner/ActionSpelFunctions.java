@@ -513,11 +513,15 @@ public class ActionSpelFunctions {
             """,
             returns="Issue source file resolver") 
     public static final POJONode issueSourceFileResolver(
-            @SpelFunctionParam(name="config", desc="configuration; for now, this must contain a single `sourceDir` property") Map<String, String> config) 
+            @SpelFunctionParam(name="config", desc="configuration; must contain `workspaceDir` property (or deprecated `sourceDir` as fallback)") Map<String, String> config) 
     {
-        var sourceDir = config.get("sourceDir");
+        // Use workspaceDir if present, otherwise fall back to sourceDir for backward compatibility
+        var workspaceDir = config.get("workspaceDir");
+        if (StringUtils.isBlank(workspaceDir)) {
+            workspaceDir = config.get("sourceDir"); // Deprecated fallback
+        }
         var builder = IssueSourceFileResolver.builder()
-                .sourcePath(StringUtils.isBlank(sourceDir) ? null : Path.of(sourceDir));
+                .workspacePath(StringUtils.isBlank(workspaceDir) ? null : Path.of(workspaceDir));
         return new POJONode(builder.build());
     }
 
@@ -560,7 +564,7 @@ public class ActionSpelFunctions {
                 directory is not inside a git working tree. Only constant-time lookups are performed (HEAD commit only).
                 Structure:
                 {
-                repository: { workDir, remoteUrl?, name: { short, full? } },
+                repository: { workspaceDir, remoteUrl?, name: { short, full? } },
                 branch: { full?, short? },
                 commit: {
                     id: { full, short },
@@ -586,7 +590,7 @@ public class ActionSpelFunctions {
                 var remoteUrl = remote==null?null:repo.getConfig().getString("remote", remote, "url");
                 var names = ActionSpelFunctionsJGitHelper.deriveRepoNames(dir.getName(), remoteUrl);
                 var repository = CiRepository.builder()
-                    .workDir(repo.getWorkTree().getAbsolutePath())
+                    .workspaceDir(repo.getWorkTree().getAbsolutePath())
                     .remoteUrl(StringUtils.isBlank(remoteUrl) ? null : remoteUrl)
                     .name(CiRepositoryName.builder()
                         .short_(names[0])

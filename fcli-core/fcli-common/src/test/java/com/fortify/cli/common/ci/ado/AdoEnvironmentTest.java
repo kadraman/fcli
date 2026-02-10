@@ -58,7 +58,7 @@ public class AdoEnvironmentTest {
         assertEquals("101", env.buildId());
         
         assertNotNull(env.ciRepository());
-        assertEquals("/home/vsts/work/1/s", env.ciRepository().workDir());
+        assertEquals("/home/vsts/work/1/s", env.ciRepository().workspaceDir());
         assertEquals("MyRepo", env.ciRepository().name().short_());
         assertEquals("MyRepo", env.ciRepository().name().full());
         
@@ -191,7 +191,7 @@ public class AdoEnvironmentTest {
         var env = AdoEnvironment.detect();
         
         assertNotNull(env);
-        assertEquals("/default/work", env.ciRepository().workDir());
+        assertEquals("/default/work", env.ciRepository().workspaceDir());
     }
     
     @Test
@@ -203,6 +203,6 @@ public class AdoEnvironmentTest {
         var env = AdoEnvironment.detect();
         
         assertNotNull(env);
-        assertEquals(".", env.ciRepository().workDir());
+        assertEquals(".", env.ciRepository().workspaceDir());
     }
 }
