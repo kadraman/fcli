@@ -167,7 +167,7 @@ formatters:
     Step: ${ciEntry.key}
     Status: ${ciEntry.value.status}
     Reason: ${ciEntry.value.statusReason?:''}
-        
+    
   summary: |
   
     # Fcli CI Pipeline Summary
