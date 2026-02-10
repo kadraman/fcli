@@ -156,6 +156,9 @@ public class IssueSourceFileResolver {
     }
     
     private static final class SourceFileIndex {
+        /** Full relative paths only, like src/main/java/com/fortify/X.java.
+         * Values are lists to handle multiple files with the same name (e.g., index.js in multiple directories) */
+        private final Map<String,java.util.List<Path>> fullRelativePathsIndex;
         /** Full and partial relative paths, like src/main/java/com/fortify/X.java, com/fortify/X.java, X.java.
          * Values are lists to handle multiple files with the same name (e.g., index.js in multiple directories) */ 
         private final Map<String,java.util.List<Path>> fullAndPartialRelativePathsIndex;
@@ -164,7 +167,9 @@ public class IssueSourceFileResolver {
         
         private SourceFileIndex(Path workspacePath, Path sourcePath) {
             this.sourcePathRelative = computeSourcePathRelative(workspacePath, sourcePath);
-            this.fullAndPartialRelativePathsIndex = createFullAndPartialRelativePathsIndex(workspacePath);
+            var fullPaths = createFullRelativePathsIndex(workspacePath);
+            this.fullRelativePathsIndex = fullPaths;
+            this.fullAndPartialRelativePathsIndex = createFullAndPartialRelativePathsIndex(fullPaths.values());
         }
         
         private static Path computeSourcePathRelative(Path workspacePath, Path sourcePath) {
@@ -244,12 +249,12 @@ public class IssueSourceFileResolver {
             if ( nameCount <= 1 ) { return null; }
             
             var subPath = normalizedPath.subpath(1, nameCount);
-            var candidates = fullAndPartialRelativePathsIndex.get(pathToString(subPath));
+            var candidates = fullRelativePathsIndex.get(pathToString(subPath));
             return candidates!=null ? selectBestCandidate(candidates) : resolveByStrippingLeadingDirs(subPath);
         }
 
         @SneakyThrows
-        private static final Map<String, java.util.List<Path>> createFullAndPartialRelativePathsIndex(Path workspacePath) {
+        private static final Map<String, java.util.List<Path>> createFullRelativePathsIndex(Path workspacePath) {
             var result = new HashMap<String, java.util.List<Path>>();
             if ( workspacePath!=null && Files.isDirectory(workspacePath) ) {
                 var normalizedWorkspacePath = workspacePath.normalize();
@@ -258,10 +263,21 @@ public class IssueSourceFileResolver {
                         .forEach(p->{
                             var fullRelativePath = normalizedWorkspacePath.relativize(p.normalize());
                             if ( LOG.isTraceEnabled() ) { LOG.trace("Adding source path {} to index", fullRelativePath); }
-                            addPathToFullAndPartialRelativePathsIndex(result, fullRelativePath, fullRelativePath);
+                            var key = pathToString(fullRelativePath);
+                            result.computeIfAbsent(key, k -> new java.util.ArrayList<>()).add(fullRelativePath);
                         });
                 }
             }
+            return result;
+        }
+        
+        private static final Map<String, java.util.List<Path>> createFullAndPartialRelativePathsIndex(java.util.Collection<java.util.List<Path>> fullRelativePaths) {
+            var result = new HashMap<String, java.util.List<Path>>();
+            fullRelativePaths.forEach(paths -> 
+                paths.forEach(fullRelativePath -> 
+                    addPathToFullAndPartialRelativePathsIndex(result, fullRelativePath, fullRelativePath)
+                )
+            );
             return result;
         }
         
