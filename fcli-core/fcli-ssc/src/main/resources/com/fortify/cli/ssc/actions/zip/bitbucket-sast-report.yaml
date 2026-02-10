@@ -2,9 +2,12 @@
 
 author: Fortify
 usage:
-  header: Generate a BitBucket Code Insights report listing SSC SAST vulnerabilities. 
+  header: Integrate SSC SAST results with BitBucket Code Insights. 
   description: |
-    For information on how to import this report into BitBucket, see 
+    This action generates and optionally publishes SSC SAST vulnerabilities to BitBucket. 
+    With the --publish option, results are automatically uploaded to BitBucket pipelines.
+    
+    For manual report uploads, see 
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
     
 config:

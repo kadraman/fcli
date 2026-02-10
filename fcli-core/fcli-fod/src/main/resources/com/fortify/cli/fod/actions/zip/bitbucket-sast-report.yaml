@@ -2,9 +2,12 @@
 
 author: Fortify
 usage:
-  header: Generate a BitBucket Code Insights report listing FoD SAST vulnerabilities. 
+  header: Integrate FoD SAST results with BitBucket Code Insights. 
   description: |
-    For information on how to import this report into BitBucket, see 
+    This action generates and optionally publishes FoD SAST vulnerabilities to BitBucket. 
+    With the --publish option, results are automatically uploaded to BitBucket pipelines.
+    
+    For manual report uploads, see 
     https://support.atlassian.com/bitbucket-cloud/docs/code-insights/
 
 config:
