@@ -113,7 +113,7 @@ steps:
               var.set:
                 ruleCategories.${issue.primaryRuleGuid}: ${issue.issueName}
                 results..: {fmt: results}
-            - if: ${doOutputCheckRun}
+            - if: ${doOutputCheckRun && issueSourceFileResolver.exists(issue.fullFileName, issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber)}
               var.set:
                 checkRunAnnotations..: {fmt: checkRunAnnotation}
   - if: ${doOutputSarif && ruleCategories!=null}
@@ -290,7 +290,6 @@ formatters:
     See annotations below for detailed findings at specific file locations.
     
   checkRunAnnotation:
-    if: ${issueSourceFileResolver.exists(issue.fullFileName, issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber)}
     path: ${issueSourceFileResolver.resolve(issue.fullFileName)}
     start_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
     end_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
