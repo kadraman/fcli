@@ -270,7 +270,7 @@ formatters:
   
     # Fcli CI Pipeline Summary
     
-    ${ciSummary}
+    ${ciSummary.replaceAll('\r', '')}
     
     # Fcli Security Policy Status
     

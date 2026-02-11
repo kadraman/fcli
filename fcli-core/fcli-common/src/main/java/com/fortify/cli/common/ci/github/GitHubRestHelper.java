@@ -141,6 +141,14 @@ public class GitHubRestHelper {
             .put("head_sha", headSha)
             .put("status", status);
         
+        // Add timestamps - GitHub expects ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
+        // For completed check runs, including timestamps helps with proper UI display
+        var now = java.time.Instant.now().toString();
+        body.put("started_at", now);
+        if ("completed".equals(status)) {
+            body.put("completed_at", now);
+        }
+        
         if (conclusion != null) {
             body.put("conclusion", conclusion);
         }
