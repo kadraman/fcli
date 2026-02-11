@@ -162,20 +162,15 @@ steps:
       - if: ${!cli.dryrun && doOutputSarif}
         steps:
           - var.set:
-              uploadResult: ${#github.tryUploadSarif(reportContents)}
-          - if: ${uploadResult.success}
+              sarifUploadResult: ${#github.tryUploadSarif(reportContents)}
+          - if: ${sarifUploadResult.success}
             log.info: Report published to GitHub Code Scanning
-          - if: ${!uploadResult.success && uploadResult.reason=='ghas_unavailable' && cli.type==null}
-            steps:
-              - var.set:
-                  checkRun: ${#github.createCheckRunWithAnnotations('Fortify SAST Scan', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
-              - log.info: Published as GitHub Check Run (free tier - GHAS not available)
-          - if: ${!uploadResult.success && uploadResult.reason!='ghas_unavailable'}
-            throw: 'Failed to publish report: ${uploadResult.message}'
-      - if: ${!cli.dryrun && cli.type=='check-run'}
+          - if: ${!sarifUploadResult.success && sarifUploadResult.reason!='ghas_unavailable'}
+            throw: 'Failed to publish report: ${sarifUploadResult.message}'
+      - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || (!sarifUploadResult.success && sarifUploadResult.reason=='ghas_unavailable'))}
         steps:
           - var.set:
-              checkRun: ${#github.createCheckRunWithAnnotations('Fortify SAST Scan', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+              checkRun: ${#github.createCheckRunWithAnnotations('fortify-sast', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
           - log.info: Published as GitHub Check Run
 
 formatters:
