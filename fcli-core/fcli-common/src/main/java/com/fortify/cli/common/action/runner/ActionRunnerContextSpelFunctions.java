@@ -137,6 +137,7 @@ public final class ActionRunnerContextSpelFunctions {
      * #action.docRenderer().asciidoc().manpageBaseUrl("/docs/cli").render(description)
      * </pre>
      */
+    @Reflectable
     @SpelFunctions
     @RequiredArgsConstructor
     public static final class DocRenderer {

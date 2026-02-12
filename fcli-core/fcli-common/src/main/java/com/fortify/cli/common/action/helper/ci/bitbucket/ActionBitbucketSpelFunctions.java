@@ -85,11 +85,11 @@ public class ActionBitbucketSpelFunctions implements IActionSpelFunctions {
     
     /**
      * Get the underlying RestHelper for advanced use cases.
-     * Exposed as public to support direct library usage from action YAML.
+     * Private since this is an internal implementation detail.
      * 
      * @return BitbucketRestHelper instance
      */
-    public BitbucketRestHelper getRestHelper() {
+    private BitbucketRestHelper getRestHelper() {
         if (restHelper == null) {
             var supplier = BitbucketUnirestInstanceSupplier.fromEnv(ctx.getUnirestContext());
             restHelper = new BitbucketRestHelper(supplier);

@@ -51,7 +51,6 @@ import org.jsoup.safety.Safelist;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.POJONode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionSource;
@@ -512,7 +511,7 @@ public class ActionSpelFunctions {
             FoD modules for examples.
             """,
             returns="Issue source file resolver") 
-    public static final POJONode issueSourceFileResolver(
+    public static final IssueSourceFileResolver issueSourceFileResolver(
             @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {
         var workspaceDir = config.get("workspaceDir");
@@ -527,7 +526,7 @@ public class ActionSpelFunctions {
         var builder = IssueSourceFileResolver.builder()
                 .workspacePath(StringUtils.isBlank(workspaceDir) ? null : Path.of(workspaceDir))
                 .sourcePath(StringUtils.isBlank(sourceDir) ? null : Path.of(sourceDir));
-        return new POJONode(builder.build());
+        return builder.build();
     }
 
     @SpelFunction(cat=fortify, returns="normalized array of trace nodes") 

@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctions;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -56,7 +57,7 @@ import lombok.SneakyThrows;
 // TODO Also see TODO comments in IssueSourceFileResolverTest
 // TODO How to handle absolute paths? Always return as-is (or null if not existing and OnNoMatch.NULL)? Or try to resolve against workspacePath?
 // TODO How to handle drive letters (with either absolute or relative path)?
-@Builder @Reflectable
+@Builder @Reflectable @SpelFunctions
 public class IssueSourceFileResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IssueSourceFileResolver.class);
     /** Workspace/repository root directory path for indexing and resolving file paths */

@@ -95,11 +95,11 @@ public class ActionGitHubSpelFunctions implements IActionSpelFunctions {
     
     /**
      * Get the underlying RestHelper for advanced use cases.
-     * Exposed as public to support direct library usage from action YAML.
+     * Private since this is an internal implementation detail.
      * 
      * @return GitHubRestHelper instance
      */
-    public GitHubRestHelper getRestHelper() {
+    private GitHubRestHelper getRestHelper() {
         if (restHelper == null) {
             var supplier = GitHubUnirestInstanceSupplier.fromEnv(ctx.getUnirestContext());
             restHelper = new GitHubRestHelper(supplier);
