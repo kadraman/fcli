@@ -170,7 +170,7 @@ steps:
       - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || (!sarifUploadResult.success && sarifUploadResult.reason=='ghas_unavailable'))}
         steps:
           - var.set:
-              checkRun: ${#github.repo().createCheckRunWithAnnotations('fortify-sast', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+              checkRun: ${#github.repo().createCheckRunWithAnnotations('fortify-sast', 'completed', 'success', 'Fortify SAST Scan Results', checkRunSummary, checkRunAnnotations)}
           - log.info: Published as GitHub Check Run
 
 formatters:
