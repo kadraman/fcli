@@ -484,33 +484,21 @@ public class ActionSpelFunctions {
     }
 
     @SpelFunction(cat=fortify, desc = """
-            Instantiates an issue source file resolver, allowing source file paths as reported by \
-            Fortify to be resolved against a locally cloned source code repository. 
+            Creates an issue source file resolver that maps Fortify-reported paths to workspace-relative paths. \
+            Fortify may add or strip leading directories during scanning; this resolver uses longest-suffix \
+            matching to find the correct file in the workspace.
             
-            In some cases, there is a mismatch between source file paths as reported by SSC or FoD \
-            and actual repository source file paths, with Fortify either inserting or stripping leading \
-            directories. When third-party systems like GitHub or GitLab ingest fcli-generated reports, \
-            such mismatches may prevent third-party systems from properly rendering source code snippets \
-            or links.
+            Configuration properties:
+            * `workspaceDir` - Repository root directory (required for path resolution)
+            * `sourceDir` - Directory that was scanned (optional; used to prioritize matches when multiple files share the same name)
             
-            The issue source file resolver can be initialized like this:
+            Example: `${#issueSourceFileResolver({workspaceDir:\"/workspace\", sourceDir:\"/workspace/src\"})}`
             
-            ```
-            - var.set:
-                issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
-            ```
+            For backward compatibility, if only `sourceDir` is provided, it will be used as `workspaceDir`.
             
-            Once initialized, Fortify-reported issue file paths can be matched and relativized against \
-            the given `sourceDir` through either:
-            
-            * SSC: `${issueSourceFileResolver.resolve(issue.fullFileName)}`
-            * FoD: `${issueSourceFileResolver.resolve(issue.primaryLocationFull)}
-            
-            Of course, the same approach can be used to resolve other Fortify-reported source file paths, \
-            for example in trace node entries. See the various fcli built-in `*-report` actions in SSC and \
-            FoD modules for examples.
+            See available methods via SpEL function documentation of the returned IssueSourceFileResolver object.
             """,
-            returns="Issue source file resolver") 
+            returns="Issue source file resolver with resolve() and exists() methods") 
     public static final IssueSourceFileResolver issueSourceFileResolver(
             @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {
