@@ -162,7 +162,7 @@ steps:
       - if: ${!cli.dryrun && doOutputSarif}
         steps:
           - var.set:
-              sarifUploadResult: ${#github.tryUploadSarif(reportContents)}
+              sarifUploadResult: ${#github.repo().tryUploadSarif(reportContents)}
           - if: ${sarifUploadResult.success}
             log.info: Report published to GitHub Code Scanning
           - if: ${!sarifUploadResult.success && sarifUploadResult.reason!='ghas_unavailable'}
@@ -170,7 +170,7 @@ steps:
       - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || (!sarifUploadResult.success && sarifUploadResult.reason=='ghas_unavailable'))}
         steps:
           - var.set:
-              checkRun: ${#github.createCheckRunWithAnnotations('fortify-sast', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+              checkRun: ${#github.repo().createCheckRunWithAnnotations('fortify-sast', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
           - log.info: Published as GitHub Check Run
 
 formatters:
