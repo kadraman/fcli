@@ -99,11 +99,19 @@ public class GitHubRepo {
         var originalConclusion = body.path("conclusion").asText(null);
         var annotations = extractAnnotations(body);
         
-        var response = createCheckRunInitial(body);
+        var createBody = prepareInitialCreateBody(body);
+        var response = unirest
+            .post("/repos/{owner}/{repo}/check-runs")
+            .routeParam("owner", owner)
+            .routeParam("repo", repo)
+            .body(createBody)
+            .asObject(ObjectNode.class)
+            .getBody();
+        
         var checkRunId = response.get("id").asLong();
         
         if (annotations != null && annotations.size() > 0) {
-            addCheckRunAnnotations(checkRunId, annotations);
+            addCheckRunAnnotations(checkRunId, annotations, createBody);
         }
         
         boolean needsFinalUpdate = !"in_progress".equals(originalStatus) || originalConclusion != null;
@@ -126,12 +134,12 @@ public class GitHubRepo {
     }
     
     /**
-     * Create initial check run with in_progress status and without annotations.
+     * Prepare initial check run body with in_progress status and without annotations.
      * 
      * @param body Original check run body
-     * @return Response from GitHub API
+     * @return Modified body for initial create
      */
-    private ObjectNode createCheckRunInitial(ObjectNode body) {
+    private ObjectNode prepareInitialCreateBody(ObjectNode body) {
         var createBody = body.deepCopy();
         createBody.put("status", "in_progress");
         createBody.remove("conclusion");
@@ -141,14 +149,7 @@ public class GitHubRepo {
         if (!createBody.has("started_at")) {
             createBody.put("started_at", java.time.Instant.now().toString());
         }
-        
-        return unirest
-            .post("/repos/{owner}/{repo}/check-runs")
-            .routeParam("owner", owner)
-            .routeParam("repo", repo)
-            .body(createBody)
-            .asObject(ObjectNode.class)
-            .getBody();
+        return createBody;
     }
     
     /**
@@ -156,15 +157,16 @@ public class GitHubRepo {
      * 
      * @param checkRunId Check run ID
      * @param annotations All annotations to add
+     * @param initialCreateBody Body used for initial create (contains output with title/summary)
      */
-    private void addCheckRunAnnotations(long checkRunId, ArrayNode annotations) {
+    private void addCheckRunAnnotations(long checkRunId, ArrayNode annotations, ObjectNode initialCreateBody) {
         for (int offset = 0; offset < annotations.size(); offset += 50) {
             var batch = JsonHelper.getObjectMapper().createArrayNode();
             int batchEnd = Math.min(offset + 50, annotations.size());
             for (int i = offset; i < batchEnd; i++) {
                 batch.add(annotations.get(i));
             }
-            updateCheckRunAnnotations(checkRunId, batch);
+            updateCheckRunAnnotations(checkRunId, batch, initialCreateBody);
         }
     }
     
@@ -193,12 +195,18 @@ public class GitHubRepo {
      * 
      * @param checkRunId Check run ID
      * @param annotations Batch of annotations (max 50)
+     * @param initialCreateBody Body used for initial create (output reused here)
      */
-    private void updateCheckRunAnnotations(long checkRunId, ArrayNode annotations) {
-        var body = JsonHelper.getObjectMapper().createObjectNode();
-        var output = body.putObject("output");
-        output.set("annotations", annotations);
-        updateCheckRun(checkRunId, body);
+    private void updateCheckRunAnnotations(long checkRunId, ArrayNode annotations, ObjectNode initialCreateBody) {
+        var updateBody = JsonHelper.getObjectMapper().createObjectNode();
+        if (initialCreateBody.has("output")) {
+            updateBody.set("output", initialCreateBody.get("output").deepCopy());
+            ((ObjectNode) updateBody.get("output")).set("annotations", annotations);
+        } else {
+            var output = updateBody.putObject("output");
+            output.set("annotations", annotations);
+        }
+        updateCheckRun(checkRunId, updateBody);
     }
     
     /**
