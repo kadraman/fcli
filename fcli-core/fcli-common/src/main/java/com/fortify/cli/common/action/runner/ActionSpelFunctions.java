@@ -69,6 +69,7 @@ import com.fortify.cli.common.json.FortifyTraceNodeHelper;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spel.fn.descriptor.SpelFunctionDescriptorsFactory;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionParam;
 import com.fortify.cli.common.util.EnvHelper;
@@ -498,7 +499,8 @@ public class ActionSpelFunctions {
             
             See available methods via SpEL function documentation of the returned IssueSourceFileResolver object.
             """,
-            returns="Issue source file resolver with resolve() and exists() methods") 
+            returns="Issue source file resolver with resolve() and exists() methods",
+            renderReturnedFunctionsAsSubsections=RenderSubFunctionsMode.TRUE) 
     public static final IssueSourceFileResolver issueSourceFileResolver(
             @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {
@@ -531,12 +533,12 @@ public class ActionSpelFunctions {
         return FortifyTraceNodeHelper.normalizeAndMerge(traceNodes);
     }
 
-    @SpelFunction(cat=fcli, returns="An object describing the fcli action YAML schema")
+    @SpelFunction(cat=internal, returns="An object describing the fcli action YAML schema")
     public static final JsonNode actionSchema() {
         return ActionSchemaDescriptorFactory.getActionSchemaDescriptor().asJson();
     }
 
-    @SpelFunction(cat=fcli, returns="An array listing all available SpEL functions")
+    @SpelFunction(cat=internal, returns="An array listing all available SpEL functions")
     public static final JsonNode actionSpelFunctions() {
         return SpelFunctionDescriptorsFactory.getActionSpelFunctionsDescriptors().asJson();
     }

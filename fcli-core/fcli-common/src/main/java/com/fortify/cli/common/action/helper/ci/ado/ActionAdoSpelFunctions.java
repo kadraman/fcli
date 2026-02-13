@@ -87,13 +87,13 @@ public class ActionAdoSpelFunctions implements IActionSpelFunctions {
      */
     @SpelFunction(cat=ci, desc="Returns a repository-scoped Azure DevOps client using organization/project/repository detected from the current pipeline run",
             returns="ADO repository client for CI operations", returnType=ActionAdoRepository.class)
-    public ActionAdoRepository repository() {
-        requireEnv("repository");
+    public ActionAdoRepository repo() {
+        requireEnv("repo");
         return new ActionAdoRepository(
             getRestHelper().repository(
-                requireOrganizationSlug("repository"),
-                requireProject("repository"),
-                requireRepositoryId("repository")
+                requireOrganizationSlug("repo"),
+                requireProject("repo"),
+                requireRepositoryId("repo")
             ), 
             env
         );

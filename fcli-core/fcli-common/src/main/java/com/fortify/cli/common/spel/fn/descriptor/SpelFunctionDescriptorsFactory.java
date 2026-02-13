@@ -87,20 +87,26 @@ public final class SpelFunctionDescriptorsFactory {
     }
     
     /**
-     * For each descriptor, check if its return type is annotated with @SpelFunctions.
+     * For each descriptor, check if its renderReturnedFunctionsAsSubsections flag is true.
      * If so, generate additional descriptors for all public methods of that return type,
-     * using the original function name as the prefix.
+     * using the original function displayName as the prefix.
      */
     private static final Stream<SpelFunctionDescriptor> createNestedFunctionDescriptorsStream(SpelFunctionDescriptor parentDescriptor) {
         // First yield the parent descriptor itself
         Stream<SpelFunctionDescriptor> parentStream = Stream.of(parentDescriptor);
         
-        // Check if return type has @SpelFunctions annotation
+        // Check if we should render returned functions as subsections
+        if (!parentDescriptor.isRenderReturnedFunctionsAsSubsections()) {
+            return parentStream;
+        }
+        
+        // Get the return type from the parent descriptor's class
         Class<?> returnType = parentDescriptor.getClazz();
         try {
             // Try to resolve the actual return type from the method
+            String methodName = parentDescriptor.getName().replaceAll(".*\\.", "");
             Method method = Stream.of(returnType.getDeclaredMethods())
-                .filter(m -> m.getName().equals(parentDescriptor.getName().replaceAll(".*\\.", "")))
+                .filter(m -> m.getName().equals(methodName))
                 .filter(m -> !Modifier.isPrivate(m.getModifiers()))
                 .findFirst()
                 .orElse(null);
@@ -109,7 +115,7 @@ public final class SpelFunctionDescriptorsFactory {
                 Class<?> actualReturnType = method.getReturnType();
                 if (actualReturnType.isAnnotationPresent(SpelFunctions.class)) {
                     // Process all public methods of the return type
-                    String prefix = parentDescriptor.getName() + ".";
+                    String prefix = parentDescriptor.getDisplayName() + ".";
                     Stream<SpelFunctionDescriptor> nestedStream = Stream.of(actualReturnType.getDeclaredMethods())
                         .filter(m -> Modifier.isPublic(m.getModifiers()))
                         .filter(m -> m.isAnnotationPresent(SpelFunction.class))
@@ -132,41 +138,97 @@ public final class SpelFunctionDescriptorsFactory {
     private static final SpelFunctionDescriptor createNestedSpelFunctionDescriptor(Class<?> spelFunctionClazz, Method spelFunctionMethod, String prefix) {
         var category = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, SpelFunction::cat, ()->com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util).name();
         var name = prefix + spelFunctionMethod.getName();
+        var displayName = deriveDisplayName(prefix, spelFunctionMethod.getName());
+        var isProperty = isPropertyGetter(spelFunctionMethod.getName());
         var desc = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, SpelFunction::desc, ()->"");
         var params = createParamDescriptors(spelFunctionMethod);
         var returns = createReturnDescriptor(spelFunctionMethod);
-        var signature = createSignature(name, params, returns);
+        var signature = createSignature(displayName, params, returns, isProperty);
+        var renderMode = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, 
+            SpelFunction::renderReturnedFunctionsAsSubsections, 
+            ()->com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode.AUTO);
+        var renderAsSubsections = shouldRenderAsSubsections(renderMode, spelFunctionMethod.getReturnType());
+        
         return SpelFunctionDescriptor.builder()
                 .clazz(spelFunctionClazz)
                 .category(category)
                 .name(name)
+                .displayName(displayName)
                 .description(desc)
                 .params(params)
                 .returns(returns)
                 .signature(signature)
+                .renderReturnedFunctionsAsSubsections(renderAsSubsections)
                 .build();
+    }
+    
+    /**
+     * Determine whether functions returned by this SpEL function should be rendered as subsections.
+     * @param mode The render mode from the annotation
+     * @param returnType The return type of the method
+     * @return true if should render as subsections, false otherwise
+     */
+    private static final boolean shouldRenderAsSubsections(com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode mode, Class<?> returnType) {
+        return switch(mode) {
+            case TRUE -> true;
+            case FALSE -> false;
+            case AUTO -> returnType.isAnnotationPresent(SpelFunctions.class);
+        };
     }
     
     private static final SpelFunctionDescriptor createSpelFunctionDescriptor(Class<?> spelFunctionClazz, Method spelFunctionMethod) {
         var prefix = ReflectionHelper.getAnnotationValue(spelFunctionClazz, SpelFunctionPrefix.class, SpelFunctionPrefix::value, ()->"");
         var category = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, SpelFunction::cat, ()->com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util).name();
         var name = prefix + spelFunctionMethod.getName();
+        var displayName = deriveDisplayName(prefix, spelFunctionMethod.getName());
+        var isProperty = isPropertyGetter(spelFunctionMethod.getName());
         var desc = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, SpelFunction::desc, ()->"");
         var params = createParamDescriptors(spelFunctionMethod);
         var returns= createReturnDescriptor(spelFunctionMethod);
-        var signature = createSignature(name, params, returns);
+        var signature = createSignature(displayName, params, returns, isProperty);
+        var renderMode = ReflectionHelper.getAnnotationValue(spelFunctionMethod, SpelFunction.class, 
+            SpelFunction::renderReturnedFunctionsAsSubsections, 
+            ()->com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode.AUTO);
+        var renderAsSubsections = shouldRenderAsSubsections(renderMode, spelFunctionMethod.getReturnType());
+        
         return SpelFunctionDescriptor.builder()
                 .clazz(spelFunctionClazz)
                 .category(category)
                 .name(name)
+                .displayName(displayName)
                 .description(desc)
                 .params(params)
                 .returns(returns)
                 .signature(signature)
+                .renderReturnedFunctionsAsSubsections(renderAsSubsections)
                 .build();
     }
     
-    private static final String createSignature(String name, List<SpelFunctionParamDescriptor> params, SpelFunctionReturnDescriptor returns) {
+    /**
+     * Derive display name from method name. For getter methods (getXxx), 
+     * returns property-style name (xxx). Otherwise returns method name as-is.
+     */
+    private static final String deriveDisplayName(String prefix, String methodName) {
+        if (isPropertyGetter(methodName)) {
+            var propertyName = methodName.substring(3);
+            propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+            return prefix + propertyName;
+        }
+        return prefix + methodName;
+    }
+    
+    /**
+     * Check if method name follows getter pattern (getXxx with uppercase after 'get').
+     */
+    private static final boolean isPropertyGetter(String methodName) {
+        return methodName.startsWith("get") && methodName.length() > 3 && Character.isUpperCase(methodName.charAt(3));
+    }
+    
+    private static final String createSignature(String name, List<SpelFunctionParamDescriptor> params, SpelFunctionReturnDescriptor returns, boolean isProperty) {
+        // For properties (getters), omit parentheses. For methods, include them with parameters.
+        if (isProperty) {
+            return String.format("%s #%s", returns.getType(), name);
+        }
         var paramsStringBuilder = new StringBuilder();
         for ( var p : params ) {
             var paramString = String.format("%s%s %s", paramsStringBuilder.isEmpty()?"":", ", p.getType(), p.getName());
@@ -321,10 +383,12 @@ public final class SpelFunctionDescriptorsFactory {
         @JsonIgnore private final Class<?> clazz;
         private final String category;
         private final String name;
+        private final String displayName;
         private final String description;
         private final String signature;
         private final List<SpelFunctionParamDescriptor> params;
         private final SpelFunctionReturnDescriptor returns;
+        private final boolean renderReturnedFunctionsAsSubsections;
         
         @JsonIgnore private final String getCategoryAndName() {
             return String.format("[%s] %s", category, name);

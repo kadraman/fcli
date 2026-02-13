@@ -72,12 +72,12 @@ public class ActionBitbucketSpelFunctions implements IActionSpelFunctions {
      */
     @SpelFunction(cat=ci, desc="Returns a repository-scoped Bitbucket client using workspace and repository detected from the current pipeline run",
             returns="Bitbucket repository client for CI operations", returnType=ActionBitbucketRepository.class)
-    public ActionBitbucketRepository repository() {
-        requireEnv("repository");
+    public ActionBitbucketRepository repo() {
+        requireEnv("repo");
         return new ActionBitbucketRepository(
             getRestHelper().repository(
-                requireWorkspace("repository"),
-                requireRepositorySlug("repository")
+                requireWorkspace("repo"),
+                requireRepositorySlug("repo")
             ), 
             env
         );

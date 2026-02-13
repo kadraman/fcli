@@ -103,13 +103,23 @@ steps:
         - var.set:
             jsonTypesByName.${jsonType.name}: ${jsonType}
 
-   # Process SpEL Functions
+   # Process SpEL Functions - First pass: collect all functions by name
+  - records.for-each:
+     from: ${#actionSpelFunctions()}
+     record.var-name: fn
+     do:
+        - var.set:
+            # Store all functions by name for later lookup
+            allSpelFunctionsByName.${fn.name}: ${fn}
+  
+  # Process SpEL Functions - Second pass: build documentation sections
   - records.for-each:
      from: ${#actionSpelFunctions()}
      record.var-name: fn
      do:
         - var.rm:
             - paramTableRows
+            - subsectionRows
         - if: ${fn.params != null && fn.params.size() > 0}
           records.for-each:
               from: ${fn.params}
@@ -118,17 +128,55 @@ steps:
                  - var.set:
                     paramTableRows..: "__${param.type} ${param.name}__ - ${param.description}"
         
+        # Build subsections for functions that have nested methods
+        - if: ${fn.renderReturnedFunctionsAsSubsections}
+          var.set:
+            subsectionPrefix: ${fn.displayName + "."}
+            subsectionParentNames..: ${fn.displayName}
+        - if: ${fn.renderReturnedFunctionsAsSubsections}
+          records.for-each:
+              from: ${#actionSpelFunctions()}
+              record.var-name: subfn
+              do:
+                - if: ${subfn.name.startsWith(subsectionPrefix)}
+                  var.set:
+                    subfn.shortName: ${subfn.displayName.substring(fn.displayName.length() + 1)}
+                    subfn.hasParams: ${subfn.params != null && subfn.params.size() > 0}
+                - if: ${subfn.name.startsWith(subsectionPrefix) && subfn.hasParams}
+                  var.set:
+                    subfn.paramList: ${#join(', ', subfn.params.![('`' + type + ' ' + name + '`')])}
+                - if: ${subfn.name.startsWith(subsectionPrefix) && !subfn.hasParams}
+                  var.set:
+                    subfn.paramList: No parameters
+                - if: ${subfn.name.startsWith(subsectionPrefix) && subfn.returns != null}
+                  var.set:
+                    subfn.returnDesc: ${" -> " + subfn.returns.description}
+                - if: ${subfn.name.startsWith(subsectionPrefix) && subfn.returns == null}
+                  var.set:
+                    subfn.returnDesc: ""
+                - if: ${subfn.name.startsWith(subsectionPrefix)}
+                  var.set:
+                    subsectionRows..:
+                      fmt: subsectionRow
+                      value: ${subfn}
+                    nestedFunctionNames..: ${subfn.name}
+        
         # Prepend internal use warning for internal category functions
         - var.set:
             fn.finalDescription: ${(fn.category!='internal'?'':"**INTERNAL USE ONLY**\n\n")}${fn.description}
+            fn.paramTableRows: ${paramTableRows}
+            fn.subsectionRows: ${subsectionRows}
+            fn.hideCategory: ${displayedCategories?.contains(fn.category)?:false}
+            fn.tocName: ${fn.displayName}
+            fn.isNested: ${nestedFunctionNames?.contains(fn.name)?:false}
                           
-        - var.set:
-           fn.paramTableRows: ${paramTableRows}
-           fn.hideCategory: ${displayedCategories?.contains(fn.category)?:false}
-           ${fn.category=='internal'?'internal':'public'}SpelFunctionDescriptionSections..:
-             fmt: spelFunctionDescriptionSection
-             value: ${fn}
-           displayedCategories..: ${fn.category}
+        # Only add top-level functions to main sections (not nested ones that will appear in subsections)
+        - if: ${!fn.isNested}
+          var.set:
+            ${fn.category=='internal'?'internal':'public'}SpelFunctionDescriptionSections..:
+              fmt: spelFunctionDescriptionSection
+              value: ${fn}
+            displayedCategories..: ${fn.category}
                        
   - out.write:
       ${cli.outputFile}: {fmt: result}
@@ -338,11 +386,11 @@ formatters:
   spelFunctionDescriptionSection: |
     ${hideCategory?'':'=== ['+category+']'}
     ${hideCategory || category != 'internal' ? '' : '\nWARNING: Functions in this category are **INTERNAL USE ONLY** and should not be used in custom (runtime) actions. These functions may be removed, renamed, or change signature between fcli versions without notice.\n'}
-    === `${name?:'-'}`
+    === `${tocName?:'-'}`
     [%noheader,%autowidth.stretch,cols="1,~"]
     |===
     |**Signature**
-    |**`${signature}`**
+    |**`${signature.replaceFirst('#'+name, '#'+displayName)}`**
     
     ${paramTableRows==null ? '' : ('|**Parameters**\n|'+#join(' +\n', paramTableRows))}
     
@@ -354,4 +402,9 @@ formatters:
     ${returns.returnTypeStructure != null ? ('2+a|*Return Type Structure:* +\n\n' + '[source,json]\n----\n' + returns.returnTypeStructure + '\n----\n') : ''}
     
     |===
+    ${subsectionRows != null && subsectionRows.size() > 0 ? '\n==== Available methods\n\n' + #join('\n\n', subsectionRows) : ''}
+  subsectionRow: |
+    ===== `${shortName}`
+    *${paramList}* +
+    ${description}${returnDesc}
     
