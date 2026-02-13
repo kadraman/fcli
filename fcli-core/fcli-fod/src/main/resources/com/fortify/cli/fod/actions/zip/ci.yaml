@@ -44,6 +44,13 @@ steps:
           - if: ${global.ci.rel==null}
             throw: FoD release must be specified through FOD_RELEASE environment variable
             
+  # Validate that workspace and source directories exist before proceeding
+  - do:
+      - if: ${!#fs.isDirectory(global.workspace.dir)}
+        throw: "Workspace directory does not exist or is not accessible: ${global.workspace.dir}"
+      - if: ${!#fs.isDirectory(global.cli.sourceDir)}
+        throw: "Source directory does not exist or is not accessible: ${global.cli.sourceDir}"
+            
   - var.set:
       # Configure scan types to run
       sca.skipReason:   # TODO
