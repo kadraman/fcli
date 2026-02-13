@@ -229,8 +229,8 @@ public final class JreHelper {
     }
     
     /**
-     * Finds the java executable in a directory. Checks both the directory itself
-     * and a bin subdirectory.
+     * Finds the java executable in a directory. Checks the directory itself,
+     * bin subdirectory, and jre/bin subdirectory (for older JDK layouts).
      * 
      * @param dir Directory to search
      * @return Path to java executable, or null if not found
@@ -252,6 +252,12 @@ public final class JreHelper {
         Path binExec = dir.resolve("bin").resolve(javaExecName);
         if (Files.isRegularFile(binExec) && Files.isExecutable(binExec)) {
             return binExec;
+        }
+        
+        // Check jre/bin subdirectory (older JDK layouts)
+        Path jreBinExec = dir.resolve("jre").resolve("bin").resolve(javaExecName);
+        if (Files.isRegularFile(jreBinExec) && Files.isExecutable(jreBinExec)) {
+            return jreBinExec;
         }
         
         return null;

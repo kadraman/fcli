@@ -14,7 +14,6 @@ package com.fortify.cli.common.action.helper.ci.github;
 
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.ci;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.ci.github.GitHubEnvironment;
@@ -79,29 +78,14 @@ public class ActionGitHubRepo {
         }
     }
     
-    @SpelFunction(cat=ci, desc="Creates check run (free tier, for summary only) using repository and commit detected from the current run",
+    @SpelFunction(cat=ci, desc="Creates check run with optional annotations (free tier, auto-paginates >50 annotations). Accepts body object per GitHub REST API spec (https://docs.github.com/en/rest/checks/runs). Automatically adds head_sha from detected commit if not present.",
             returns="Response from GitHub API")
     public ObjectNode createCheckRun(
-            @SpelFunctionParam(name="name", desc="check run name") String name,
-            @SpelFunctionParam(name="status", desc="status: queued, in_progress, completed") String status,
-            @SpelFunctionParam(name="conclusion", desc="conclusion: success, failure, neutral, cancelled, skipped, timed_out, action_required") String conclusion,
-            @SpelFunctionParam(name="title", desc="summary title") String title,
-            @SpelFunctionParam(name="summary", desc="summary text in Markdown (max 65535 chars)") String summary) {
-        var sha = env.ciCommit().id().full();
-        return repo.createCheckRun(name, sha, status, conclusion, title, summary);
-    }
-    
-    @SpelFunction(cat=ci, desc="Creates check run with file/line annotations (free tier, shows vulnerabilities at source locations, auto-paginates) using the detected repository/commit",
-            returns="Response from GitHub API")
-    public ObjectNode createCheckRunWithAnnotations(
-            @SpelFunctionParam(name="name", desc="check run name") String name,
-            @SpelFunctionParam(name="status", desc="status: queued, in_progress, completed") String status,
-            @SpelFunctionParam(name="conclusion", desc="conclusion: success, failure, neutral, etc.") String conclusion,
-            @SpelFunctionParam(name="title", desc="summary title") String title,
-            @SpelFunctionParam(name="summary", desc="summary text in Markdown") String summary,
-            @SpelFunctionParam(name="annotations", desc="array of annotation objects with path, line, level, message (auto-paginated)") ArrayNode annotations) {
-        var sha = env.ciCommit().id().full();
-        return repo.createCheckRunWithAnnotations(name, sha, status, conclusion, title, summary, annotations);
+            @SpelFunctionParam(name="body", desc="check run body object: {name, head_sha (optional), status, conclusion (optional), started_at (optional), completed_at (optional), output: {title, summary, annotations (optional)}}") ObjectNode body) {
+        if (!body.has("head_sha")) {
+            body.put("head_sha", env.ciCommit().id().full());
+        }
+        return repo.createCheckRun(body);
     }
     
     @SpelFunction(cat=ci, desc="Adds a comment to the current pull request detected from the workflow run",

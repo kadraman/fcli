@@ -95,6 +95,9 @@ steps:
             traces:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
           do:
+            - var.set:
+                issueCount: ${(issueCount?:0) + 1}
+                issueCountBySeverity: {fmt: issueCountIncrement}
             - if: ${doOutputSarif}
               var.set:
                 rules..: {fmt: rules, if: "${ruleCache==null || ruleCache[issue.checkId]==null}"}
@@ -103,12 +106,14 @@ steps:
             - if: ${doOutputCheckRun && issueSourceFileResolver.exists(issue.primaryLocationFull, issue.lineNumber==0?1:issue.lineNumber)}
               var.set:
                 checkRunAnnotations..: {fmt: checkRunAnnotation}
+                annotationCount: ${(annotationCount?:0) + 1}
+                annotationCountBySeverity: {fmt: annotationCountIncrement}
   - if: ${doOutputSarif}
     var.set:
       reportContents: {fmt: github-sast-report}
   - if: ${doOutputCheckRun}
     var.set:
-      checkRunSummary: {fmt: checkRunSummary}
+      checkRunBody: {fmt: checkRunBody}
   - var.set:
       reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gh-fortify-sast.sarif'}"
   - if: ${reportFile!=null}
@@ -131,11 +136,8 @@ steps:
             steps:
               - log.info: |
                   
-                  ===== Check Run Summary =====
-                  ${checkRunSummary}
-                  
-                  ===== Check Run Annotations (${checkRunAnnotations?.getRealNode()?.size()?:0} total) =====
-                  ${checkRunAnnotations}
+                  ===== Check Run Body =====
+                  ${checkRunBody}
       - if: ${!cli.dryrun && doOutputSarif}
         steps:
           - var.set:
@@ -147,7 +149,7 @@ steps:
       - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || (!sarifUploadResult.success && sarifUploadResult.reason=='ghas_unavailable'))}
         steps:
           - var.set:
-              checkRun: ${#github.repo().createCheckRunWithAnnotations('fortify-sast', 'completed', 'neutral', 'Fortify Security Scan Results', checkRunSummary, checkRunAnnotations)}
+              checkRun: ${#github.repo().createCheckRun(checkRunBody)}
           - log.info: Published as GitHub Check Run
 
 formatters:
@@ -240,24 +242,32 @@ formatters:
         }
         
   # Check Run formatters for free-tier GitHub reporting
-  checkRunSummary: |
-    ## Fortify SAST Scan Results
-    
-    **Application:** ${rel.applicationName}  
-    **Release:** ${rel.releaseName}  
-    **Total Issues:** ${issues?.getRealNode()?.size()?:0}
-    
-    ### Issues by Severity
-    
-    | Severity | Count |
-    |----------|-------|
-    | Critical | ${issues?.^[severityString=='Critical']?.getRealNode()?.size()?:0} |
-    | High | ${issues?.^[severityString=='High']?.getRealNode()?.size()?:0} |
-    | Medium | ${issues?.^[severityString=='Medium']?.getRealNode()?.size()?:0} |
-    | Low | ${issues?.^[severityString=='Low']?.getRealNode()?.size()?:0} |
-    
-    See annotations below for detailed findings at specific file locations.
-    
+  checkRunBody:
+    name: fortify-sast
+    status: completed
+    conclusion: neutral
+    output:
+      title: Fortify Security Scan Results
+      summary: |
+        ## Fortify SAST Scan Results
+        
+        **Application:** ${rel.applicationName}  
+        **Release:** ${rel.releaseName}  
+        **Total Issues in FoD:** ${issueCount?:0}  
+        **Reported in GitHub:** ${annotationCount?:0}
+        
+        ### Issues by Severity
+        
+        | Severity | FoD | GitHub |
+        |----------|-----|--------|
+        | Critical | ${issueCountBySeverity?.Critical?:0} | ${annotationCountBySeverity?.Critical?:0} |
+        | High | ${issueCountBySeverity?.High?:0} | ${annotationCountBySeverity?.High?:0} |
+        | Medium | ${issueCountBySeverity?.Medium?:0} | ${annotationCountBySeverity?.Medium?:0} |
+        | Low | ${issueCountBySeverity?.Low?:0} | ${annotationCountBySeverity?.Low?:0} |
+        
+        **Note:** GitHub counts may be lower than FoD counts when issue file paths cannot be resolved to files in the repository.
+      annotations: ${checkRunAnnotations?:{}}
+      
   checkRunAnnotation:
     path: ${issueSourceFileResolver.resolve(issue.primaryLocationFull)}
     start_line: ${issue.lineNumber==0?1:issue.lineNumber}
@@ -270,4 +280,16 @@ formatters:
       ${#cleanIssueDescription(issue.details?.summary)}
       
       [View in FoD](${#fod.issueBrowserUrl(issue)})
+      
+  issueCountIncrement:
+    Critical: "${issue.severityString=='Critical' ? (issueCountBySeverity?.Critical?:0)+1 : (issueCountBySeverity?.Critical?:0)}"
+    High: "${issue.severityString=='High' ? (issueCountBySeverity?.High?:0)+1 : (issueCountBySeverity?.High?:0)}"
+    Medium: "${issue.severityString=='Medium' ? (issueCountBySeverity?.Medium?:0)+1 : (issueCountBySeverity?.Medium?:0)}"
+    Low: "${issue.severityString=='Low' ? (issueCountBySeverity?.Low?:0)+1 : (issueCountBySeverity?.Low?:0)}"
+      
+  annotationCountIncrement:
+    Critical: "${issue.severityString=='Critical' ? (annotationCountBySeverity?.Critical?:0)+1 : (annotationCountBySeverity?.Critical?:0)}"
+    High: "${issue.severityString=='High' ? (annotationCountBySeverity?.High?:0)+1 : (annotationCountBySeverity?.High?:0)}"
+    Medium: "${issue.severityString=='Medium' ? (annotationCountBySeverity?.Medium?:0)+1 : (annotationCountBySeverity?.Medium?:0)}"
+    Low: "${issue.severityString=='Low' ? (annotationCountBySeverity?.Low?:0)+1 : (annotationCountBySeverity?.Low?:0)}"
       

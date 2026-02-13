@@ -75,120 +75,141 @@ public class GitHubRepo {
     /**
      * Create a check run for the commit (available on all tiers including free).
      * This can report scan results without requiring GitHub Advanced Security.
-     * For file/line-level findings, use createCheckRunWithAnnotations instead.
      * 
-     * API documentation: https://docs.github.com/en/rest/checks/runs
+     * The implementation handles annotations automatically:
+     * 1. Creates check run with status "in_progress" (without conclusion/annotations)
+     * 2. If annotations present, updates check run with annotations (paginated in batches of 50)
+     * 3. Updates check run with final status and conclusion
      * 
-     * @param name Check run name
-     * @param headSha Commit SHA
-     * @param status Status (queued, in_progress, completed)
-     * @param conclusion Conclusion (success, failure, neutral, cancelled, skipped, timed_out, action_required) - required if status=completed
-     * @param title Summary title
-     * @param summary Summary text (Markdown supported, max 65535 chars)
-     * @return Response from GitHub API
-     */
-    public ObjectNode createCheckRun(String name, String headSha, String status, 
-                                      String conclusion, String title, String summary) {
-        return createCheckRunWithAnnotations(name, headSha, status, conclusion, title, summary, null);
-    }
-    
-    /**
-     * Create a check run with annotations for file/line-level details (available on all tiers).
-     * Annotations allow displaying vulnerability details at specific file locations.
-     * Automatically handles pagination for more than 50 annotations by creating the check run
-     * with the first 50, then updating with remaining annotations in batches of 50.
+     * Expected body format matches GitHub REST API (https://docs.github.com/en/rest/checks/runs):
+     * - name: Check run name (required)
+     * - head_sha: Commit SHA (required)
+     * - status: queued, in_progress, or completed (required)
+     * - conclusion: success, failure, neutral, etc. (optional, set to finalize check run)
+     * - started_at: ISO 8601 timestamp (optional, defaults to current time)
+     * - completed_at: ISO 8601 timestamp (optional, set when status=completed)
+     * - output: Object with title, summary, text, and annotations (optional)
+     *   - annotations: Array of annotation objects (optional, auto-paginated if >50)
      * 
-     * Annotation format:
-     * - path: File path relative to repository root
-     * - start_line: Starting line number (required)
-     * - end_line: Ending line number (defaults to start_line)
-     * - annotation_level: notice, warning, or failure
-     * - message: Annotation message (Markdown supported)
-     * - title: Optional short title
-     * 
-     * API documentation: https://docs.github.com/en/rest/checks/runs#create-a-check-run
-     * 
-     * @param name Check run name
-     * @param headSha Commit SHA
-     * @param status Status (queued, in_progress, completed)
-     * @param conclusion Conclusion (required if status=completed)
-     * @param title Summary title
-     * @param summary Summary text (Markdown supported)
-     * @param annotations Array of annotation objects (automatic pagination for >50)
+     * @param body Full check run request body in GitHub API format
      * @return Response from GitHub API (from initial create request)
      */
-    public ObjectNode createCheckRunWithAnnotations(String name, String headSha, String status,
-                                                     String conclusion, String title, String summary, 
-                                                     ArrayNode annotations) {
-        ArrayNode firstBatch = null;
+    public ObjectNode createCheckRun(ObjectNode body) {
+        var originalStatus = body.path("status").asText(null);
+        var originalConclusion = body.path("conclusion").asText(null);
+        var annotations = extractAnnotations(body);
+        
+        var response = createCheckRunInitial(body);
+        var checkRunId = response.get("id").asLong();
+        
         if (annotations != null && annotations.size() > 0) {
-            firstBatch = JsonHelper.getObjectMapper().createArrayNode();
-            int batchSize = Math.min(50, annotations.size());
-            for (int i = 0; i < batchSize; i++) {
-                firstBatch.add(annotations.get(i));
-            }
+            addCheckRunAnnotations(checkRunId, annotations);
         }
         
-        var body = JsonHelper.getObjectMapper().createObjectNode()
-            .put("name", name)
-            .put("head_sha", headSha)
-            .put("status", status);
-        
-        var now = java.time.Instant.now().toString();
-        body.put("started_at", now);
-        if ("completed".equals(status)) {
-            body.put("completed_at", now);
-        }
-        
-        if (conclusion != null) {
-            body.put("conclusion", conclusion);
-        }
-        
-        if (title != null || summary != null || firstBatch != null) {
-            var output = body.putObject("output");
-            if (title != null) output.put("title", title);
-            if (summary != null) output.put("summary", summary);
-            if (firstBatch != null) {
-                output.set("annotations", firstBatch);
-            }
-        }
-        
-        var response = unirest
-            .post("/repos/{owner}/{repo}/check-runs")
-            .routeParam("owner", owner)
-            .routeParam("repo", repo)
-            .body(body)
-            .asObject(ObjectNode.class)
-            .getBody();
-        
-        if (annotations != null && annotations.size() > 50) {
-            var checkRunId = response.get("id").asLong();
-            for (int offset = 50; offset < annotations.size(); offset += 50) {
-                var batch = JsonHelper.getObjectMapper().createArrayNode();
-                int batchEnd = Math.min(offset + 50, annotations.size());
-                for (int i = offset; i < batchEnd; i++) {
-                    batch.add(annotations.get(i));
-                }
-                updateCheckRunAnnotations(checkRunId, batch);
-            }
+        boolean needsFinalUpdate = !"in_progress".equals(originalStatus) || originalConclusion != null;
+        if (needsFinalUpdate) {
+            finalizeCheckRun(checkRunId, originalStatus, originalConclusion, body.has("completed_at"));
         }
         
         return response;
     }
     
     /**
-     * Update check run with additional annotations.
-     * Used internally by createCheckRunWithAnnotations for pagination.
+     * Extract annotations from check run body.
+     * 
+     * @param body Check run body
+     * @return Annotations array or null if not present
+     */
+    private ArrayNode extractAnnotations(ObjectNode body) {
+        var annotations = (ArrayNode) body.path("output").path("annotations");
+        return annotations.isMissingNode() ? null : annotations;
+    }
+    
+    /**
+     * Create initial check run with in_progress status and without annotations.
+     * 
+     * @param body Original check run body
+     * @return Response from GitHub API
+     */
+    private ObjectNode createCheckRunInitial(ObjectNode body) {
+        var createBody = body.deepCopy();
+        createBody.put("status", "in_progress");
+        createBody.remove("conclusion");
+        if (createBody.has("output")) {
+            ((ObjectNode) createBody.get("output")).remove("annotations");
+        }
+        if (!createBody.has("started_at")) {
+            createBody.put("started_at", java.time.Instant.now().toString());
+        }
+        
+        return unirest
+            .post("/repos/{owner}/{repo}/check-runs")
+            .routeParam("owner", owner)
+            .routeParam("repo", repo)
+            .body(createBody)
+            .asObject(ObjectNode.class)
+            .getBody();
+    }
+    
+    /**
+     * Add annotations to check run in batches of 50.
      * 
      * @param checkRunId Check run ID
-     * @param annotations Array of annotation objects (max 50)
+     * @param annotations All annotations to add
+     */
+    private void addCheckRunAnnotations(long checkRunId, ArrayNode annotations) {
+        for (int offset = 0; offset < annotations.size(); offset += 50) {
+            var batch = JsonHelper.getObjectMapper().createArrayNode();
+            int batchEnd = Math.min(offset + 50, annotations.size());
+            for (int i = offset; i < batchEnd; i++) {
+                batch.add(annotations.get(i));
+            }
+            updateCheckRunAnnotations(checkRunId, batch);
+        }
+    }
+    
+    /**
+     * Finalize check run with final status and conclusion.
+     * 
+     * @param checkRunId Check run ID
+     * @param status Final status
+     * @param conclusion Final conclusion (may be null)
+     * @param hasCompletedAt Whether body already has completed_at
+     */
+    private void finalizeCheckRun(long checkRunId, String status, String conclusion, boolean hasCompletedAt) {
+        var updateBody = JsonHelper.getObjectMapper().createObjectNode();
+        updateBody.put("status", status);
+        if (conclusion != null) {
+            updateBody.put("conclusion", conclusion);
+        }
+        if ("completed".equals(status) && !hasCompletedAt) {
+            updateBody.put("completed_at", java.time.Instant.now().toString());
+        }
+        updateCheckRun(checkRunId, updateBody);
+    }
+    
+    /**
+     * Update check run with annotation batch.
+     * 
+     * @param checkRunId Check run ID
+     * @param annotations Batch of annotations (max 50)
      */
     private void updateCheckRunAnnotations(long checkRunId, ArrayNode annotations) {
         var body = JsonHelper.getObjectMapper().createObjectNode();
         var output = body.putObject("output");
         output.set("annotations", annotations);
-        
-        unirest
+        updateCheckRun(checkRunId, body);
+    }
+    
+    /**
+     * Update check run via PATCH request.
+     * 
+     * @param checkRunId Check run ID
+     * @param body Update body
+     * @return Response from GitHub API
+     */
+    private ObjectNode updateCheckRun(long checkRunId, ObjectNode body) {
+        return unirest
             .patch("/repos/{owner}/{repo}/check-runs/{check_run_id}")
             .routeParam("owner", owner)
             .routeParam("repo", repo)

@@ -66,10 +66,12 @@ public abstract class AbstractToolRunCommand extends AbstractRunnableCommand {
         var baseCommands = new ArrayList<>(getBaseCommands(descriptor));
         while (true) {
             try {
+                LOG.debug("Attempting to execute command: {}", baseCommands.get(0));
                 return call(baseCommands.get(0));
             } catch ( Exception e ) {
                 if ( baseCommands.size()==1) { throw e; } // No more base commands
-                LOG.debug("Command execution failed; trying fallback command");
+                LOG.debug("Command execution failed ({}): {}; trying fallback command", 
+                    e.getClass().getSimpleName(), e.getMessage());
                 baseCommands.remove(0);
             }
         }
