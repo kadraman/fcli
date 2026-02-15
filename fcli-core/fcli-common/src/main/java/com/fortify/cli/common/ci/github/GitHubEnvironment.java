@@ -12,10 +12,13 @@
  */
 package com.fortify.cli.common.ci.github;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.ci.CiBranch;
 import com.fortify.cli.common.ci.CiCommit;
@@ -23,6 +26,7 @@ import com.fortify.cli.common.ci.CiCommitId;
 import com.fortify.cli.common.ci.CiPullRequest;
 import com.fortify.cli.common.ci.CiRepository;
 import com.fortify.cli.common.ci.CiRepositoryName;
+import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.util.EnvHelper;
 
 import lombok.Builder;
@@ -72,6 +76,7 @@ public record GitHubEnvironment(
     public static final String ENV_SERVER_URL = "GITHUB_SERVER_URL"; // Base URL for GitHub Enterprise
     public static final String ENV_API_URL = "GITHUB_API_URL"; // API URL for GitHub Enterprise
     public static final String ENV_TOKEN = "GITHUB_TOKEN";
+    public static final String ENV_EVENT_PATH = "GITHUB_EVENT_PATH"; // Path to event payload JSON
     
     /**
      * Detect GitHub Actions environment from environment variables.
@@ -90,7 +95,7 @@ public record GitHubEnvironment(
         var repo = repoParts.length > 1 ? repoParts[1] : ghRepo;
         var sourceBranch = branchInfo[0];
         var targetBranch = branchInfo[1];
-        var sha = EnvHelper.env(ENV_SHA);
+        var sha = detectCommitSha(isPr);
         
         // Build standardized structures
         var ciRepository = CiRepository.builder()
@@ -163,6 +168,60 @@ public record GitHubEnvironment(
         if (StringUtils.isBlank(ref)) return null;
         var matcher = PR_NUMBER_PATTERN.matcher(ref);
         return matcher.find() ? Integer.parseInt(matcher.group(1)) : null;
+    }
+    
+    /**
+     * Detect commit SHA, using head SHA for pull requests.
+     * For PR events, reads from event payload JSON to get pull_request.head.sha.
+     * Falls back to GITHUB_SHA for regular commits or if head SHA is not available.
+     */
+    private static String detectCommitSha(boolean isPr) {
+        var sha = EnvHelper.env(ENV_SHA);
+        
+        if (isPr) {
+            var headSha = extractHeadShaFromEventPayload();
+            if (StringUtils.isNotBlank(headSha)) {
+                sha = headSha;
+            }
+        }
+        
+        return sha;
+    }
+    
+    /**
+     * Extract pull_request.head.sha from GitHub event payload JSON.
+     * Returns null if event path not available or head SHA not found.
+     */
+    private static String extractHeadShaFromEventPayload() {
+        var eventPath = EnvHelper.env(ENV_EVENT_PATH);
+        if (StringUtils.isBlank(eventPath)) return null;
+        
+        var eventFile = new File(eventPath);
+        if (!eventFile.exists() || !eventFile.isFile()) return null;
+        
+        try {
+            var eventPayload = JsonHelper.getObjectMapper().readTree(eventFile);
+            return extractHeadShaFromPayload(eventPayload);
+        } catch (IOException e) {
+            // Silently ignore parsing errors and fall back to GITHUB_SHA
+            return null;
+        }
+    }
+    
+    /**
+     * Extract head SHA from parsed event payload.
+     */
+    private static String extractHeadShaFromPayload(JsonNode eventPayload) {
+        if (eventPayload == null) return null;
+        
+        var pullRequest = eventPayload.path("pull_request");
+        if (pullRequest.isMissingNode()) return null;
+        
+        var head = pullRequest.path("head");
+        if (head.isMissingNode()) return null;
+        
+        var sha = head.path("sha");
+        return sha.isMissingNode() ? null : sha.asText();
     }
     
     /**
