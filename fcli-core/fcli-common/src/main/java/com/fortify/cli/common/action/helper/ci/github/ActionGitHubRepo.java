@@ -46,7 +46,7 @@ public class ActionGitHubRepo {
     public ObjectNode uploadSarif(
             @SpelFunctionParam(name="sarifContent", desc="SARIF report content as string") String sarifContent) {
         var ref = env.ciBranch().full();
-        var sha = env.ciCommit().id().full();
+        var sha = env.ciCommit().mergeId().full();  // GitHub API requires merge commit for PRs
         return repo.uploadSarif(ref, sarifContent, sha);
     }
     
@@ -57,7 +57,7 @@ public class ActionGitHubRepo {
         var mapper = JsonHelper.getObjectMapper();
         try {
             var ref = env.ciBranch().full();
-            var sha = env.ciCommit().id().full();
+            var sha = env.ciCommit().mergeId().full();  // GitHub API requires merge commit for PRs
             var response = repo.uploadSarif(ref, sarifContent, sha);
             return mapper.createObjectNode()
                 .put("success", true)
@@ -83,7 +83,7 @@ public class ActionGitHubRepo {
     public ObjectNode createCheckRun(
             @SpelFunctionParam(name="body", desc="check run body object: {name, head_sha (optional), status, conclusion (optional), started_at (optional), completed_at (optional), output: {title, summary, annotations (optional)}}") ObjectNode body) {
         if (!body.has("head_sha")) {
-            body.put("head_sha", env.ciCommit().id().full());
+            body.put("head_sha", env.ciCommit().headId().full());  // Head commit better for annotations on actual code
         }
         return repo.createCheckRun(body);
     }
@@ -107,7 +107,7 @@ public class ActionGitHubRepo {
         if (!env.pullRequest().active()) {
             throw new FcliSimpleException("Not running in pull request context. GITHUB_HEAD_REF is not set.");
         }
-        var sha = env.ciCommit().id().full();
+        var sha = env.ciCommit().headId().full();  // Use head commit for review comments on actual PR code
         return repo.createReviewComment(env.pullRequest().id(), sha, path, line, body);
     }
 }

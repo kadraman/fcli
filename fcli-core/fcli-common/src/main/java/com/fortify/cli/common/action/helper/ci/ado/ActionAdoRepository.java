@@ -43,7 +43,7 @@ public class ActionAdoRepository {
     public ObjectNode uploadSarif(
             @SpelFunctionParam(name="sarifContent", desc="SARIF report content") String sarifContent) {
         var ref = env.ciBranch().short_();
-        var sha = env.ciCommit().id().full();
+        var sha = env.ciCommit().headId().full();
         return repository.uploadSarif(ref, sha, sarifContent);
     }
 }

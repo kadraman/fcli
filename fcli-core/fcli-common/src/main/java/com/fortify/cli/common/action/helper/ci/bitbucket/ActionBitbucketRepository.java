@@ -62,8 +62,8 @@ public class ActionBitbucketRepository {
     }
     
     private String requireCommitSha(String operation) {
-        var commit = env.ciCommit() != null && env.ciCommit().id() != null
-            ? env.ciCommit().id().full()
+        var commit = env.ciCommit() != null && env.ciCommit().headId() != null
+            ? env.ciCommit().headId().full()
             : null;
         if (StringUtils.isBlank(commit)) {
             throw new FcliSimpleException(

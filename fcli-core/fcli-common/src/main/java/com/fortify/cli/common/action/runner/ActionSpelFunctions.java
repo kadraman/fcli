@@ -621,11 +621,14 @@ public class ActionSpelFunctions {
                         var authorIdent = gitCommit.getAuthorIdent();
                         var committerIdent = gitCommit.getCommitterIdent();
                         
+                        var commitId = CiCommitId.builder()
+                            .full(gitCommit.getId().getName())
+                            .short_(shortId)
+                            .build();
+                        
                         commit = CiCommit.builder()
-                            .id(CiCommitId.builder()
-                                .full(gitCommit.getId().getName())
-                                .short_(shortId)
-                                .build())
+                            .headId(commitId)
+                            .mergeId(commitId)  // Same as headId for local repos
                             .message(CiCommitMessage.builder()
                                 .short_(gitCommit.getShortMessage())
                                 .full(gitCommit.getFullMessage())

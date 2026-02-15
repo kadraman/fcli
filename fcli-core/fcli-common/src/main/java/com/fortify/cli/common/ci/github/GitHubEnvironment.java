@@ -95,7 +95,7 @@ public record GitHubEnvironment(
         var repo = repoParts.length > 1 ? repoParts[1] : ghRepo;
         var sourceBranch = branchInfo[0];
         var targetBranch = branchInfo[1];
-        var sha = detectCommitSha(isPr);
+        var commitShas = detectCommitShas(isPr);
         
         // Build standardized structures
         var ciRepository = CiRepository.builder()
@@ -113,9 +113,15 @@ public record GitHubEnvironment(
             .build();
         
         var ciCommit = CiCommit.builder()
-            .id(CiCommitId.builder()
-                .full(sha)
-                .short_(StringUtils.isNotBlank(sha) && sha.length() >= 7 ? sha.substring(0, 7) : sha)
+            .headId(CiCommitId.builder()
+                .full(commitShas.headSha())
+                .short_(StringUtils.isNotBlank(commitShas.headSha()) && commitShas.headSha().length() >= 7 
+                    ? commitShas.headSha().substring(0, 7) : commitShas.headSha())
+                .build())
+            .mergeId(CiCommitId.builder()
+                .full(commitShas.mergeSha())
+                .short_(StringUtils.isNotBlank(commitShas.mergeSha()) && commitShas.mergeSha().length() >= 7 
+                    ? commitShas.mergeSha().substring(0, 7) : commitShas.mergeSha())
                 .build())
             .message(null)  // Not available in GitHub Actions environment
             .author(null)   // Not available in GitHub Actions environment
@@ -171,21 +177,29 @@ public record GitHubEnvironment(
     }
     
     /**
-     * Detect commit SHA, using head SHA for pull requests.
-     * For PR events, reads from event payload JSON to get pull_request.head.sha.
-     * Falls back to GITHUB_SHA for regular commits or if head SHA is not available.
+     * Helper record to hold both head and merge commit SHAs.
      */
-    private static String detectCommitSha(boolean isPr) {
-        var sha = EnvHelper.env(ENV_SHA);
+    private record CommitShas(String headSha, String mergeSha) {}
+    
+    /**
+     * Detect commit SHAs, differentiating between head and merge commits.
+     * For PR events: mergeSha = GITHUB_SHA (merge commit), headSha = pull_request.head.sha (actual PR commit)
+     * For push events: both SHAs are the same (GITHUB_SHA)
+     * Falls back to GITHUB_SHA for both if head SHA is not available.
+     */
+    private static CommitShas detectCommitShas(boolean isPr) {
+        var githubSha = EnvHelper.env(ENV_SHA);
         
         if (isPr) {
             var headSha = extractHeadShaFromEventPayload();
             if (StringUtils.isNotBlank(headSha)) {
-                sha = headSha;
+                // For PRs: GITHUB_SHA is merge commit, event payload has head commit
+                return new CommitShas(headSha, githubSha);
             }
         }
         
-        return sha;
+        // For non-PRs or if event payload unavailable: both are the same
+        return new CommitShas(githubSha, githubSha);
     }
     
     /**
