@@ -148,7 +148,7 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
     /**
      * Sets generic exception variables available in on.fail blocks.
      * Sets lastException as POJONode for consistency with ${name}_exception behavior from v3.14.x.
-     * Both variables support SpEL method calls (e.g., ${lastException.message}, ${lastException.class.simpleName}).
+     * Both variables support SpEL method calls (e.g., ${lastException.message}, ${lastException.getClass().simpleName}).
      * 
      * @param exception The exception to expose as variables
      * @param elementName The element name/key (may be null)

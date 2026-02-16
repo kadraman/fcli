@@ -42,7 +42,7 @@ public abstract class AbstractActionStepElement implements IActionStepElement {
         Optional list: Steps to be executed if this element's execution throws an exception. \
         If not specified, the exception will propagate and action execution will terminate \
         (fail-fast behavior). Steps executed in on.fail can access exception details via \
-        'lastException' (the exception object, e.g., ${lastException.message}, ${lastException.class.simpleName}). \
+        'lastException' (the exception object, e.g., ${lastException.message}, ${lastException.getClass().simpleName}). \
         For named elements, '${name}_exception' is also available with the same properties.
         """)
     @JsonProperty(value = "on.fail", required = false) private ArrayList<ActionStep> onFail;
