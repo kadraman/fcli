@@ -25,6 +25,7 @@ import com.fortify.cli.common.ci.gitlab.GitLabRestHelper;
 import com.fortify.cli.common.ci.gitlab.GitLabUnirestInstanceSupplier;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionPrefix;
 
@@ -86,7 +87,8 @@ public class ActionGitLabSpelFunctions implements IActionSpelFunctions {
      * @return Project-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a project-scoped GitLab client using project ID detected from the current pipeline run",
-            returns="GitLab project client for CI operations")
+            returns="GitLab project client for CI operations",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE)
     public ActionGitLabProject project() {
         requireEnv("project");
         return new ActionGitLabProject(getRestHelper().project(requireProjectId("project")), env);

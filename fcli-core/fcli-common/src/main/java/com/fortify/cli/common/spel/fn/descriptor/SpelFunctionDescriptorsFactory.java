@@ -201,8 +201,8 @@ public final class SpelFunctionDescriptorsFactory {
             SpelFunction::renderSubFunctions, 
             ()->RenderSubFunctionsMode.AUTO);
         var renderSubFunctionsMode = resolveRenderSubFunctionsMode(renderMode, spelFunctionMethod.getReturnType());
-        // Parent function with sub-functions should have renderInline=false
-        var renderInline = renderSubFunctionsMode == RenderSubFunctionsMode.AUTO;
+        // All top-level functions should have section headers
+        var renderInline = false;
         
         return SpelFunctionDescriptor.builder()
                 .clazz(spelFunctionClazz)
