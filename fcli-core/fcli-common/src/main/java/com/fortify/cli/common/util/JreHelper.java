@@ -98,8 +98,8 @@ public final class JreHelper {
                 
                 // Try GitHub Actions-style patterns (e.g., JAVA_HOME_17_X64)
                 // GitHub Actions uses X64 for 64-bit x86 architectures and X86 for 32-bit
-                String githubActionsArch = PlatformHelper.getGitHubActionsArchSuffix();
-                if (githubActionsArch != null) {
+                {
+                    String githubActionsArch = PlatformHelper.getGitHubActionsArchSuffix();
                     String envVarName = "JAVA_HOME_" + version + "_" + githubActionsArch;
                     String javaHome = EnvHelper.env(envVarName);
                     if (StringUtils.isNotBlank(javaHome)) {

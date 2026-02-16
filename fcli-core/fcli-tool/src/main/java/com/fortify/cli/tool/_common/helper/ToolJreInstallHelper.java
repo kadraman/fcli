@@ -114,8 +114,8 @@ public class ToolJreInstallHelper {
                 }
                 
                 // Try GitHub Actions-style patterns (e.g., JAVA_HOME_17_X64)
-                String githubActionsArch = com.fortify.cli.common.util.PlatformHelper.getGitHubActionsArchSuffix();
-                if (githubActionsArch != null) {
+                {
+                    String githubActionsArch = com.fortify.cli.common.util.PlatformHelper.getGitHubActionsArchSuffix();
                     String envVarName = "JAVA_HOME_" + version + "_" + githubActionsArch;
                     JreInstallResult result = tryVersionEnvVar(envVarName, version);
                     if (result != null) return result;
