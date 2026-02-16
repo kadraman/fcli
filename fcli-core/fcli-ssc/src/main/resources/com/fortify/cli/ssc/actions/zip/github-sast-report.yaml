@@ -78,6 +78,7 @@ steps:
       doOutputSarif: ${cli.type==null || cli.type=='sarif'}
       doOutputCheckRun: ${cli.type==null || cli.type=='check-run'}
       dateFmt: YYYY-MM-dd HH:mm
+      issueCount: 0
   - log.progress: Loading latest static scan
   - rest.call:
       artifacts:
@@ -111,7 +112,7 @@ steps:
               uri: /api/v1/issueDetails/${issue.id}
           do:
             - var.set:
-                issueCount: ${(issueCount?:0) + 1}
+                issueCount: ${issueCount+1}
                 issueCountBySeverity: {fmt: issueCountIncrement}
             - if: ${doOutputSarif}
               var.set:
@@ -270,14 +271,15 @@ formatters:
   checkRunBody:
     name: fortify-sast
     status: completed
-    conclusion: success
+    conclusion: ${issueCount==0?'success':'neutral'}
+    details_url: ${#ssc.appversionBrowserUrl(av,fs)}
     output:
       title: Fortify SAST Scan Results
       summary: |
-        ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,null)})
+        ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,fs)})
 
         **Summary generated on:** ${#formatDateTime(dateFmt)}
-        **Total Issues in SSC:** ${issueCount?:0}  
+        **Total Issues in SSC:** ${issueCount}  
 
         ### Issues by Severity
         
@@ -295,7 +297,7 @@ formatters:
     annotation_level: notice # GitHub only allows for 10 warn/fail annotations per check run, so we set all annotations to notice and use severity info in the title instead
     title: ${issue.issueName} (${issue.friority})
     message: |
-      ${issue.details?.brief}
+      ${issue.details?.brief?.trim()?:''}
       For more details, see: ${#ssc.issueBrowserUrl(issue,fs)}
       
   issueCountIncrement:
