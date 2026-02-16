@@ -296,7 +296,7 @@ formatters:
     title: ${issue.issueName} (${issue.friority})
     message: |
       ${issue.details?.brief}
-      ${#ssc.issueBrowserUrl(issue,fs)}
+      For more details, see: ${#ssc.issueBrowserUrl(issue,fs)}
       
   issueCountIncrement:
     Critical: "${issue.friority=='Critical' ? (issueCountBySeverity?.Critical?:0)+1 : (issueCountBySeverity?.Critical?:0)}"
