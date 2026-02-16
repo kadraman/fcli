@@ -67,6 +67,7 @@ steps:
       issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
       doOutputSarif: ${cli.type==null || cli.type=='sarif'}
       doOutputCheckRun: ${cli.type==null || cli.type=='check-run'}
+      issueCount: 0
   - log.progress: Loading static scan summary
   - rest.call:
       staticScanSummary:
@@ -96,7 +97,7 @@ steps:
               uri: /api/v3/releases/${rel.releaseId}/vulnerabilities/${issue.vulnId}/traces 
           do:
             - var.set:
-                issueCount: ${(issueCount?:0) + 1}
+                issueCount: ${issueCount+1}
                 issueCountBySeverity: {fmt: issueCountIncrement}
             - if: ${doOutputSarif}
               var.set:
@@ -106,8 +107,6 @@ steps:
             - if: ${doOutputCheckRun && issueSourceFileResolver.exists(issue.primaryLocationFull, issue.lineNumber==0?1:issue.lineNumber)}
               var.set:
                 checkRunAnnotations..: {fmt: checkRunAnnotation}
-                annotationCount: ${(annotationCount?:0) + 1}
-                annotationCountBySeverity: {fmt: annotationCountIncrement}
   - if: ${doOutputSarif}
     var.set:
       reportContents: {fmt: github-sast-report}
@@ -245,51 +244,37 @@ formatters:
   checkRunBody:
     name: fortify-sast
     status: completed
-    conclusion: neutral
+    conclusion: ${issueCount==0?'success':'neutral'}
+    details_url: ${#fod.releaseBrowserUrl(rel)}
     output:
-      title: Fortify Security Scan Results
+      title: Fortify SAST Scan Results
       summary: |
-        ## Fortify SAST Scan Results
-        
-        **Application:** ${rel.applicationName}  
-        **Release:** ${rel.releaseName}  
-        **Total Issues in FoD:** ${issueCount?:0}  
-        **Reported in GitHub:** ${annotationCount?:0}
-        
+        ## [${rel.applicationName} - ${rel.releaseName}](${#fod.releaseBrowserUrl(rel)})
+
+        **Total Issues in FoD:** ${issueCount}  
+
         ### Issues by Severity
         
-        | Severity | FoD | GitHub |
-        |----------|-----|--------|
-        | Critical | ${issueCountBySeverity?.Critical?:0} | ${annotationCountBySeverity?.Critical?:0} |
-        | High | ${issueCountBySeverity?.High?:0} | ${annotationCountBySeverity?.High?:0} |
-        | Medium | ${issueCountBySeverity?.Medium?:0} | ${annotationCountBySeverity?.Medium?:0} |
-        | Low | ${issueCountBySeverity?.Low?:0} | ${annotationCountBySeverity?.Low?:0} |
+        | Critical | High | Medium | Low |
+        |----------|------|--------|-----|
+        | ${issueCountBySeverity?.Critical?:0} | ${issueCountBySeverity?.High?:0} | ${issueCountBySeverity?.Medium?:0} | ${issueCountBySeverity?.Low?:0} |
         
-        **Note:** GitHub counts may be lower than FoD counts when issue file paths cannot be resolved to files in the repository.
+        **Note:** Only a subset of issues may be included in the annotations below; for more details and to view all issues, please check the [results in FoD](${#fod.releaseBrowserUrl(rel)}).
       annotations: ${checkRunAnnotations?:{}}
       
   checkRunAnnotation:
     path: ${issueSourceFileResolver.resolve(issue.primaryLocationFull)}
     start_line: ${issue.lineNumber==0?1:issue.lineNumber}
     end_line: ${issue.lineNumber==0?1:issue.lineNumber}
-    annotation_level: ${(issue.severityString matches "(Critical|High)") ? "warning":"notice"}
-    title: ${issue.category}
+    annotation_level: notice # GitHub only allows for 10 warn/fail annotations per check run, so we set all annotations to notice and use severity info in the title instead
+    title: ${issue.category} (${issue.severityString})
     message: |
-      **${issue.category}** (Severity: ${issue.severityString})
-      
-      ${#cleanIssueDescription(issue.details?.summary)}
-      
-      [View in FoD](${#fod.issueBrowserUrl(issue)})
+      ${#cleanIssueDescription(issue.details?.summary)?.trim()?:''}
+      For more details, see: ${#fod.issueBrowserUrl(issue)}
       
   issueCountIncrement:
     Critical: "${issue.severityString=='Critical' ? (issueCountBySeverity?.Critical?:0)+1 : (issueCountBySeverity?.Critical?:0)}"
     High: "${issue.severityString=='High' ? (issueCountBySeverity?.High?:0)+1 : (issueCountBySeverity?.High?:0)}"
     Medium: "${issue.severityString=='Medium' ? (issueCountBySeverity?.Medium?:0)+1 : (issueCountBySeverity?.Medium?:0)}"
     Low: "${issue.severityString=='Low' ? (issueCountBySeverity?.Low?:0)+1 : (issueCountBySeverity?.Low?:0)}"
-      
-  annotationCountIncrement:
-    Critical: "${issue.severityString=='Critical' ? (annotationCountBySeverity?.Critical?:0)+1 : (annotationCountBySeverity?.Critical?:0)}"
-    High: "${issue.severityString=='High' ? (annotationCountBySeverity?.High?:0)+1 : (annotationCountBySeverity?.High?:0)}"
-    Medium: "${issue.severityString=='Medium' ? (annotationCountBySeverity?.Medium?:0)+1 : (annotationCountBySeverity?.Medium?:0)}"
-    Low: "${issue.severityString=='Low' ? (annotationCountBySeverity?.Low?:0)+1 : (annotationCountBySeverity?.Low?:0)}"
       
