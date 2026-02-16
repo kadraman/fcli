@@ -19,8 +19,7 @@ steps:
   # Only run if not run before; global.isCiInitialized is set at the end of this action.
   # Callers may also check this variable to avoid re-running this action.
   - if: ${global.isCiInitialized==null}
-    steps:
-      # Set default ci values. Where possible, steps below should override these
+    do:      # Set default ci values. Where possible, steps below should override these
       # variables with CI-specific values
       - var.set:
           fcliBuildProps:                  ${#fcliBuildProperties()}

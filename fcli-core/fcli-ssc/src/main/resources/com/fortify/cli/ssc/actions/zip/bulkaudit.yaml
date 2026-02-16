@@ -79,7 +79,7 @@ steps:
 
   # Validate that at least one of --tag-mapping or --add-aviator-tags is specified
   - if: ${(cli['tag-mapping'] == null || cli['tag-mapping'] == '') && !cli['add-aviator-tags']}
-    steps:
+    do:
       - log.progress: "ERROR: Either --tag-mapping or --add-aviator-tags must be specified."
       - throw: "Either --tag-mapping or --add-aviator-tags must be specified."
 
@@ -133,7 +133,7 @@ steps:
 
   # Apply exclusion filter if specified
   - if: ${enriched_versions != null && enriched_versions.size() > 0 && cli['exclude-filter'] != ""}
-    steps:
+    do:
       - log.progress: Applying exclusion filter...
       - rest.call:
           exclusion_list:
@@ -178,18 +178,18 @@ steps:
 
   # Early exit if no candidates
   - if: ${enriched_versions == null || enriched_versions.size() == 0}
-    steps:
+    do:
       - log.info: No application versions found that require audit
       - var.set:
           audit_candidates: null
 
   # Apply max-audits limit if we have candidates
   - if: ${enriched_versions != null && enriched_versions.size() > 0}
-    steps:
+    do:
       - var.set:
           audit_candidates: ${enriched_versions}
       - if: ${cli['max-audits'] != -1 && enriched_versions.size() > cli['max-audits']}
-        steps:
+        do:
           - var.set:
               audit_counter: 0
               audit_candidates: null
@@ -209,8 +209,7 @@ steps:
 
   # Process audit candidates
   - if: ${audit_candidates != null && audit_candidates.size() > 0}
-    steps:
-      # Initialize execution tracking
+    do:      # Initialize execution tracking
       - var.set:
           stats.create_attempts: 0
           stats.create_successes: 0
@@ -226,20 +225,20 @@ steps:
           record.var-name: project
           do:
             - if: ${cli['dry-run']}
-              steps:
+              do:
                 - if: ${!project.exists_in_aviator}
                   log.progress: Would create app ${project.project_name}
                 - if: ${cli['add-aviator-tags']}
                   log.progress: Would prepare tags for ${project.project_name}:${project.version_name}
                 - log.progress: Would audit ${project.project_name}:${project.version_name}
             - if: ${!cli['dry-run']}
-              steps:
+              do:
                 - var.set:
                     app_ready: ${project.exists_in_aviator}
 
                 # Create app if needed
                 - if: ${!project.exists_in_aviator && !stats.entitlement_exhausted}
-                  steps:
+                  do:
                     - var.set:
                         stats.create_attempts: ${stats.create_attempts + 1}
                     - run.fcli:
@@ -251,11 +250,11 @@ steps:
                         app_ready: true
                         stats.create_successes: ${stats.create_successes + 1}
                     - if: ${create_app.exitCode != 0}
-                      steps:
+                      do:
                         - var.set:
                             stats.create_failures: ${stats.create_failures + 1}
                         - if: ${!stats.entitlement_exhausted}
-                          steps:
+                          do:
                             - log.warn: App creation failed - suppressing further create attempts
                             - var.set:
                                 stats.entitlement_exhausted: true
@@ -266,19 +265,19 @@ steps:
 
                 # Prepare Aviator tags if requested
                 - if: ${cli['add-aviator-tags']}
-                  steps:
+                  do:
                     - log.progress: Preparing Aviator tags for ${project.project_name}
                     - run.fcli:
                         prepare_tags:
                           cmd: aviator ssc prepare --av "${project.project_name}:${project.version_name}"
                           status.check: false
                     - if: ${prepare_tags.exitCode != 0}
-                      steps:
+                      do:
                         - log.warn: Aviator tag preparation failed for ${project.project_name}
 
                 # Run audit if app is ready
                 - if: ${app_ready}
-                  steps:
+                  do:
                     - var.set:
                         stats.audit_attempts: ${stats.audit_attempts + 1}
 
@@ -295,14 +294,14 @@ steps:
                           status.check: false
 
                     - if: ${run_audit.exitCode != 0}
-                      steps:
+                      do:
                         - var.set:
                             stats.audit_failures: ${stats.audit_failures + 1}
                         - log.warn: Audit failed for ${project.project_name}:${project.version_name}
 
       # Summary
       - if: ${cli['dry-run']}
-        steps:
+        do:
           - var.set:
               would_create_count: 0
           - records.for-each:
@@ -315,7 +314,7 @@ steps:
           - log.progress: Dry-run complete - would process ${audit_candidates.size()} versions and create ${would_create_count} apps
 
       - if: ${!cli['dry-run']}
-        steps:
+        do:
           - log.progress: Complete - Apps created ${stats.create_successes}/${stats.create_attempts}, Audits attempted ${stats.audit_attempts}
           - if: ${stats.entitlement_exhausted}
             log.progress: Note - Entitlement exhausted, some app creations were skipped

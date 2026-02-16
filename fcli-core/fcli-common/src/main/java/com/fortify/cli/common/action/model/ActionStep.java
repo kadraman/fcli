@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -132,7 +133,7 @@ public final class ActionStep extends AbstractActionStepElement {
         formatters that are declared later in the same step.
         """)
     @SampleYamlSnippets(copyFrom=TemplateExpressionWithFormatter.class, value="""
-        steps:
+        do:
           - var.set:
               var1: Hello ${name}
               var2.p1: This is property 1 on var2
@@ -148,7 +149,7 @@ public final class ActionStep extends AbstractActionStepElement {
         text or as a SpEL template expression, resolving to for example 'var1' or 'global.var2'.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - var.rm:
               - var1    # Remove variable named 'var1'
               - ${var2} # Remove variable name as stored in var2 variable
@@ -164,7 +165,7 @@ public final class ActionStep extends AbstractActionStepElement {
         log.info instead.     
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - log.progress: Processing record ${recordNumber}
         """)
     @JsonProperty(value = "log.progress", required = false) private TemplateExpression logProgress;
@@ -175,7 +176,7 @@ public final class ActionStep extends AbstractActionStepElement {
         only after all action steps have been executed, to not interfere with progress messages.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - log.info: Output written to ${fileName}
         """)
     @JsonProperty(value = "log.info", required = false) private TemplateExpression logInfo;
@@ -186,14 +187,14 @@ public final class ActionStep extends AbstractActionStepElement {
         action steps have been executed, to not interfere with progress messages.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - log.warn: Skipping this part due to errors: ${errors}
         """)
     @JsonProperty(value = "log.warn", required = false) private TemplateExpression logWarn;
     
     @JsonPropertyDescription("Write a debug message to log file (if enabled).")
     @SampleYamlSnippets("""
-        steps:
+        do:
            - log.debug: ${#this}   # Log all action variables
          """)
     @JsonProperty(value = "log.debug", required = false) private TemplateExpression logDebug;
@@ -284,7 +285,7 @@ public final class ActionStep extends AbstractActionStepElement {
         /path/to/myFile3: {value: "${myVar}", fmt: "${myVarFormatterExpression}"}     
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - out.write:
               ${cli.file}: {fmt: output}    
         """)
@@ -337,22 +338,27 @@ public final class ActionStep extends AbstractActionStepElement {
     @JsonProperty(value="writer.append", required = false) private LinkedHashMap<String, TemplateExpressionWithFormatter> writerAppend;
     
     @JsonPropertyDescription("""
-        Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.    
+        Sub-steps to be executed; useful for grouping or conditional execution of multiple steps.
+        
+        Note: The 'steps' property name is deprecated; use 'do' instead. For backward compatibility, 'steps' is \
+        still accepted.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - ...
           - if: ${condition}
-            steps:
+            do:
               - ... # One or more steps to execute if ${condition} evaluates to true     
         """)
-    @JsonProperty(value = "steps", required = false) private List<ActionStep> steps;
+    @JsonProperty(value = "do", required = false) 
+    @JsonAlias("steps")
+    private List<ActionStep> steps;
     
     @JsonPropertyDescription("""
         Throw an exception, thereby terminating action execution.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - throw: ERROR: ${errorMessage}    
         """)
     @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
@@ -361,7 +367,7 @@ public final class ActionStep extends AbstractActionStepElement {
         Terminate action execution and return the given exit code.
         """)
     @SampleYamlSnippets("""
-        steps:
+        do:
           - if: ${someCondition}
             exit: 1    
         """)

@@ -117,29 +117,29 @@ steps:
   - var.set:
       reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gh-fortify-sast.sarif'}"
   - if: ${reportFile!=null}
-    steps:
+    do:
       - out.write:
           ${reportFile}: ${reportContents}
       - if: ${!{'stdout','stderr'}.contains(reportFile)}
         log.info: Output written to ${reportFile}
   - if: ${cli.publish==true}
-    steps:
+    do:
       - if: ${cli.dryrun}
-        steps:
+        do:
           - if: ${doOutputSarif}
-            steps:
+            do:
               - log.info: |
                   
                   ===== SARIF contents =====
                   ${reportContents}
           - if: ${doOutputCheckRun}
-            steps:
+            do:
               - log.info: |
                   
                   ===== Check Run Body =====
                   ${checkRunBody}
       - if: ${!cli.dryrun && doOutputSarif}
-        steps:
+        do:
           - var.set:
               sarifUploadResponse: ${#github.repo().uploadSarif(reportContents)}
               sarifUploaded: true
@@ -155,7 +155,7 @@ steps:
             on.success:
               - log.info: Report published to GitHub Code Scanning
       - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || !sarifUploaded)}
-        steps:
+        do:
           - var.set:
               checkRun: ${#github.repo().createCheckRun(checkRunBody)}
           - log.info: Published as GitHub Check Run
