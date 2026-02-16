@@ -1,3 +1,9 @@
+---
+name: 'Action YAML Guide'
+description: 'Editing guide for fcli action YAML files with SpEL expressions'
+applyTo: 'fcli/**/src/main/resources/**/actions/**/*.yaml'
+---
+
 # Action YAML Editing Guide
 
 This guide provides detailed instructions for editing fcli action YAML files.
@@ -322,17 +328,17 @@ steps:
 Reference these for patterns:
 
 **Report generation:**
-- GitHub SARIF report: [fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/github-sast-report.yaml](../../../fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/github-sast-report.yaml)
-- Policy check: [fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/check-policy.yaml](../../../fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/check-policy.yaml)
+- GitHub SARIF report: `fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/github-sast-report.yaml`
+- Policy check: `fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/check-policy.yaml`
 
 **CI/CD integration:**
-- Generic CI action: [fcli-core/fcli-action/src/main/resources/com/fortify/cli/generic_action/actions/zip/ci.yaml](../../../fcli-core/fcli-action/src/main/resources/com/fortify/cli/generic_action/actions/zip/ci.yaml)
-- FoD CI action: [fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/ci.yaml](../../../fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/ci.yaml)
-- SSC CI action: [fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip/ci.yaml](../../../fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip/ci.yaml)
+- Generic CI action: `fcli-core/fcli-action/src/main/resources/com/fortify/cli/generic_action/actions/zip/ci.yaml`
+- FoD CI action: `fcli-core/fcli-fod/src/main/resources/com/fortify/cli/fod/actions/zip/ci.yaml`
+- SSC CI action: `fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip/ci.yaml`
 
 **Documentation generation:**
-- CI documentation action: [fcli-core/fcli-app/src/main/resources/com/fortify/cli/app/actions/build-time/ci-doc.yaml](../../../fcli-core/fcli-app/src/main/resources/com/fortify/cli/app/actions/build-time/ci-doc.yaml)
-- Action development doc (this guide's source): [fcli-other/fcli-doc/src/actions/generate-action-dev-doc.yaml](../../../fcli-other/fcli-doc/src/actions/generate-action-dev-doc.yaml)
+- CI documentation action: `fcli-core/fcli-app/src/main/resources/com/fortify/cli/app/actions/build-time/ci-doc.yaml`
+- Action development doc: `fcli-other/fcli-doc/src/actions/generate-action-dev-doc.yaml`
 
 **All built-in actions:**
 - SSC actions: `fcli-core/fcli-ssc/src/main/resources/com/fortify/cli/ssc/actions/zip/`

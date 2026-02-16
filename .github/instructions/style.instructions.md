@@ -1,3 +1,9 @@
+---
+name: 'Style Guide'
+description: 'Coding style and conventions for fcli'
+applyTo: 'fcli/**/*'
+---
+
 # Detailed Style Guide (AI & Manual Edits)
 
 ## General

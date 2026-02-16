@@ -29,12 +29,14 @@ Fcli is a modular CLI tool for interacting with Fortify products (FoD, SSC, Scan
 - Short methods (~20 lines max); extract helpers or use Streams for clarity
 - No change-tracking comments (e.g., "New ...", "Updated ..."); only explanatory comments when code is complex
 
-## Detailed Development Guides
+## Context-Specific Instructions
 
-**When working on specific areas, read the relevant detailed guide:**
+Additional detailed instructions are automatically applied based on the file you're working with:
 
-- **Java code (commands, utilities, exceptions, etc.):** Read [copilot/java-guide.md](.github/copilot/java-guide.md)
-- **Action YAML files:** Read [copilot/action-yaml-guide.md](.github/copilot/action-yaml-guide.md)
-- **Utility classes:** Reference [copilot/utilities-guide.md](.github/copilot/utilities-guide.md)
-- **Style conventions:** Follow [copilot/style-guide.md](.github/copilot/style-guide.md)
+- **Java files** (`fcli/**/*.java`): Java development guide with architecture, command structure, exceptions, and utilities
+- **Action YAML files** (`fcli/**/actions/**/*.yaml`): Action YAML editing guide with SpEL expressions, schema validation, and patterns
+- **All Java files** (`fcli/**/*.java`): Common utility classes documentation for use throughout the codebase
+- **All fcli files** (`fcli/**/*`): Style guide with naming, formatting, and coding conventions
+
+These instructions are defined in `.github/instructions/*.instructions.md` files with `applyTo` directives.
 
