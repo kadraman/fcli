@@ -6,6 +6,14 @@ applyTo: 'fcli/**/*.java'
 
 # Java Development Guide
 
+## Maintaining These Instructions
+
+**If you detect discrepancies** between these instructions and the actual implementation, or discover patterns/features not documented here:
+
+1. **Notify the user** about the discrepancy or missing documentation
+2. **Suggest specific updates** to this instruction file
+3. **Verify against current code** before proceeding with changes based on potentially outdated instructions
+
 ## Architecture Overview
 
 **Module structure:**

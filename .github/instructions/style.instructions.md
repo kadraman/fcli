@@ -6,6 +6,14 @@ applyTo: 'fcli/**/*'
 
 # Detailed Style Guide (AI & Manual Edits)
 
+## Maintaining These Instructions
+
+**If you detect discrepancies** between these instructions and the actual codebase patterns, or discover conventions not documented here:
+
+1. **Notify the user** about the discrepancy or missing documentation
+2. **Suggest specific updates** to this instruction file
+3. **Consider whether the discrepancy represents an intentional exception** (clarity over rules) or an outdated instruction
+
 ## General
 
 - Follow `.editorconfig` for indentation (4 spaces Java, 2 spaces YAML/JSON/Markdown), LF endings, trimmed trailing whitespace, final newline.

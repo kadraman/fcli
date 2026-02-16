@@ -29,6 +29,20 @@ Fcli is a modular CLI tool for interacting with Fortify products (FoD, SSC, Scan
 - Short methods (~20 lines max); extract helpers or use Streams for clarity
 - No change-tracking comments (e.g., "New ...", "Updated ..."); only explanatory comments when code is complex
 
+## Maintaining Instructions
+
+**If you detect discrepancies between these instructions and the actual implementation**, or discover patterns/features not documented here:
+
+1. **Notify the user** about the discrepancy or missing documentation
+2. **Suggest specific updates** to the relevant instruction file(s)
+3. **Verify against current code** before making changes based on outdated instructions
+
+This applies to:
+- Main instructions (this file)
+- Specific instruction files in `.github/instructions/`
+- Examples that no longer match current patterns
+- Missing documentation for new features or utilities
+
 ## Context-Specific Instructions
 
 Additional detailed instructions are automatically applied based on the file you're working with:
