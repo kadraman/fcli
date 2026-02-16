@@ -41,7 +41,7 @@ public class ActionAdoProject {
     private final AdoProject project;
     private final AdoEnvironment env;
     
-    @SpelFunction(cat=ci, desc="Publishes test results (free tier); auto-detects project and build ID from the current pipeline run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Publishes test results (free tier); auto-detects project and build ID from the current pipeline run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Response from Azure DevOps API")
     public ObjectNode publishTestResults(
             @SpelFunctionParam(name="testRunner", desc="test runner type (JUnit, NUnit, XUnit, VSTest, CTest)") String testRunner,
@@ -49,7 +49,7 @@ public class ActionAdoProject {
         return project.publishTestResults(requireBuildId("publishTestResults"), testResults, testRunner);
     }
     
-    @SpelFunction(cat=ci, desc="Adds a comment thread to the current pull request; auto-detects project, repository, and PR context",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Adds a comment thread to the current pull request; auto-detects project, repository, and PR context. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Created thread object")
     public ObjectNode addPrThread(
             @SpelFunctionParam(name="comment", desc="comment text") String comment) {

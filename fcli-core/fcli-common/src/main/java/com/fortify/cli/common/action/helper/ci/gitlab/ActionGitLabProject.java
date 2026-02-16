@@ -59,7 +59,7 @@ public class ActionGitLabProject {
         return project.uploadCodeQualityReport(env.pullRequest().id(), reportContent);
     }
     
-    @SpelFunction(cat=ci, desc="Adds a comment to the merge request detected from the current pipeline run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Adds a comment to the merge request detected from the current pipeline run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Created note object")
     public ObjectNode addMrComment(
             @SpelFunctionParam(name="body", desc="comment body (Markdown supported)") String body) {

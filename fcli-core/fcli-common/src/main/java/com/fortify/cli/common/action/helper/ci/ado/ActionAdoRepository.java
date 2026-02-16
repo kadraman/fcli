@@ -38,7 +38,7 @@ public class ActionAdoRepository {
     private final AdoRepository repository;
     private final AdoEnvironment env;
     
-    @SpelFunction(cat=ci, desc="Uploads SARIF to ADO Advanced Security (paid tier); auto-detects organization/project/repository/commit from the current run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Uploads SARIF to ADO Advanced Security (paid tier); auto-detects organization/project/repository/commit from the current run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Response from Azure DevOps API")
     public ObjectNode uploadSarif(
             @SpelFunctionParam(name="sarifContent", desc="SARIF report content") String sarifContent) {

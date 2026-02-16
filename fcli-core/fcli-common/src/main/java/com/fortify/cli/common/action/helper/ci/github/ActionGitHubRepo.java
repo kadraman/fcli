@@ -41,7 +41,7 @@ public class ActionGitHubRepo {
     private final GitHubRepo repo;
     private final GitHubEnvironment env;
     
-    @SpelFunction(cat=ci, desc="Uploads SARIF to GitHub Code Scanning (paid tier, requires GHAS) using repository/ref/commit from the current workflow run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Uploads SARIF to GitHub Code Scanning (paid tier, requires GHAS) using repository/ref/commit from the current workflow run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Response from GitHub API")
     public ObjectNode uploadSarif(
             @SpelFunctionParam(name="sarifContent", desc="SARIF report content as string") String sarifContent) {
@@ -88,7 +88,7 @@ public class ActionGitHubRepo {
         return repo.createCheckRun(body);
     }
     
-    @SpelFunction(cat=ci, desc="Adds a comment to the current pull request detected from the workflow run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Adds a comment to the current pull request detected from the workflow run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Created comment object")
     public ObjectNode addPrComment(
             @SpelFunctionParam(name="body", desc="comment body (Markdown supported)") String body) {
@@ -98,7 +98,7 @@ public class ActionGitHubRepo {
         return repo.createPullRequestComment(env.pullRequest().id(), body);
     }
     
-    @SpelFunction(cat=ci, desc="Adds a review comment on a specific file and line in the pull request detected from the workflow run",
+    @SpelFunction(cat=ci, desc="(PREVIEW) Adds a review comment on a specific file and line in the pull request detected from the workflow run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
             returns="Created review comment object")
     public ObjectNode addReviewComment(
             @SpelFunctionParam(name="path", desc="file path relative to repository root") String path,
