@@ -145,10 +145,10 @@ steps:
               sarifUploaded: true
             on.fail:
               - if: ${!doOutputCheckRun}
-                throw: 'Failed to publish SARIF report (${lastException.getClass().simpleName}): ${lastException.message}'
-              - if: ${lastException.getClass().simpleName=='GhasUnavailableException'}
+                throw: 'Failed to publish SARIF report (${lastException.class.simpleName}): ${lastException.message}'
+              - if: ${lastException.class.simpleName=='GhasUnavailableException'}
                 log.info: GitHub Advanced Security not available, will try Check Run fallback
-              - if: ${lastException.getClass().simpleName!='GhasUnavailableException'}
+              - if: ${lastException.class.simpleName!='GhasUnavailableException'}
                 log.warn: 'SARIF upload failed (${lastException.message}), will try Check Run fallback'
               - var.set:
                   sarifUploaded: false
