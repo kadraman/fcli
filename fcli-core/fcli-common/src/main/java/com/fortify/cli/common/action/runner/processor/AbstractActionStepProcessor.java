@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -32,7 +31,6 @@ import com.fortify.cli.common.action.model.IActionStepElement;
 import com.fortify.cli.common.action.model.IMapKeyAware;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
-import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.spel.wrapper.TemplateExpressionKeySerializer;
 import com.fortify.cli.common.util.StringHelper;
 
@@ -149,38 +147,21 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
     
     /**
      * Sets generic exception variables available in on.fail blocks.
-     * Always sets lastException*, and also ${name}_exception* if element has a name.
+     * Sets lastException as POJONode for consistency with ${name}_exception behavior from v3.14.x.
+     * Both variables support SpEL method calls (e.g., ${lastException.message}, ${lastException.class.simpleName}).
      * 
      * @param exception The exception to expose as variables
      * @param elementName The element name/key (may be null)
      */
     protected void setGenericExceptionVars(Throwable exception, String elementName) {
         var vars = getVars();
-        var exceptionNode = new POJONode(exception);
-        var message = exception.getMessage();
-        var type = exception.getClass().getSimpleName();
         
-        // Always set generic lastException* variables
-        vars.set("lastException", exceptionNode);
-        vars.set("lastException.message", new TextNode(message != null ? message : ""));
-        vars.set("lastException.type", new TextNode(type));
+        // Always set lastException as POJONode (same pattern as ${name}_exception from v3.14.x)
+        vars.set("lastException", new POJONode(exception));
         
-        // Add httpStatus if this is an HTTP exception
-        if (exception instanceof UnexpectedHttpResponseException) {
-            var httpException = (UnexpectedHttpResponseException) exception;
-            vars.set("lastException.httpStatus", new IntNode(httpException.getStatus()));
-        }
-        
-        // For named elements, also set ${name}_exception* variables
+        // For named elements, set ${name}_exception as POJONode (backward compatible with v3.14.x)
         if (elementName != null) {
-            vars.set(elementName + "_exception", exceptionNode);
-            vars.set(elementName + "_exception.message", new TextNode(message != null ? message : ""));
-            vars.set(elementName + "_exception.type", new TextNode(type));
-            
-            if (exception instanceof UnexpectedHttpResponseException) {
-                var httpException = (UnexpectedHttpResponseException) exception;
-                vars.set(elementName + "_exception.httpStatus", new IntNode(httpException.getStatus()));
-            }
+            vars.set(elementName + "_exception", new POJONode(exception));
         }
     }
     
