@@ -164,12 +164,20 @@ steps:
       - if: ${!cli.dryrun && doOutputSarif}
         steps:
           - var.set:
-              sarifUploadResult: ${#github.repo().tryUploadSarif(reportContents)}
-          - if: ${sarifUploadResult.success}
-            log.info: Report published to GitHub Code Scanning
-          - if: ${!sarifUploadResult.success && sarifUploadResult.reason!='ghas_unavailable'}
-            throw: 'Failed to publish report: ${sarifUploadResult.message}'
-      - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || (!sarifUploadResult.success && sarifUploadResult.reason=='ghas_unavailable'))}
+              sarifUploadResponse: ${#github.repo().uploadSarif(reportContents)}
+              sarifUploaded: true
+            on.fail:
+              - if: ${!doOutputCheckRun}
+                throw: 'Failed to publish SARIF report (${lastException.type}): ${lastException.message}'
+              - if: ${lastException.type=='GhasUnavailableException'}
+                log.info: GitHub Advanced Security not available, will try Check Run fallback
+              - if: ${lastException.type!='GhasUnavailableException'}
+                log.warn: 'SARIF upload failed (${lastException.message}), will try Check Run fallback'
+              - var.set:
+                  sarifUploaded: false
+            on.success:
+              - log.info: Report published to GitHub Code Scanning
+      - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || !sarifUploaded)}
         steps:
           - var.set:
               checkRun: ${#github.repo().createCheckRun(checkRunBody)}

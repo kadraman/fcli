@@ -20,16 +20,19 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.formkiq.graalvm.annotations.Reflectable;
-import com.fortify.cli.common.action.model.AbstractActionElementForEachRecord;
+import com.fortify.cli.common.action.model.AbstractActionStepElementForEachRecord;
 import com.fortify.cli.common.action.model.ActionStep;
-import com.fortify.cli.common.action.model.IActionStepIfSupplier;
+import com.fortify.cli.common.action.model.IActionStepElement;
 import com.fortify.cli.common.action.model.IMapKeyAware;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.spel.wrapper.TemplateExpressionKeySerializer;
 import com.fortify.cli.common.util.StringHelper;
 
@@ -64,7 +67,7 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         new ActionStepProcessorSteps(getCtx(), getVars(), steps).process();
     }
     
-    protected boolean processForEachStepNode(AbstractActionElementForEachRecord forEachRecord, JsonNode node) {
+    protected boolean processForEachStepNode(AbstractActionStepElementForEachRecord forEachRecord, JsonNode node) {
         if ( forEachRecord==null ) { return false; }
         var breakIf = forEachRecord.getBreakIf();
         getVars().set(forEachRecord.getVarName(), node);
@@ -87,8 +90,8 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
             var e = (Map.Entry<?,?>)o;
             return _if(e.getKey()) && _if(e.getValue());
         }
-        if (o instanceof IActionStepIfSupplier ) {
-            var _if = ((IActionStepIfSupplier) o).get_if();
+        if (o instanceof IActionStepElement ) {
+            var _if = ((IActionStepElement) o).get_if();
             if ( _if!=null ) {
                 var result = getVars().eval(_if, Boolean.class);
                 if ( !result ) { LOG.debug("SKIPPED due to 'if' evaluating to false:\n"+getEntryAsString(o)); }
@@ -116,6 +119,104 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
                     .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
                     .enable(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR)
                     .disable(YAMLGenerator.Feature.SPLIT_LINES)));
+    }
+    
+    /**
+     * Wraps element execution with generic error handling. Sets lastException* variables,
+     * executes on.fail/on.success steps, and allows processors to customize via hooks.
+     * 
+     * @param element The action element being executed
+     * @param coreLogic The actual execution logic to run
+     */
+    protected final void processWithErrorHandling(IActionStepElement element, Runnable coreLogic) {
+        String elementName = getElementName(element);
+        try {
+            coreLogic.run();
+            setSuccessVars(element, elementName);
+            if (element.getOnSuccess() != null) {
+                processSteps(element.getOnSuccess());
+            }
+        } catch (Exception e) {
+            setGenericExceptionVars(e, elementName);
+            setFailureVars(element, elementName, e);
+            if (element.getOnFail() != null) {
+                processSteps(element.getOnFail());
+            } else {
+                throw e;
+            }
+        }
+    }
+    
+    /**
+     * Sets generic exception variables available in on.fail blocks.
+     * Always sets lastException*, and also ${name}_exception* if element has a name.
+     * 
+     * @param exception The exception to expose as variables
+     * @param elementName The element name/key (may be null)
+     */
+    protected void setGenericExceptionVars(Throwable exception, String elementName) {
+        var vars = getVars();
+        var exceptionNode = new POJONode(exception);
+        var message = exception.getMessage();
+        var type = exception.getClass().getSimpleName();
+        
+        // Always set generic lastException* variables
+        vars.set("lastException", exceptionNode);
+        vars.set("lastException.message", new TextNode(message != null ? message : ""));
+        vars.set("lastException.type", new TextNode(type));
+        
+        // Add httpStatus if this is an HTTP exception
+        if (exception instanceof UnexpectedHttpResponseException) {
+            var httpException = (UnexpectedHttpResponseException) exception;
+            vars.set("lastException.httpStatus", new IntNode(httpException.getStatus()));
+        }
+        
+        // For named elements, also set ${name}_exception* variables
+        if (elementName != null) {
+            vars.set(elementName + "_exception", exceptionNode);
+            vars.set(elementName + "_exception.message", new TextNode(message != null ? message : ""));
+            vars.set(elementName + "_exception.type", new TextNode(type));
+            
+            if (exception instanceof UnexpectedHttpResponseException) {
+                var httpException = (UnexpectedHttpResponseException) exception;
+                vars.set(elementName + "_exception.httpStatus", new IntNode(httpException.getStatus()));
+            }
+        }
+    }
+    
+    /**
+     * Extracts the element name/key for variable naming.
+     * 
+     * @param element The action element
+     * @return The element name/key, or null if not available
+     */
+    protected String getElementName(Object element) {
+        if (element instanceof IMapKeyAware<?>) {
+            Object key = ((IMapKeyAware<?>) element).getKey();
+            return key != null ? key.toString() : null;
+        }
+        return null;
+    }
+    
+    /**
+     * Sets processor-specific success variables. Override in subclasses to add custom variables.
+     * 
+     * @param element The action element that succeeded
+     * @param elementName The element name/key (may be null)
+     */
+    protected void setSuccessVars(IActionStepElement element, String elementName) {
+        // Default: no additional variables. Subclasses override to add custom variables.
+    }
+    
+    /**
+     * Sets processor-specific failure variables. Override in subclasses to add custom variables.
+     * 
+     * @param element The action element that failed
+     * @param elementName The element name/key (may be null)
+     * @param exception The exception that was thrown
+     */
+    protected void setFailureVars(IActionStepElement element, String elementName, Throwable exception) {
+        // Default: no additional variables. Subclasses override to add custom variables.
     }
     
     public abstract ActionRunnerContext getCtx();

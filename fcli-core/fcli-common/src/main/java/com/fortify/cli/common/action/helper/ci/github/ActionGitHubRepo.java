@@ -19,8 +19,6 @@ import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.ci.github.GitHubEnvironment;
 import com.fortify.cli.common.ci.github.GitHubRepo;
 import com.fortify.cli.common.exception.FcliSimpleException;
-import com.fortify.cli.common.json.JsonHelper;
-import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionParam;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctions;
@@ -41,41 +39,13 @@ public class ActionGitHubRepo {
     private final GitHubRepo repo;
     private final GitHubEnvironment env;
     
-    @SpelFunction(cat=ci, desc="(PREVIEW) Uploads SARIF to GitHub Code Scanning (paid tier, requires GHAS) using repository/ref/commit from the current workflow run. This function is not yet used by any built-in fcli actions; signature and implementation may change in future fcli versions based on new insights as to how to best integrate this functionality into fcli built-in actions.",
+    @SpelFunction(cat=ci, desc="Uploads SARIF to GitHub Code Scanning (paid tier, requires GHAS) using repository/ref/commit from the current workflow run. Throws GhasUnavailableException if GitHub Advanced Security is not enabled. Use on.fail in action YAML to implement fallback logic.",
             returns="Response from GitHub API")
     public ObjectNode uploadSarif(
             @SpelFunctionParam(name="sarifContent", desc="SARIF report content as string") String sarifContent) {
         var ref = env.ciBranch().full();
         var sha = env.ciCommit().mergeId().full();  // GitHub API requires merge commit for PRs
         return repo.uploadSarif(ref, sarifContent, sha);
-    }
-    
-    @SpelFunction(cat=ci, desc="Tries to upload SARIF, returning {success, reason, message} for fallback logic; does not throw on GHAS unavailable",
-            returns="Result object: {success: true, data: ...} or {success: false, reason: 'ghas_unavailable'|'other', message: ...}")
-    public ObjectNode tryUploadSarif(
-            @SpelFunctionParam(name="sarifContent", desc="SARIF report content as string") String sarifContent) {
-        var mapper = JsonHelper.getObjectMapper();
-        try {
-            var ref = env.ciBranch().full();
-            var sha = env.ciCommit().mergeId().full();  // GitHub API requires merge commit for PRs
-            var response = repo.uploadSarif(ref, sarifContent, sha);
-            return mapper.createObjectNode()
-                .put("success", true)
-                .set("data", response);
-        } catch (UnexpectedHttpResponseException e) {
-            var status = e.getStatus();
-            var isGhasUnavailable = (status == 403 || status == 404) && 
-                                   e.getMessage().contains("code-scanning");
-            return mapper.createObjectNode()
-                .put("success", false)
-                .put("reason", isGhasUnavailable ? "ghas_unavailable" : "other")
-                .put("message", e.getMessage());
-        } catch (Exception e) {
-            return mapper.createObjectNode()
-                .put("success", false)
-                .put("reason", "other")
-                .put("message", e.getMessage());
-        }
     }
     
     @SpelFunction(cat=ci, desc="Creates check run with optional annotations (free tier, auto-paginates >50 annotations). Accepts body object per GitHub REST API spec (https://docs.github.com/en/rest/checks/runs). Automatically adds head_sha from detected commit if not present.",

@@ -44,6 +44,11 @@ public class AdoRepository {
      * Upload SARIF report to Azure DevOps Advanced Security.
      * Requires GitHub Advanced Security for Azure DevOps license.
      * 
+     * TODO: Similar to GitHub's GhasUnavailableException, consider adding specific
+     * exception handling for when ADO Advanced Security is not licensed/enabled.
+     * This would require identifying the specific HTTP error codes and messages
+     * returned by ADO when the feature is unavailable.
+     * 
      * SARIF format: https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html
      * ADO Advanced Security: https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security
      * 

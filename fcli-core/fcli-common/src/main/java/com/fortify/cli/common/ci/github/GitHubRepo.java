@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.formkiq.graalvm.annotations.Reflectable;
+import com.fortify.cli.common.action.helper.ci.github.GhasUnavailableException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.util.Break;
 import com.fortify.cli.common.util.GzipHelper;
 
@@ -46,6 +48,9 @@ public class GitHubRepo {
     /**
      * Upload SARIF report to GitHub Code Scanning (requires GitHub Advanced Security).
      * 
+     * Throws GhasUnavailableException if GitHub Advanced Security is not enabled for the repository
+     * (detected by 403/404 status with "code-scanning" in the error message).
+     * 
      * SARIF format: https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html
      * GitHub SARIF support: https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
      * API documentation: https://docs.github.com/en/rest/code-scanning
@@ -54,22 +59,35 @@ public class GitHubRepo {
      * @param sarifContent SARIF report content as string
      * @param commitSha Commit SHA (required)
      * @return Response from GitHub API
+     * @throws GhasUnavailableException if GitHub Advanced Security is not available
      */
     public ObjectNode uploadSarif(String ref, String sarifContent, String commitSha) {
-        var compressed = GzipHelper.gzipAndBase64(sarifContent);
-        
-        var body = JsonHelper.getObjectMapper().createObjectNode()
-            .put("sarif", compressed)
-            .put("ref", ref)
-            .put("commit_sha", commitSha);
-        
-        return unirest
-            .post("/repos/{owner}/{repo}/code-scanning/sarifs")
-            .routeParam("owner", owner)
-            .routeParam("repo", repo)
-            .body(body)
-            .asObject(ObjectNode.class)
-            .getBody();
+        try {
+            var compressed = GzipHelper.gzipAndBase64(sarifContent);
+            
+            var body = JsonHelper.getObjectMapper().createObjectNode()
+                .put("sarif", compressed)
+                .put("ref", ref)
+                .put("commit_sha", commitSha);
+            
+            return unirest
+                .post("/repos/{owner}/{repo}/code-scanning/sarifs")
+                .routeParam("owner", owner)
+                .routeParam("repo", repo)
+                .body(body)
+                .asObject(ObjectNode.class)
+                .getBody();
+        } catch (UnexpectedHttpResponseException e) {
+            var status = e.getStatus();
+            var isGhasUnavailable = (status == 403 || status == 404) && 
+                                   e.getMessage().contains("code-scanning");
+            if (isGhasUnavailable) {
+                throw new GhasUnavailableException(
+                    "GitHub Advanced Security not available for this repository. " +
+                    "SARIF upload requires GHAS to be enabled.", e);
+            }
+            throw e; // Re-throw other HTTP exceptions
+        }
     }
     
     /**

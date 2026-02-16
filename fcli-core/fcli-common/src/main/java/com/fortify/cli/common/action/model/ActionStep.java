@@ -62,7 +62,7 @@ import lombok.SneakyThrows;
             run.fcli:
               ...
         """)
-public final class ActionStep extends AbstractActionElementIf {
+public final class ActionStep extends AbstractActionStepElement {
     // Capture fields in this class annotated with @JsonProperty, indexed by JSON property name
     // Only used to initialize getters and propertyTypes 
     @JsonIgnore private static final Map<String, Field> fields = createFields();

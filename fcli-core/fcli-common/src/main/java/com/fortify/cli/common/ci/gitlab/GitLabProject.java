@@ -45,6 +45,11 @@ public class GitLabProject {
      * Upload security report to GitLab (requires Ultimate/Premium tier).
      * Supports SAST, DAST, dependency scanning, container scanning, etc.
      * 
+     * TODO: Similar to GitHub's GhasUnavailableException, consider adding specific
+     * exception handling for when GitLab Ultimate/Premium tier features are not available.
+     * This would require identifying the specific HTTP error codes and messages
+     * returned by GitLab when the feature is unavailable on Free/Starter tiers.
+     * 
      * Report schemas: https://docs.gitlab.com/ee/development/integrations/secure.html
      * SAST schema: https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/blob/master/dist/sast-report-format.json
      * 
