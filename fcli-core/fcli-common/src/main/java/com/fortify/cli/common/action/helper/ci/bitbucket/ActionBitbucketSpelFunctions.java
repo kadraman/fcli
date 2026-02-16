@@ -25,6 +25,7 @@ import com.fortify.cli.common.ci.bitbucket.BitbucketRestHelper;
 import com.fortify.cli.common.ci.bitbucket.BitbucketUnirestInstanceSupplier;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionPrefix;
 
@@ -71,7 +72,8 @@ public class ActionBitbucketSpelFunctions implements IActionSpelFunctions {
      * @return Repository-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a repository-scoped Bitbucket client using workspace and repository detected from the current pipeline run",
-            returns="Bitbucket repository client for CI operations", returnType=ActionBitbucketRepository.class)
+            returns="Bitbucket repository client for CI operations",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE)
     public ActionBitbucketRepository repo() {
         requireEnv("repo");
         return new ActionBitbucketRepository(

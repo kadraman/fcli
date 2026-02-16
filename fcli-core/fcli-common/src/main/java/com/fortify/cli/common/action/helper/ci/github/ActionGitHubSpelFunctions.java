@@ -23,6 +23,7 @@ import com.fortify.cli.common.ci.github.GitHubRestHelper;
 import com.fortify.cli.common.ci.github.GitHubUnirestInstanceSupplier;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionPrefix;
 
@@ -84,7 +85,8 @@ public class ActionGitHubSpelFunctions implements IActionSpelFunctions {
      * @return Repository-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a repository-scoped GitHub client using repository and owner detected from the current workflow run",
-            returns="GitHub repository client for CI operations", returnType=ActionGitHubRepo.class)
+            returns="GitHub repository client for CI operations",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE)
     public ActionGitHubRepo repo() {
         requireEnv("repo");
         var repoName = env.ciRepository().name();

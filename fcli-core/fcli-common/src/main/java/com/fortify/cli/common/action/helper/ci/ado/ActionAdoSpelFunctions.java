@@ -25,6 +25,7 @@ import com.fortify.cli.common.ci.ado.AdoRestHelper;
 import com.fortify.cli.common.ci.ado.AdoUnirestInstanceSupplier;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionPrefix;
 
@@ -86,7 +87,8 @@ public class ActionAdoSpelFunctions implements IActionSpelFunctions {
      * @return Repository-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a repository-scoped Azure DevOps client using organization/project/repository detected from the current pipeline run",
-            returns="ADO repository client for CI operations", returnType=ActionAdoRepository.class)
+            returns="ADO repository client for CI operations",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE)
     public ActionAdoRepository repo() {
         requireEnv("repo");
         return new ActionAdoRepository(
@@ -106,7 +108,8 @@ public class ActionAdoSpelFunctions implements IActionSpelFunctions {
      * @return Project-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a project-scoped Azure DevOps client using organization and project detected from the current pipeline run",
-            returns="ADO project client for CI operations", returnType=ActionAdoProject.class)
+            returns="ADO project client for CI operations",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE)
     public ActionAdoProject project() {
         requireEnv("project");
         return new ActionAdoProject(

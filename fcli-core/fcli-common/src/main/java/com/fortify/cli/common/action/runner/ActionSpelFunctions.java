@@ -500,7 +500,7 @@ public class ActionSpelFunctions {
             See available methods via SpEL function documentation of the returned IssueSourceFileResolver object.
             """,
             returns="Issue source file resolver with resolve() and exists() methods",
-            renderReturnedFunctionsAsSubsections=RenderSubFunctionsMode.TRUE) 
+            renderSubFunctions=RenderSubFunctionsMode.INLINE) 
     public static final IssueSourceFileResolver issueSourceFileResolver(
             @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {

@@ -86,7 +86,7 @@ public class ActionGitLabSpelFunctions implements IActionSpelFunctions {
      * @return Project-scoped action client
      */
     @SpelFunction(cat=ci, desc="Returns a project-scoped GitLab client using project ID detected from the current pipeline run",
-            returns="GitLab project client for CI operations", returnType=ActionGitLabProject.class)
+            returns="GitLab project client for CI operations")
     public ActionGitLabProject project() {
         requireEnv("project");
         return new ActionGitLabProject(getRestHelper().project(requireProjectId("project")), env);

@@ -13,22 +13,23 @@
 package com.fortify.cli.common.spel.fn.descriptor.annotation;
 
 /**
- * Controls whether functions returned by a SpEL function should be rendered as subsections 
+ * Controls how functions returned by a SpEL function should be rendered 
  * in documentation and schema.
  */
 public enum RenderSubFunctionsMode {
     /**
-     * Auto-detect: render as subsections if the return type is annotated with @SpelFunctions.
+     * Auto-detect: render as sections if the return type is annotated with @SpelFunctions,
+     * otherwise render inline.
      */
     AUTO,
     
     /**
-     * Always render returned functions as subsections.
+     * Render returned functions as separate sections with their own headers.
      */
-    TRUE,
+    SECTION,
     
     /**
-     * Never render returned functions as subsections (flat structure).
+     * Render returned functions inline without separate section headers.
      */
-    FALSE
+    INLINE
 }
