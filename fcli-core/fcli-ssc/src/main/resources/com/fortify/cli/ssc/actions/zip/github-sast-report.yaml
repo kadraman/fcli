@@ -77,6 +77,7 @@ steps:
       issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
       doOutputSarif: ${cli.type==null || cli.type=='sarif'}
       doOutputCheckRun: ${cli.type==null || cli.type=='check-run'}
+      dateFmt: YYYY-MM-dd HH:mm
   - log.progress: Loading latest static scan
   - rest.call:
       artifacts:
@@ -119,8 +120,6 @@ steps:
             - if: ${doOutputCheckRun && issueSourceFileResolver.exists(issue.fullFileName, issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber)}
               var.set:
                 checkRunAnnotations..: {fmt: checkRunAnnotation}
-                annotationCount: ${(annotationCount?:0) + 1}
-                annotationCountBySeverity: {fmt: annotationCountIncrement}
   - if: ${doOutputSarif && ruleCategories!=null}
     steps:
       - log.progress: Processing rule data
@@ -275,46 +274,32 @@ formatters:
     output:
       title: Fortify SAST Scan Results
       summary: |
-        ## Fortify SAST Scan Results
-        
-        **Application:** ${av.project.name}  
-        **Version:** ${av.name}  
+        ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,null)})
+
+        **Summary generated on:** ${#formatDateTime(dateFmt)}
         **Total Issues in SSC:** ${issueCount?:0}  
-        **Reported in GitHub:** ${annotationCount?:0}
-        
+
         ### Issues by Severity
         
-        | Severity | SSC | GitHub |
-        |----------|-----|--------|
-        | Critical | ${issueCountBySeverity?.Critical?:0} | ${annotationCountBySeverity?.Critical?:0} |
-        | High | ${issueCountBySeverity?.High?:0} | ${annotationCountBySeverity?.High?:0} |
-        | Medium | ${issueCountBySeverity?.Medium?:0} | ${annotationCountBySeverity?.Medium?:0} |
-        | Low | ${issueCountBySeverity?.Low?:0} | ${annotationCountBySeverity?.Low?:0} |
+        | Critical | High | Medium | Low |
+        |----------|------|--------|-----|
+        | ${issueCountBySeverity?.Critical?:0} | ${issueCountBySeverity?.High?:0} | ${issueCountBySeverity?.Medium?:0} | ${issueCountBySeverity?.Low?:0} |
         
-        **Note:** GitHub counts may be lower than SSC counts when issue file paths cannot be resolved to files in the repository.
+        **Note:** Only a subset of issues may be included in the annotations below; for more details and to view all issues, please check the [results in SSC](${#ssc.appversionBrowserUrl(av,fs)}).
       annotations: ${checkRunAnnotations?:{}}
       
   checkRunAnnotation:
     path: ${issueSourceFileResolver.resolve(issue.fullFileName)}
     start_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
     end_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
-    annotation_level: ${(issue.friority matches "(Critical|High)") ? "warning":"notice"}
-    title: ${issue.issueName}
+    annotation_level: notice # GitHub only allows for 10 warn/fail annotations per check run, so we set all annotations to notice and use severity info in the title instead
+    title: ${issue.issueName} (${issue.friority})
     message: |
-      **${issue.issueName}** (Severity: ${issue.friority})
-      
       ${issue.details?.brief}
-      
-      [View in SSC](${#ssc.issueBrowserUrl(issue,fs)})
+      ${#ssc.issueBrowserUrl(issue,fs)}
       
   issueCountIncrement:
     Critical: "${issue.friority=='Critical' ? (issueCountBySeverity?.Critical?:0)+1 : (issueCountBySeverity?.Critical?:0)}"
     High: "${issue.friority=='High' ? (issueCountBySeverity?.High?:0)+1 : (issueCountBySeverity?.High?:0)}"
     Medium: "${issue.friority=='Medium' ? (issueCountBySeverity?.Medium?:0)+1 : (issueCountBySeverity?.Medium?:0)}"
     Low: "${issue.friority=='Low' ? (issueCountBySeverity?.Low?:0)+1 : (issueCountBySeverity?.Low?:0)}"
-      
-  annotationCountIncrement:
-    Critical: "${issue.friority=='Critical' ? (annotationCountBySeverity?.Critical?:0)+1 : (annotationCountBySeverity?.Critical?:0)}"
-    High: "${issue.friority=='High' ? (annotationCountBySeverity?.High?:0)+1 : (annotationCountBySeverity?.High?:0)}"
-    Medium: "${issue.friority=='Medium' ? (annotationCountBySeverity?.Medium?:0)+1 : (annotationCountBySeverity?.Medium?:0)}"
-    Low: "${issue.friority=='Low' ? (annotationCountBySeverity?.Low?:0)+1 : (annotationCountBySeverity?.Low?:0)}"
