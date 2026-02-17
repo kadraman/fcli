@@ -214,11 +214,12 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
 - Useful for graceful degradation, fallback logic, or custom error messages
 
 **Available exception variables in `on.fail` blocks:**
-- `lastException` — The exception object (provides access to all exception properties via JavaBean accessors)
-- `lastException.message` — Exception message text
-- `#type(lastException)` — Exception class name (e.g., `GhasUnavailableException`)
-- `lastException.httpStatus` — HTTP status code (only available for `UnexpectedHttpResponseException`)
-- `${name}_exception` — For named elements (e.g., `rest.call` or `run.fcli` entries), provides same object access as `lastException`
+- `lastException` — ObjectNode with exception details:
+  - `lastException.type` — Exception class simple name (e.g., `GhasUnavailableException`)
+  - `lastException.message` — Exception message text
+  - `lastException.httpStatus` — HTTP status code (only present for `UnexpectedHttpResponseException`)
+  - `lastException.pojo` — Original exception as POJONode (for calling methods like `.getMessage()`)
+- `${name}_exception` — For named elements (e.g., `rest.call` or `run.fcli` entries), same structure as `lastException`
 
 **Common patterns:**
 
@@ -228,7 +229,9 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
     sarifUploadResponse: ${#github.repo().uploadSarif(reportContents)}
     sarifUploaded: true
   on.fail:
-    - log.warn: 'SARIF upload failed (${lastException.message}), will try Check Run fallback'
+    - log.warn:
+        msg: 'SARIF upload failed, will try Check Run fallback'
+        cause: ${lastException}
     - var.set:
         sarifUploaded: false
 ```
@@ -238,10 +241,12 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
 - var.set:
     result: ${#someOperation()}
   on.fail:
-    - if: ${#type(lastException)=='GhasUnavailableException'}
+    - if: ${lastException.type=='GhasUnavailableException'}
       log.info: GitHub Advanced Security not available
-    - if: ${#type(lastException)!='GhasUnavailableException'}
-      throw: 'Unexpected error: ${lastException.message}'
+    - if: ${lastException.type!='GhasUnavailableException'}
+      throw:
+        msg: 'Unexpected error'
+        cause: ${lastException}
 ```
 
 **Pattern 3: Named element exception handling**
@@ -250,7 +255,9 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
     staticScanSummary:
       uri: /api/v3/scans/${scanId}/summary
       on.fail:
-        - log.warn: 'Unable to load scan summary (${staticScanSummary_exception.httpStatus}): ${staticScanSummary_exception.message}'
+        - log.warn:
+            msg: 'Unable to load scan summary'
+            cause: ${staticScanSummary_exception}
 ```
 
 **Pattern 4: Success handler for validation or logging**
@@ -262,6 +269,53 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
         - if: ${issues_raw.totalCount>5000}
           throw: Too many vulnerabilities to process (${issues_raw.totalCount})
 ```
+
+**Pattern 5: Rethrowing with cause (exception chaining)**
+```yaml
+- var.set:
+    result: ${#someOperation()}
+  on.fail:
+    # Simple throw with message
+    - if: ${lastException.type=='NetworkException'}
+      throw: 'Network operation failed: ${lastException.message}'
+    
+    # Structured throw with message and cause
+    - if: ${lastException.type!='NetworkException'}
+      throw:
+        msg: 'Unexpected error during operation'
+        cause: ${lastException}
+    
+    # Rethrow exception (preserves original exception type if FcliException)
+    - throw:
+        cause: ${lastException}
+```
+
+**Pattern 6: Logging with exception cause**
+```yaml
+- var.set:
+    result: ${#someOperation()}
+  on.fail:
+    # Simple log message
+    - log.warn: 'Operation failed: ${lastException.message}'
+    
+    # Log with exception cause (includes stack trace in log files)
+    - log.warn:
+        msg: 'Operation failed with unexpected error'
+        cause: ${lastException}
+```
+
+**`throw` instruction capabilities:**
+- **Simple string:** `throw: "Error message"` — Throws `FcliActionStepException` with message
+- **Structured with msg and cause:** `throw: { msg: "...", cause: ${exception} }` — Attaches original exception as cause
+- **Rethrow only:** `throw: { cause: ${exception} }` — Rethrows FcliException as-is, or wraps other exceptions
+- **Cause extraction:** Automatically unwraps Throwables from `POJONode` or `ObjectNode.pojo` properties
+
+**`log.*` instruction capabilities:**
+- **Simple string:** `log.info: "Message"` — Logs simple message
+- **Structured with msg and cause:** `log.info: { msg: "...", cause: ${exception} }` — Logs message with exception details
+- **Exception support:** `log.info`, `log.warn`, `log.debug` support both simple and structured formats with exception cause
+- **Progress logging:** `log.progress` only supports simple string format (no exception cause support)
+- **Exception cause handling:** When cause is provided, exception details (including stack trace) are included in log output
 
 **When to use `on.fail`:**
 - Implementing fallback strategies (try SARIF, fall back to Check Run)

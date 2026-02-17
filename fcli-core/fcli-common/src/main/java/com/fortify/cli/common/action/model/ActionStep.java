@@ -162,7 +162,7 @@ public final class ActionStep extends AbstractActionStepElement {
         disappear when the next progress message is written, or after all action steps have \
         been executed. If you need to write an information message that is always displayed \
         to the end user, without the possibility of the message being removed, please use \
-        log.info instead.     
+        log.info instead.
         """)
     @SampleYamlSnippets("""
         do:
@@ -173,31 +173,54 @@ public final class ActionStep extends AbstractActionStepElement {
     @JsonPropertyDescription("""
         Write an informational message to console and log file (if enabled). Note that depending \
         on the config:output setting, informational messages may be shown either immediately, or \
-        only after all action steps have been executed, to not interfere with progress messages.
+        only after all action steps have been executed, to not interfere with progress messages. \
+        This instruction can be specified as either a simple SpEL template expression, or as a \
+        structured object with 'msg' and optional 'cause' properties for including exception details.
         """)
-    @SampleYamlSnippets("""
+    @SampleYamlSnippets({"""
         do:
           - log.info: Output written to ${fileName}
-        """)
-    @JsonProperty(value = "log.info", required = false) private TemplateExpression logInfo;
+        ""","""
+        do:
+          - log.info:
+              msg: 'Operation completed with warnings'
+              cause: ${lastException}
+        """})
+    @JsonProperty(value = "log.info", required = false) private MessageWithCause logInfo;
     
     @JsonPropertyDescription("""
         Write a warning message to console and log file (if enabled). Note that depending on the \
         config:output setting, warning messages may be shown either immediately, or only after all \
-        action steps have been executed, to not interfere with progress messages.
+        action steps have been executed, to not interfere with progress messages. This instruction \
+        can be specified as either a simple SpEL template expression, or as a structured object with \
+        'msg' and optional 'cause' properties for including exception details.
         """)
-    @SampleYamlSnippets("""
+    @SampleYamlSnippets({"""
         do:
           - log.warn: Skipping this part due to errors: ${errors}
-        """)
-    @JsonProperty(value = "log.warn", required = false) private TemplateExpression logWarn;
+        ""","""
+        do:
+          - log.warn:
+              msg: 'Failed to complete operation'
+              cause: ${lastException}
+        """})
+    @JsonProperty(value = "log.warn", required = false) private MessageWithCause logWarn;
     
-    @JsonPropertyDescription("Write a debug message to log file (if enabled).")
-    @SampleYamlSnippets("""
+    @JsonPropertyDescription("""
+        Write a debug message to log file (if enabled). This instruction can be specified as either \
+        a simple SpEL template expression, or as a structured object with 'msg' and optional 'cause' \
+        properties for including exception details.
+        """)
+    @SampleYamlSnippets({"""
         do:
            - log.debug: ${#this}   # Log all action variables
-         """)
-    @JsonProperty(value = "log.debug", required = false) private TemplateExpression logDebug;
+         ""","""
+        do:
+          - log.debug:
+              msg: 'Debug information'
+              cause: ${lastException}
+        """})
+    @JsonProperty(value = "log.debug", required = false) private MessageWithCause logDebug;
     
     @JsonPropertyDescription("""
         Add REST request targets for use in 'rest.call' steps. This step takes a map, with \
@@ -355,13 +378,26 @@ public final class ActionStep extends AbstractActionStepElement {
     private List<ActionStep> steps;
     
     @JsonPropertyDescription("""
-        Throw an exception, thereby terminating action execution.
+        Throw an exception, thereby terminating action execution. This instruction can be specified \
+        as either a simple SpEL template expression that evaluates to a message string, or as a \
+        structured object with 'msg' and/or 'cause' properties. When only 'cause' is specified without \
+        'msg', the exception will be rethrown preserving its original type (if FcliException) or wrapped.
         """)
-    @SampleYamlSnippets("""
+    @SampleYamlSnippets({"""
         do:
           - throw: ERROR: ${errorMessage}    
-        """)
-    @JsonProperty(value = "throw", required = false) private TemplateExpression _throw;
+        ""","""
+        do:
+          - throw:
+              msg: 'Operation failed'
+              cause: ${lastException}
+        ""","""
+        # Rethrow original exception
+        do:
+          - throw:
+              cause: ${lastException}
+        """})
+    @JsonProperty(value = "throw", required = false) private MessageWithCause _throw;
     
     @JsonPropertyDescription("""
         Terminate action execution and return the given exit code.

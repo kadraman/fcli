@@ -15,11 +15,13 @@ package com.fortify.cli.common.action.runner.processor;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -29,8 +31,11 @@ import com.fortify.cli.common.action.model.AbstractActionStepElementForEachRecor
 import com.fortify.cli.common.action.model.ActionStep;
 import com.fortify.cli.common.action.model.IActionStepElement;
 import com.fortify.cli.common.action.model.IMapKeyAware;
+import com.fortify.cli.common.action.model.MessageWithCause;
 import com.fortify.cli.common.action.runner.ActionRunnerContext;
 import com.fortify.cli.common.action.runner.ActionRunnerVars;
+import com.fortify.cli.common.json.JsonHelper;
+import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.spel.wrapper.TemplateExpressionKeySerializer;
 import com.fortify.cli.common.util.StringHelper;
 
@@ -147,21 +152,35 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
     
     /**
      * Sets generic exception variables available in on.fail blocks.
-     * Sets lastException as POJONode for consistency with ${name}_exception behavior from v3.14.x.
-     * Both variables support SpEL method calls (e.g., ${lastException.message}, ${lastException.getClass().simpleName}).
+     * Serializes exception to an ObjectNode with properties: type, message, httpStatus (if applicable), and pojo.
+     * Always sets lastException, and also ${name}_exception if element has a name.
      * 
      * @param exception The exception to expose as variables
      * @param elementName The element name/key (may be null)
      */
     protected void setGenericExceptionVars(Throwable exception, String elementName) {
         var vars = getVars();
+        var exceptionNode = JsonHelper.getObjectMapper().createObjectNode();
         
-        // Always set lastException as POJONode (same pattern as ${name}_exception from v3.14.x)
-        vars.set("lastException", new POJONode(exception));
+        // Set common exception properties
+        exceptionNode.put("type", exception.getClass().getSimpleName());
+        exceptionNode.put("message", exception.getMessage());
         
-        // For named elements, set ${name}_exception as POJONode (backward compatible with v3.14.x)
+        // Add httpStatus if this is an HTTP exception
+        if (exception instanceof UnexpectedHttpResponseException) {
+            var httpException = (UnexpectedHttpResponseException) exception;
+            exceptionNode.put("httpStatus", httpException.getStatus());
+        }
+        
+        // Store original exception as POJONode for advanced use cases (e.g., calling methods)
+        exceptionNode.set("pojo", new POJONode(exception));
+        
+        // Always set lastException
+        vars.set("lastException", exceptionNode);
+        
+        // For named elements, also set ${name}_exception
         if (elementName != null) {
-            vars.set(elementName + "_exception", new POJONode(exception));
+            vars.set(elementName + "_exception", exceptionNode);
         }
     }
     
@@ -198,6 +217,63 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
      */
     protected void setFailureVars(IActionStepElement element, String elementName, Throwable exception) {
         // Default: no additional variables. Subclasses override to add custom variables.
+    }
+    
+    /**
+     * Evaluates a MessageWithCause and returns the evaluated message and optional cause.
+     * 
+     * @param msgWithCause The MessageWithCause to evaluate
+     * @param vars The action variables for expression evaluation
+     * @return EvaluatedMessageWithCause record containing message and cause (may be null)
+     */
+    protected static final EvaluatedMessageWithCause evaluateMessageWithCause(
+            MessageWithCause msgWithCause, 
+            ActionRunnerVars vars) {
+        String message = msgWithCause.getMsg() != null 
+            ? asString(vars.eval(msgWithCause.getMsg(), Object.class))
+            : null;
+        
+        // Treat blank strings as null for consistency
+        if (StringUtils.isBlank(message)) {
+            message = null;
+        }
+        
+        Throwable cause = null;
+        if (msgWithCause.getCause() != null) {
+            Object causeValue = vars.eval(msgWithCause.getCause(), Object.class);
+            cause = extractThrowableFromCause(causeValue);
+        }
+        
+        return new EvaluatedMessageWithCause(message, cause);
+    }
+    
+    /**
+     * Extracts a Throwable from a cause value that may be wrapped in POJONode or ObjectNode.
+     * This method is private and only called by evaluateMessageWithCause.
+     * 
+     * @param causeValue The evaluated cause expression value
+     * @return The extracted Throwable, or null if not found or not a Throwable
+     */
+    private static Throwable extractThrowableFromCause(Object causeValue) {
+        if (causeValue == null) {
+            return null;
+        }
+        
+        // If ObjectNode with 'pojo' property, extract that property
+        if (causeValue instanceof ObjectNode) {
+            JsonNode pojoNode = ((ObjectNode) causeValue).get("pojo");
+            if (pojoNode != null) {
+                causeValue = pojoNode;
+            }
+        }
+        
+        // If POJONode, extract the wrapped object
+        if (causeValue instanceof POJONode) {
+            causeValue = ((POJONode) causeValue).getPojo();
+        }
+        
+        // Return causeValue if it's a Throwable, otherwise null
+        return causeValue instanceof Throwable ? (Throwable) causeValue : null;
     }
     
     public abstract ActionRunnerContext getCtx();

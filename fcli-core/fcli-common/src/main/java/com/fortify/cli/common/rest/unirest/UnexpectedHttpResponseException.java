@@ -53,17 +53,6 @@ public final class UnexpectedHttpResponseException extends UnirestException {
         this.status = failureResponse.getStatus();
     }
 
-    /**
-     * Provides backward compatibility for SpEL expressions that reference {@code httpStatus}.
-     * In v3.x, the exception variable was explicitly set as {@code lastException.httpStatus},
-     * so this method allows {@code .httpStatus} property access via JavaBean conventions.
-     * 
-     * @return the HTTP status code
-     */
-    public int getHttpStatus() {
-        return status;
-    }
-
     private static final String getMessage(HttpResponse<?> failureResponse, HttpRequestSummary requestSummary, String guidance) {
         var reason = getFailureReason(failureResponse);
         var body = failureResponse.getParsingError()
