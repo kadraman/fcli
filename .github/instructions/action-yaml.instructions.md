@@ -216,7 +216,7 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
 **Available exception variables in `on.fail` blocks:**
 - `lastException` — The exception object (provides access to all exception properties via JavaBean accessors)
 - `lastException.message` — Exception message text
-- `lastException.class.simpleName` — Exception class name (e.g., `GhasUnavailableException`)
+- `#type(lastException)` — Exception class name (e.g., `GhasUnavailableException`)
 - `lastException.httpStatus` — HTTP status code (only available for `UnexpectedHttpResponseException`)
 - `${name}_exception` — For named elements (e.g., `rest.call` or `run.fcli` entries), provides same object access as `lastException`
 
@@ -238,9 +238,9 @@ SpEL expressions may contain characters with special YAML meaning, causing parse
 - var.set:
     result: ${#someOperation()}
   on.fail:
-    - if: ${lastException.class.simpleName=='GhasUnavailableException'}
+    - if: ${#type(lastException)=='GhasUnavailableException'}
       log.info: GitHub Advanced Security not available
-    - if: ${lastException.class.simpleName!='GhasUnavailableException'}
+    - if: ${#type(lastException)!='GhasUnavailableException'}
       throw: 'Unexpected error: ${lastException.message}'
 ```
 

@@ -51,6 +51,7 @@ import org.jsoup.safety.Safelist;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionSource;
@@ -106,6 +107,18 @@ public class ActionSpelFunctions {
         } else {
             return true;
         }
+    }
+    
+    @SpelFunction(cat=util, desc = "Returns the simple class name of the given object. Primarily used for exception type checking in on.fail handlers.",
+            returns="The simple class name of the object, or `null` if the input is `null`")
+    public static final String type(
+            @SpelFunctionParam(name="object", desc="the object whose type should be returned; may be `null`") Object object)
+    {
+        if (object == null) { return null; }
+        if (object instanceof POJONode) {
+            object = ((POJONode) object).getPojo();
+        }
+        return object.getClass().getSimpleName();
     }
     
     @SpelFunction(cat=txt, desc = "Repeats the input text a specified number of times.",

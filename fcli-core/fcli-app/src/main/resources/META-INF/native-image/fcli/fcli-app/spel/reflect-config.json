@@ -86,11 +86,6 @@
   "name" : "java.lang.String",
   "allPublicMethods" : true
 },{
-  "name" : "java.lang.Object",
-  "methods" : [
-    { "name" : "getClass" }
-  ]
-},{
   "name" : "java.lang.Class",
   "allPublicMethods" : true
 },{
