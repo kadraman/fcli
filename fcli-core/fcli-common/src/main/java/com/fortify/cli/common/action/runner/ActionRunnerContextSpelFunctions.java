@@ -208,6 +208,25 @@ public final class ActionRunnerContextSpelFunctions {
             return text;
         }
         
+        @SpelFunction(cat=internal, desc="""
+                Format text for use in table cells, converting newlines to appropriate line breaks.
+                For AsciiDoc: converts newlines to hard line breaks (space + plus + newline).
+                For plain text: keeps newlines as-is.
+                This method does NOT process other references - call render() first if needed.
+                """, returns="Text formatted for table cell display")
+        public String tableCell(@SpelFunctionParam(name="text", desc="Text to format for table cell") String text) {
+            if (text == null) return "";
+            
+            if (isAsciiDoc) {
+                // For AsciiDoc table cells, convert newlines to hard line breaks
+                // AsciiDoc requires " +\n" (space-plus-newline) for hard line breaks
+                return text.replaceAll("\n", " +\n");
+            } else {
+                // For plain text, keep newlines as-is (table writer will handle them)
+                return text;
+            }
+        }
+        
         public String processEvalExpressions(String text, int depth) {
             if (depth >= MAX_EVAL_DEPTH) {
                 throw new FcliSimpleException("Maximum evaluation depth (" + MAX_EVAL_DEPTH + ") exceeded for $eval{...} expressions. Check for circular references.");

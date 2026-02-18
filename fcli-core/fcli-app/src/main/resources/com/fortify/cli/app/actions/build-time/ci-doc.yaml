@@ -206,8 +206,7 @@ formatters:
               By default, the fcli `ci` action will wait for all started scans to complete; set `DO_WAIT` to
               `false` to just kick off any configured scans without waiting for completion. Note that doing so
               will skip any post-scan tasks. The `SAST_WAIT_EXTRA_OPTS` environment variable can be used to pass
-              extra options to the fcliCmd:fcli fod sast-scan wait-for: command. Note that `DO_SAST_WAIT` is deprecated; 
-              please use `DO_WAIT` instead.
+              extra options to the fcliCmd:fcli fod sast-scan wait-for: command.
       - title: Post-Scan Actions
         overview: >
           Configure post-scan tasks including release summaries, policy checks, pull request comments, and
@@ -349,7 +348,6 @@ formatters:
               will skip any post-scan tasks. The `SAST_WAIT_EXTRA_OPTS` environment variable can be used to pass
               extra options to the fcliCmd:fcli sc-sast scan wait-for: command, and similarly, the `DEBRICKED_WAIT_EXTRA_OPTS`
               environment variable can be used to pass extra options to the fcliCmd:fcli ssc artifact wait-for: command.
-              Note that `DO_SAST_WAIT` is deprecated; please use `DO_WAIT` instead.
       - title: Post-Scan Actions
         overview: >
           Configure post-scan tasks including Aviator auditing, application version summaries, policy checks,
@@ -503,11 +501,23 @@ formatters:
                   The Fortify tools to be installed are specified through action inputs, whereas optional bootstrapping behavior for fcli and supporting
                   tools can be controlled through environment variables.
 
-                  === Quick Start Example
+                  == Quick Start Example
 
                   Basic setup for custom workflows with fcli version pinning.
 
                   $eval{snippets.quickstart}
+
+                  == Tips & Recommendations
+
+                  === Air-Gapped Environments
+
+                  For air-gapped or restricted network environments, host custom tool definitions and tool bundles in an internal
+                  SCM repository or artifact registry. Configure the integration to use these internal resources:
+
+                  * Set `TOOL_DEFINITIONS` to point to your internally hosted tool definitions file
+                  * Set `FCLI_BOOTSTRAP_URL` to download fcli from your internal mirror
+
+                  This ensures all required tools are accessible without external internet access.
 
                   == Configuration
 
@@ -614,11 +624,36 @@ formatters:
                   related tasks, providing a unified yet customizable experience across your AST scan workflows
                   on GitHub and other CI systems. 
 
-                  === Quick Start Example
+                  == Quick Start Example
 
                   Minimal configuration for running OpenText Fortify AST scans.
 
                   $eval{snippets.quickstart}
+
+                  == Tips & Recommendations
+
+                  === Centralized Configuration Management
+
+                  For enterprise environments with multiple repositories, consider creating
+                  link:https://docs.github.com/en/actions/using-workflows/reusing-workflows[reusable workflows] or
+                  link:https://docs.github.com/en/actions/creating-actions/creating-a-composite-action[composite actions]
+                  to wrap the Fortify integration. This approach provides:
+
+                  * **Version stability**: Pin specific Fortify action and fcli versions (e.g., `FCLI_BOOTSTRAP_VERSION: v3.15.0`) across all pipelines
+                  * **Consistent configuration**: Centrally manage common settings like tool versions and scan parameters
+                  * **Controlled upgrades**: Test new versions centrally before rolling out to all repositories
+
+                  $eval{snippets.tipsTemplateExample}
+
+                  === Air-Gapped Environments
+
+                  For air-gapped or restricted network environments, host custom tool definitions and tool bundles in an internal
+                  SCM repository or artifact registry. Configure the integration to use these internal resources:
+
+                  * Set `TOOL_DEFINITIONS` to point to your internally hosted tool definitions file
+                  * Set `FCLI_BOOTSTRAP_URL` to download fcli from your internal mirror
+
+                  This ensures all required tools are accessible without external internet access.
 
                   == Configuration
 
@@ -656,7 +691,7 @@ formatters:
                     bootstrapNotes: |
                       NOTE: This GitHub Action requires at least fcli v3.15.0 to function correctly.
 
-                      NOTE: Environment variables listed in the subsequent sections are for fcli ${fcliVersion}; if your bootstrap settings install another fcli version, please refer to to the fcli actionRef:generic:ci action documentation for that version. 
+                      NOTE: Environment variables listed in the subsequent sections are for fcli ${fcliVersion}; if your bootstrap settings install another fcli version, please refer to to the fcli actionRef:generic:ci action documentation for that version.
                     migrationSectionContents: |
                       Migrating from v2.x.y to v3.x.y versions of the `fortify/github-action` should be fairly 
                       straightforward, as most of the environment-based configuration remains the same. However,
@@ -717,6 +752,32 @@ formatters:
                                 # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
                                 # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
                       ----
+                    tipsTemplateExample: |
+                      Example reusable workflow structure:
+                      [source,yaml]
+                      ----
+                      # .github/workflows/fortify-scan.yml (in your organization's shared workflow repository)
+                      name: Fortify Scan Reusable
+                      on:
+                        workflow_call:
+                          inputs:
+                            fod-release:
+                              description: 'Optional FoD release, defaults to <repo>:<branch>'
+                              required: false
+                              type: string
+                      jobs:
+                        scan:
+                          runs-on: ubuntu-latest
+                          steps:
+                            - uses: actions/checkout@v4
+                            - uses: fortify/github-action@v3
+                              env:
+                                FOD_URL: ${'$'}{{ vars.FOD_URL }}
+                                FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
+                                FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
+                                FOD_RELEASE: ${'$'}{{ inputs.fod-release || format('{0}:{1}', github.repository, github.ref_name) }}
+                                FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
+                      ----
                   ssc:
                     quickstart: |
                       [source,yaml]
@@ -744,6 +805,32 @@ formatters:
                                 SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
                                 SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
                                 # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
+                      ----
+                    tipsTemplateExample: |
+                      Example reusable workflow structure:
+                      [source,yaml]
+                      ----
+                      # .github/workflows/fortify-scan.yml (in your organization's shared workflow repository)
+                      name: Fortify Scan Reusable
+                      on:
+                        workflow_call:
+                          inputs:
+                            ssc-appversion:
+                              description: 'Optional SSC application version, defaults to <repo>:<branch>'
+                              required: false
+                              type: string
+                      jobs:
+                        scan:
+                          runs-on: ubuntu-latest
+                          steps:
+                            - uses: actions/checkout@v4
+                            - uses: fortify/github-action@v3
+                              env:
+                                SSC_URL: ${'$'}{{ vars.SSC_URL }}
+                                SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
+                                SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
+                                SSC_APPVERSION: ${'$'}{{ inputs.ssc-appversion || format('{0}:{1}', github.repository, github.ref_name) }}
+                                FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
                       ----
     gitlab:
       title: Fortify GitLab Components
@@ -797,6 +884,18 @@ formatters:
                   Basic setup for custom workflows with fcli version pinning.
 
                   $eval{snippets.quickstart}
+
+                  == Tips & Recommendations
+
+                  === Air-Gapped Environments
+
+                  For air-gapped or restricted network environments, host custom tool definitions and tool bundles in an internal
+                  SCM repository or artifact registry. Configure the integration to use these internal resources:
+
+                  * Set `TOOL_DEFINITIONS` to point to your internally hosted tool definitions file
+                  * Set `FCLI_TGZ_URL` to download fcli from your internal mirror
+
+                  This ensures all required tools are accessible without external internet access.
 
                   == Configuration
 
@@ -977,6 +1076,31 @@ formatters:
 
                   $eval{snippets.quickstart}
 
+                  == Tips & Recommendations
+
+                  === Centralized Configuration Management
+
+                  For enterprise environments with multiple repositories, consider creating
+                  link:https://docs.gitlab.com/ee/ci/components/[custom GitLab components] or
+                  link:https://docs.gitlab.com/ee/ci/yaml/includes.html[pipeline templates]
+                  to wrap the Fortify integration. This approach provides:
+
+                  * **Version stability**: Pin specific component versions (e.g., `@1.0.1` instead of `@1`) and fcli versions across all pipelines
+                  * **Consistent configuration**: Centrally manage common settings like tool versions and scan parameters
+                  * **Controlled upgrades**: Test new versions centrally before rolling out to all repositories
+
+                  $eval{snippets.tipsTemplateExample}
+
+                  === Air-Gapped Environments
+
+                  For air-gapped or restricted network environments, host custom tool definitions and tool bundles in an internal
+                  SCM repository or artifact registry. Configure the integration to use these internal resources:
+
+                  * Set `TOOL_DEFINITIONS` to point to your internally hosted tool definitions file
+                  * Set `FCLI_TGZ_URL` to download fcli from your internal mirror
+
+                  This ensures all required tools are accessible without external internet access.
+
                   == Configuration
 
                   === Component Inputs
@@ -1087,7 +1211,7 @@ formatters:
                     bootstrapNotes: |
                       NOTE: This GitLab Component requires a recent fcli v3.x.y version to function properly.
 
-                      NOTE: Environment variables listed in the subsequent sections are for fcli ${fcliVersion}; if your bootstrap settings install another fcli version, please refer to to the fcli actionRef:generic:ci action documentation for that version. 
+                      NOTE: Environment variables listed in the subsequent sections are for fcli ${fcliVersion}; if your bootstrap settings install another fcli version, please refer to to the fcli actionRef:generic:ci action documentation for that version.
                     quickstart: |
                       [source,yaml]
                       ----
@@ -1127,6 +1251,25 @@ formatters:
                           FOD_CLIENT_SECRET: ${FOD_CLIENT_SECRET}     # From GitLab CI/CD variables
                           # FOD_RELEASE: MyApp:main                   # Optional: defaults to repo:branch
                       ----
+                    tipsTemplateExample: |
+                      Example custom component or template structure:
+                      [source,yaml]
+                      ----
+                      # In your organization's shared component/template repository
+                      include:
+                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1.0.1  # Pinned version
+                          inputs:
+                            job-name: fortify-ast-scan
+                            stage: security
+                            fcli-version: v3.15.0  # Pinned fcli version
+
+                      fortify-ast-scan:
+                        variables:
+                          FOD_URL: ${FOD_URL}
+                          FOD_CLIENT_ID: ${FOD_CLIENT_ID}
+                          FOD_CLIENT_SECRET: ${FOD_CLIENT_SECRET}
+                        extends: .my-shared-config  # Additional organization-wide settings
+                      ----
                   ssc:
                     quickstart: |
                       [source,yaml]
@@ -1147,6 +1290,25 @@ formatters:
                           SSC_TOKEN: ${SSC_TOKEN}               # From GitLab CI/CD variables
                           SC_SAST_TOKEN: ${SC_SAST_TOKEN}       # From GitLab CI/CD variables
                           # SSC_APPVERSION: MyApp:main          # Optional: defaults to repo:branch
+                      ----
+                    tipsTemplateExample: |
+                      Example custom component or template structure:
+                      [source,yaml]
+                      ----
+                      # In your organization's shared component/template repository
+                      include:
+                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1.0.1  # Pinned version
+                          inputs:
+                            job-name: fortify-ast-scan
+                            stage: security
+                            fcli-version: v3.15.0  # Pinned fcli version
+
+                      fortify-ast-scan:
+                        variables:
+                          SSC_URL: ${SSC_URL}
+                          SSC_TOKEN: ${SSC_TOKEN}
+                          SC_SAST_TOKEN: ${SC_SAST_TOKEN}
+                        extends: .my-shared-config  # Additional organization-wide settings
                       ----
     ado:
       title: Fortify Azure DevOps
@@ -1184,11 +1346,35 @@ formatters:
                   This approach provides a unified yet customizable experience across your AST scan workflows, allowing you to
                   implement the same scanning logic across different CI/CD platforms.
 
-                  === Quick Start Example
+                  == Quick Start Example
 
                   Minimal configuration for running OpenText Fortify AST scans in Azure DevOps.
 
                   $eval{snippets.quickstart}
+
+                  == Tips & Recommendations
+
+                  === Centralized Configuration Management
+
+                  For enterprise environments with multiple repositories, consider creating
+                  link:https://learn.microsoft.com/en-us/azure/devops/pipelines/process/templates[pipeline templates]
+                  to wrap the Fortify integration. This approach provides:
+
+                  * **Version stability**: Pin specific `@fortify/setup` and fcli versions (e.g., `FCLI_BOOTSTRAP_VERSION: v3.15.0`) across all pipelines
+                  * **Consistent configuration**: Centrally manage common settings like tool versions and scan parameters
+                  * **Controlled upgrades**: Test new versions centrally before rolling out to all repositories
+
+                  $eval{snippets.tipsTemplateExample}
+
+                  === Air-Gapped Environments
+
+                  For air-gapped or restricted network environments, host custom tool definitions and tool bundles in an internal
+                  SCM repository or artifact registry. Configure the integration to use these internal resources:
+
+                  * Set `TOOL_DEFINITIONS` to point to your internally hosted tool definitions file
+                  * Set `FCLI_BOOTSTRAP_URL` to download fcli from your internal mirror
+
+                  This ensures all required tools are accessible without external internet access.
 
                   == Configuration
 
@@ -1231,6 +1417,9 @@ formatters:
                           include:
                             - main
                       
+                      variables:
+                        - group: fortify  # Variable group containing FOD_URL, FOD_CLIENT_ID, FOD_CLIENT_SECRET
+                      
                       jobs:
                         - job: fortify
                           pool:
@@ -1261,6 +1450,34 @@ formatters:
                                 # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
                                 FORTIFY_SETUP_VERSION: v2.1      # Or v2 for latest features, v2.1.1 for stability
                       ----
+                    tipsTemplateExample: |
+                      Example template structure:
+                      [source,yaml]
+                      ----
+                      # fortify-scan-template.yml (in your organization's shared template repository)
+                      parameters:
+                        - name: fodRelease
+                          displayName: 'Optional FoD release, defaults to <repo>:<branch>'
+                          type: string
+                          default: ''
+
+                      steps:
+                        - task: Bash@3
+                          displayName: 'Run Fortify AST scan'
+                          inputs:
+                            targetType: 'inline'
+                            script: |
+                              npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
+                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                              fcli action run ci
+                          env:
+                            FOD_URL: $(FOD_URL)
+                            FOD_CLIENT_ID: $(FOD_CLIENT_ID)
+                            FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
+                            FOD_RELEASE: ${'$'}{{ parameters.fodRelease }}
+                            FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
+                            FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
+                      ----
                   ssc:
                     quickstart: |
                       [source,yaml]
@@ -1273,6 +1490,9 @@ formatters:
                         branches:
                           include:
                             - main
+                      
+                      variables:
+                        - group: fortify  # Variable group containing SSC_URL, SSC_TOKEN, SC_SAST_TOKEN
                       
                       jobs:
                         - job: fortify
@@ -1302,6 +1522,34 @@ formatters:
                                 SC_SAST_TOKEN: $(SC_SAST_TOKEN)
                                 # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
                                 FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.1 for stability
+                      ----
+                    tipsTemplateExample: |
+                      Example template structure:
+                      [source,yaml]
+                      ----
+                      # fortify-scan-template.yml (in your organization's shared template repository)
+                      parameters:
+                        - name: sscAppVersion
+                          displayName: 'Optional SSC application version, defaults to <repo>:<branch>'
+                          type: string
+                          default: ''
+
+                      steps:
+                        - task: Bash@3
+                          displayName: 'Run Fortify AST scan'
+                          inputs:
+                            targetType: 'inline'
+                            script: |
+                              npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
+                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                              fcli action run ci
+                          env:
+                            SSC_URL: $(SSC_URL)
+                            SSC_TOKEN: $(SSC_TOKEN)
+                            SC_SAST_TOKEN: $(SC_SAST_TOKEN)
+                            SSC_APPVERSION: ${'$'}{{ parameters.sscAppVersion }}
+                            FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
+                            FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
                       ----
   
   # ============================================================================
@@ -1431,8 +1679,8 @@ formatters:
     |===
   
   asciiDocCell: |
-    |${(envVar.realNode!=null?envVar.realNode:envVar).names.replaceAll('\\n', ' +\\\\n')}
-    a|${#action.docRenderer().asciidoc().currentProduct(product).render((envVar.realNode!=null?envVar.realNode:envVar).desc.replaceAll('\\n', ' +\\\\n'))}
+    |${#action.docRenderer().asciidoc().tableCell((envVar.realNode!=null?envVar.realNode:envVar).names)}
+    a|${#action.docRenderer().asciidoc().currentProduct(product).tableCell(#action.docRenderer().asciidoc().currentProduct(product).render((envVar.realNode!=null?envVar.realNode:envVar).desc))}
   
   asciiDocConfigSection: |
     === ${sectionDef.title}
