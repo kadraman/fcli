@@ -150,16 +150,39 @@ formatters:
               applications). Default value is based on repository and branch name, for example `myOrg/myRepo:myBranch`.
               Note that you'll need to explicitly configure `FOD_RELEASE` for microservices applications, as the default
               value lacks a microservice name.
-          - names: DO_SETUP\nSETUP_ACTION\nSETUP_EXTRA_OPTS
+          - names: DO_SETUP\nSETUP_ACTION\nSETUP_EXTRA_OPTS\nOVERRIDE_SAST_SETTINGS
             desc: >-
               If `DO_SETUP` is set not set to `false`, the application and/or release will be created if they do not
-              yet exist, and static scan settings will be configured if not configured already, using the
-              fcli-provided actionRef:_:setup-release action, or, if specified, the custom fcli action specified through
-              `SETUP_ACTION`. Extra options for the fcli action can be passed through the `SETUP_EXTRA_OPTS`
-              environment variable.\n\nDepending on your Git workflow, it is recommended to copy state from the
-              release representing your default branch by passing the `--copy-from` option through
-              `SETUP_EXTRA_OPTS`. To allow this action to create new applications, depending on FoD version,
-              you may (also) need to provide the `--app-owner <user id or name>` option through `SETUP_EXTRA_OPTS`.
+              yet exist, and static scan settings will be configured if necessary. By default, static scan settings
+              will only be configured if no settings have been previously configured for the release; set 
+              `OVERRIDE_SAST_SETTINGS` to `true` to override existing static scan settings. The setup will be performed
+              using the fcli-provided fcli-provided actionRef:_:setup-release action, or, the custom fcli action 
+              specified through `SETUP_ACTION`. Extra options for the fcli action can be passed through the 
+              `SETUP_EXTRA_OPTS` environment variable, but also see below for some convenience environment variables.
+          - names: COPY_FROM_RELEASE
+            desc: >-
+              Depending on your Git workflow, when a new release is created, it is recommended to copy state from the 
+              release representing your default branch by either setting this environment variable or by passing the 
+              `--copy-from` option through `SETUP_EXTRA_OPTS`.
+          - names: SAST_ASSESSMENT_TYPE
+            desc: >-
+              By default, when setting up a release for SAST scanning, the SAST scan will be configured with the 
+              `Static Assessment` assessment type. You can choose a different assement type by either setting this 
+              environment variable or by passing the `--assessment-type` option through `SETUP_EXTRA_OPTS`. Note 
+              that this won't update the assessment type if SAST scan settings have already been configured for the 
+              release, unless you set `OVERRIDE_SAST_SETTINGS` to `true`.
+          - names: DO_AVIATOR_AUDIT
+            desc: >-
+              To enable Aviator audits, set this environment variable to true or pass `--use-aviator` through `SETUP_EXTRA_OPTS`.
+              Note that Aviator avaliablility depends on tenant and scan policy configuration, and may consume additional entitlement
+              units. Also note that this setting will be ignored if SAST scan settings have already been configured for the release, 
+              unless you set `OVERRIDE_SAST_SETTINGS` to `true`.
+          - names: DO_SCA_SCAN
+            desc: >-
+              To enable Software Composition Analysis in your SAST scans, set this environment variable to true or pass `--oss` 
+              through `SETUP_EXTRA_OPTS`. Note that Debricked or Sonatype availability depends on tenant and scan policy configuration, and
+              may consume additional entitlement units. Also note that this option will be ignored if SAST scan settings have already
+              been configured for the release, unless you set `OVERRIDE_SAST_SETTINGS` to `true`.
       - title: Package Configuration
         overview: >-
           Configure source code packaging behavior for SAST scans. Control whether to use custom packaging
