@@ -175,7 +175,7 @@ public final class ActionStep extends AbstractActionStepElement {
         on the config:output setting, informational messages may be shown either immediately, or \
         only after all action steps have been executed, to not interfere with progress messages. \
         This instruction can be specified as either a simple SpEL template expression, or as a \
-        structured object with 'msg' and optional 'cause' properties for including exception details.
+        structured object with `msg` and optional `cause` properties for including exception details.
         """)
     @SampleYamlSnippets({"""
         do:
@@ -192,8 +192,8 @@ public final class ActionStep extends AbstractActionStepElement {
         Write a warning message to console and log file (if enabled). Note that depending on the \
         config:output setting, warning messages may be shown either immediately, or only after all \
         action steps have been executed, to not interfere with progress messages. This instruction \
-        can be specified as either a simple SpEL template expression, or as a structured object with \
-        'msg' and optional 'cause' properties for including exception details.
+        can be specified as either a simple SpEL template expression, or as a structured object with `msg` \
+        and optional `cause` properties for including exception details.
         """)
     @SampleYamlSnippets({"""
         do:
@@ -208,7 +208,7 @@ public final class ActionStep extends AbstractActionStepElement {
     
     @JsonPropertyDescription("""
         Write a debug message to log file (if enabled). This instruction can be specified as either \
-        a simple SpEL template expression, or as a structured object with 'msg' and optional 'cause' \
+        a simple SpEL template expression, or as a structured object with `msg` and optional `cause` \
         properties for including exception details.
         """)
     @SampleYamlSnippets({"""
@@ -380,8 +380,8 @@ public final class ActionStep extends AbstractActionStepElement {
     @JsonPropertyDescription("""
         Throw an exception, thereby terminating action execution. This instruction can be specified \
         as either a simple SpEL template expression that evaluates to a message string, or as a \
-        structured object with 'msg' and/or 'cause' properties. When only 'cause' is specified without \
-        'msg', the exception will be rethrown preserving its original type (if FcliException) or wrapped.
+        structured object with `msg` and/or `cause` properties. When only `cause` is specified without \
+        `msg`, the exception will be rethrown preserving its original type (if FcliException) or wrapped.
         """)
     @SampleYamlSnippets({"""
         do:

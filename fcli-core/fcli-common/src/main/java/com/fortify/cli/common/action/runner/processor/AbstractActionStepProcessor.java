@@ -14,6 +14,7 @@ package com.fortify.cli.common.action.runner.processor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -140,7 +141,7 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
                 processSteps(element.getOnSuccess());
             }
         } catch (Exception e) {
-            setGenericExceptionVars(e, elementName);
+            setGenericExceptionVars(e, elementName, getVars()::set);
             setFailureVars(element, elementName, e);
             if (element.getOnFail() != null) {
                 processSteps(element.getOnFail());
@@ -158,8 +159,19 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
      * @param exception The exception to expose as variables
      * @param elementName The element name/key (may be null)
      */
-    protected void setGenericExceptionVars(Throwable exception, String elementName) {
-        var vars = getVars();
+    protected void setGenericExceptionVars(Throwable exception, String elementName, BiConsumer<String, JsonNode> varSetter) {
+        var exceptionNode = buildExceptionNode(exception);
+        
+        // Always set lastException
+        varSetter.accept("lastException", exceptionNode);
+        
+        // For named elements, also set ${name}_exception
+        if (elementName != null) {
+            varSetter.accept(elementName + "_exception", exceptionNode);
+        }
+    }
+
+    private ObjectNode buildExceptionNode(Throwable exception) {
         var exceptionNode = JsonHelper.getObjectMapper().createObjectNode();
         
         // Set common exception properties
@@ -174,14 +186,7 @@ public abstract class AbstractActionStepProcessor implements IActionStepProcesso
         
         // Store original exception as POJONode for advanced use cases (e.g., calling methods)
         exceptionNode.set("pojo", new POJONode(exception));
-        
-        // Always set lastException
-        vars.set("lastException", exceptionNode);
-        
-        // For named elements, also set ${name}_exception
-        if (elementName != null) {
-            vars.set(elementName + "_exception", exceptionNode);
-        }
+        return exceptionNode;
     }
     
     /**

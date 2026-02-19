@@ -185,7 +185,7 @@ public class ActionStepProcessorRunFcli extends AbstractActionStepProcessorMapEn
     private void onFcliException(ActionStepRunFcliEntry fcli, Throwable t) {
         var name = fcli.getKey();
         // Set generic lastException* and ${name}_exception* variables (with .message, .type, .httpStatus sub-properties)
-        setGenericExceptionVars(t, name);
+        setGenericExceptionVars(t, name, getVars()::set);
         var msg = t.getMessage();
         msg = msg==null 
             ? "Fcli command terminated with an exception"

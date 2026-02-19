@@ -17,11 +17,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.spel.SpelHelper;
 import com.fortify.cli.common.spel.wrapper.TemplateExpression;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -30,15 +32,16 @@ import lombok.NoArgsConstructor;
  * and structured messages with exception causes.
  */
 @Reflectable @NoArgsConstructor
-@Data
+@Data @EqualsAndHashCode(callSuper = true)
 @JsonInclude(Include.NON_NULL)
+@JsonTypeName("msg-and-cause")
 @JsonClassDescription("""
         A message with optional exception cause. This can be supplied as either a simple \
         SpEL template expression (in which case it represents the message text), or as a \
-        structured object with 'msg' and optional 'cause' properties. Used by `throw` and \
+        structured object with `msg` and optional `cause` properties. Used by `throw` and \
         `log.*` instructions.
         """)
-public final class MessageWithCause {
+public final class MessageWithCause extends AbstractActionStepElement  {
     
     /** Allow for deserializing from a string that specified the message */
     public MessageWithCause(String msgString) {
@@ -57,11 +60,13 @@ public final class MessageWithCause {
     
     @JsonPropertyDescription("""
         Optional exception cause, specified as an SpEL template expression that evaluates to a Throwable.
-        Can be a direct Throwable reference, wrapped in POJONode, or an ObjectNode with a 'pojo' property \
-        (e.g., `${lastException}` or `${lastException.pojo}`). The implementation automatically extracts the \
-        Throwable from the ObjectNode.pojo property when present. For throw instruction: if only cause is \
-        specified (no msg), the exception will be rethrown if it's an FcliException, otherwise wrapped.
+        Can be a direct Throwable reference, wrapped in POJONode, or an ObjectNode with a `pojo` property \
+        (e.g., `${lastException}` or `${lastException.pojo}`). If only cause is specified (no msg), the 
+        exception will be rethrown if it's an FcliException, otherwise wrapped.
         """)
     @JsonProperty(value = "cause", required = false) 
     private TemplateExpression cause;
+
+    @Override
+    public void postLoad(Action action) {}
 }

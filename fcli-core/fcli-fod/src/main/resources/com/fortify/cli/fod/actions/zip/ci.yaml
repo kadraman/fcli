@@ -70,11 +70,11 @@ steps:
       # any scan completed successfully. 
       postScan.skipReason: ${#ifBlank(wait.skipReason,'No scans have been run because they failed or were skipped')}
   
-  # Configure conditional setup options
+  # Configure conditional setup options if setup is not skipped.
   - if: ${#isBlank(setup.skipReason)}
     do:
       - var.set:
-          setup.extraOpts: ${#env('SETUP_EXTRA_OPTS')}
+          setup.extraOpts: ${#env('SETUP_EXTRA_OPTS')?:''}
           setup.conditionalOpts: ""
       - if: ${!setup.extraOpts.contains('--copy-from')}
         var.set:

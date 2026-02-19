@@ -72,7 +72,7 @@ public class ActionStepProcessorRestCall extends AbstractActionStepProcessor {
         var onFailSteps = requestDescriptor.getOnFail();
         if ( onFailSteps==null ) { throw e; }
         // Set generic lastException* and ${name}_exception* variables (with .message, .type, .httpStatus sub-properties)
-        setGenericExceptionVars(e, requestDescriptor.getKey());
+        setGenericExceptionVars(e, requestDescriptor.getKey(), getVars()::setLocal);
         processSteps(onFailSteps);
     }
     
