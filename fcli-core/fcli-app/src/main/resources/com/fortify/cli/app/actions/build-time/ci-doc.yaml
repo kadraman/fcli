@@ -775,7 +775,7 @@ formatters:
                                 FOD_URL: ${'$'}{{ vars.FOD_URL }}
                                 FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
                                 FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
-                                FOD_RELEASE: ${'$'}{{ inputs.fod-release || format('{0}:{1}', github.repository, github.ref_name) }}
+                                FOD_RELEASE: ${'$'}{{ inputs.fod-release }}
                                 FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
                       ----
                   ssc:
@@ -829,7 +829,7 @@ formatters:
                                 SSC_URL: ${'$'}{{ vars.SSC_URL }}
                                 SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
                                 SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
-                                SSC_APPVERSION: ${'$'}{{ inputs.ssc-appversion || format('{0}:{1}', github.repository, github.ref_name) }}
+                                SSC_APPVERSION: ${'$'}{{ inputs.ssc-appversion }}
                                 FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
                       ----
     gitlab:
