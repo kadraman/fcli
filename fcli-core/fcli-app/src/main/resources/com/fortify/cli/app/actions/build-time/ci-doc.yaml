@@ -518,7 +518,7 @@ formatters:
                 contents: |
                   == Overview
 
-                  The `fortify/github-action/setup` action allows for setting up fcli and various other Fortify tools for use in custom CI/CD workflows.
+                  The `fortify/github-action/setup@v3` action allows for setting up fcli and various other Fortify tools for use in custom CI/CD workflows.
                   This allows you to implement fully customized AST scan workflows or other automation workflows that interact with Fortify products.
 
                   The Fortify tools to be installed are specified through action inputs, whereas optional bootstrapping behavior for fcli and supporting
@@ -640,7 +640,7 @@ formatters:
                 contents: |
                   == Overview
 
-                  This GitHub Action provides seamless integration of $eval{fortifyProductName}
+                  The `@fortify/github-action@v3` GitHub Action provides seamless integration of $eval{fortifyProductName}
                   for automated Application Security Testing (AST) into your CI/CD
                   workflows. The action leverages the ciOutputRef:setup-action action to set up
                   fcli, then executes the fcli actionRef:generic:ci action to run the requested scans and 
@@ -793,7 +793,7 @@ formatters:
                           runs-on: ubuntu-latest
                           steps:
                             - uses: actions/checkout@v4
-                            - uses: fortify/github-action@v3
+                            - uses: fortify/github-action@v3.0.0 # Centrally managed version
                               env:
                                 FOD_URL: ${'$'}{{ vars.FOD_URL }}
                                 FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
@@ -847,7 +847,7 @@ formatters:
                           runs-on: ubuntu-latest
                           steps:
                             - uses: actions/checkout@v4
-                            - uses: fortify/github-action@v3
+                            - uses: fortify/github-action@v3.0.0 # Centrally managed version
                               env:
                                 SSC_URL: ${'$'}{{ vars.SSC_URL }}
                                 SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
@@ -1343,7 +1343,7 @@ formatters:
             component: fortifySetup
             version: v2.1.x
             overview: |
-              Azure DevOps integration uses a script-based approach leveraging the `@fortify/setup` npm package to bootstrap fcli
+              The script-based Azure DevOps integration leverages the `@fortify/setup` npm package to bootstrap fcli
               and supporting tools like ScanCentral Client. The environment variables in this section are provided by
               `@fortify/setup` $eval{bootstrapComponentVersion} (configured via `FORTIFY_SETUP_VERSION=$eval{bootstrapComponentVersion}`).
               If you configure a different `@fortify/setup` version, please refer to the
@@ -1362,12 +1362,10 @@ formatters:
                   == Overview
 
                   This guide demonstrates how to integrate $eval{fortifyProductName} Application Security Testing (AST)
-                  into your Azure DevOps pipelines using a script-based approach. Unlike GitHub Actions or GitLab Components,
-                  Azure DevOps integration leverages the `@fortify/setup` npm package to bootstrap fcli, which then executes
-                  the fcli actionRef:generic:ci action to run scans and related tasks.
-
-                  This approach provides a unified yet customizable experience across your AST scan workflows, allowing you to
-                  implement the same scanning logic across different CI/CD platforms.
+                  into your Azure DevOps pipelines using a script-based approach, leveraging the `@fortify/setup` npm package
+                  to bootstrap fcli. Once bootstrapped, you can execute the fcli actionRef:generic:ci action to run scans,
+                  providing a unified yet customizable experience across your AST scan workflows on Azure DevOps and other
+                  CI systems. In the future, we may provide native fcli-based Azure DevOps tasks for an even easier integration.
 
                   == Quick Start Example
 
