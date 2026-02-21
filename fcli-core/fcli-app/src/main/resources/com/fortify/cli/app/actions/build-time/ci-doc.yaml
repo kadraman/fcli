@@ -902,7 +902,7 @@ formatters:
                   `.<job-name>-vars-prepare`, `.fcli-install`) which may be used to implement advanced use cases but
                   should not be directly customized.
 
-                  === Quick Start Example
+                  == Quick Start Example
 
                   Basic setup for custom workflows with fcli version pinning.
 
@@ -945,9 +945,9 @@ formatters:
 
                   $eval{bootstrapSection}
 
-                  === Advanced Customization
+                  == Advanced Customization
 
-                  ==== Customizing the `<job-name>` Job
+                  === Customizing the `<job-name>` Job
 
                   By default, `<job-name>` will just run `${FCLI} -V` to verify the fcli installation. You'll typically want to define
                   a custom `script` section that runs fcli and other commands as needed. For Docker-based runners, you'll usually also
@@ -981,7 +981,7 @@ formatters:
                       - # Your commands here
                   ----
 
-                  ==== Customizing the `<job-name>-prepare` Job
+                  === Customizing the `<job-name>-prepare` Job
 
                   The `<job-name>-prepare` job can be customized to perform additional preparation tasks beyond fcli installation.
                   You can define additional script steps, optionally based on additional variables:
@@ -1010,7 +1010,7 @@ formatters:
                     image: my.registry/alpine:latest  # Use custom registry or different image
                   ----
 
-                  ==== Using Multiple Component Configurations
+                  === Using Multiple Component Configurations
 
                   You can include the fcli component multiple times with different configurations, as long as each `include`
                   specifies a different `job-name`. This allows for using multiple fcli versions within a single pipeline.
@@ -1093,7 +1093,7 @@ formatters:
                   In addition, several hidden jobs are defined by the component which may be used to implement advanced
                   use cases but should not be directly customized.
 
-                  === Quick Start Example
+                  == Quick Start Example
 
                   Minimal configuration for running OpenText Fortify AST scans.
 
@@ -1175,28 +1175,9 @@ formatters:
 
                   $eval{fcliCiActionSections}
 
-                  === Best Practices
+                  == Advanced Customization
 
-                  For enterprise use, if you want to run Fortify scans across many different repositories, it is highly
-                  recommended to have those repositories use the Fortify-provided components through some intermediate custom
-                  template(s) or component(s), with those intermediate templates/components providing (partial) configuration
-                  of the Fortify AST Scan component. Some examples:
-
-                  * Pin specific Fortify component, fcli, and other tool versions rather than using a semantic version like
-                    `@v2` or `latest`, to ensure stability, allow for controlled upgrades to newer Fortify component & tool
-                    versions, and ensure that all pipelines use the same Fortify component and tool versions
-                  * Pre-configure `SSC_URL`, `FOD_URL`, and/or `FOD_TENANT`
-                  * Implement an alternative application version/release naming convention, with the intermediate component
-                    passing the custom name to the Fortify component through the `FOD_RELEASE` or `SSC_APPVERSION` variables
-                  * Load credentials from a vault and automatically pass these to the Fortify component through the appropriate variables
-
-                  This approach provides better consistency across different repositories, potentially reduces duplication
-                  across pipelines in those repositories, and allows for easily applying changes that will be automatically
-                  picked up by each pipeline.
-
-                  === Advanced Customization
-
-                  ==== Customizing the `<job-name>` Job
+                  === Customizing the `<job-name>` Job
 
                   The main `<job-name>` job can be customized to specify the Docker image providing build tools, additional
                   environment variables, and other job properties:
@@ -1218,7 +1199,7 @@ formatters:
                   If you override `needs` or `extends`, make sure to keep the original contents to ensure the component
                   functions correctly.
 
-                  ==== Customizing Report Publication
+                  === Customizing Report Publication
 
                   The component automatically publishes SAST reports to GitLab's security dashboard through the
                   `<job-name>-publish-sast` job. You can customize the access level for these reports through the
