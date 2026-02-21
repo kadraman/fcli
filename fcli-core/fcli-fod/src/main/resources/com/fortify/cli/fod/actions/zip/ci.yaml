@@ -84,13 +84,13 @@ steps:
           setup.conditionalOpts: ${setup.conditionalOpts} ${#opt('--assessment-type',#env('SAST_ASSESSMENT_TYPE'))}
       - if: ${!setup.extraOpts.contains('--use-aviator')}
         var.set:
-          setup.conditionalOpts: ${setup.conditionalOpts} "--use-aviator=${#env('DO_AVIATOR_AUDIT')==true}"
+          setup.conditionalOpts: ${setup.conditionalOpts} "--use-aviator=${#env('DO_AVIATOR_AUDIT')=='true'}"
       - if: ${!setup.extraOpts.contains('--oss')}
         var.set:
-          setup.conditionalOpts: ${setup.conditionalOpts} "--oss=${#env('DO_SCA_SCAN')==true}"
+          setup.conditionalOpts: ${setup.conditionalOpts} "--oss=${#env('DO_SCA_SCAN')=='true'}"
       - if: ${!setup.extraOpts.contains('--override-sast-settings')}
         var.set:
-          setup.conditionalOpts: ${setup.conditionalOpts} "--override-sast-settings=${#env('OVERRIDE_SAST_SETTINGS')==true}"
+          setup.conditionalOpts: ${setup.conditionalOpts} "--override-sast-settings=${#env('OVERRIDE_SAST_SETTINGS')=='true'}"
       
   # Run the fcli commands that make up this CI pipeline. Note that by default, pipeline will
   # continue to run on failures due to config:run.fcli.status.check.default being set to false.
