@@ -1375,6 +1375,17 @@ formatters:
 
                   $eval{snippets.quickstart}
 
+                  == Platform Notes
+
+                  To keep scripts portable across Linux/macOS and Windows agents, use the command path exported by
+                  `@fortify/setup`:
+
+                  * Bash: `${'$'}{FCLI_CMD:-fcli} action run ci`
+                  * PowerShell: `& $env:FCLI_CMD action run ci`
+
+                  This is particularly important for Bash tasks on Windows agents, where invoking `fcli` without the
+                  full executable path may fail.
+
                   == Tips & Recommendations
 
                   === Centralized Configuration Management
@@ -1459,12 +1470,12 @@ formatters:
                                   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
                                   # Add fcli to PATH
                                   # - For bash tasks
-                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
                                   # - For PowerShell tasks
                                   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
                                   # - To expose fcli path for subsequent tasks
                                   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
-                                  fcli action run ci  # Or any other fcli-based custom workflow
+                                  "${'$'}{FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
                               env:
                                 FOD_URL: $(FOD_URL)
                                 FOD_CLIENT_ID: $(FOD_CLIENT_ID)
@@ -1491,8 +1502,8 @@ formatters:
                             targetType: 'inline'
                             script: |
                               npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
-                              fcli action run ci
+                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
+                              "${'$'}{FCLI_CMD:-fcli}" action run ci
                           env:
                             FOD_URL: $(FOD_URL)
                             FOD_CLIENT_ID: $(FOD_CLIENT_ID)
@@ -1533,12 +1544,12 @@ formatters:
                                   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
                                   # Add fcli to PATH
                                   # - For bash tasks
-                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
+                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
                                   # - For PowerShell tasks
                                   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
                                   # - To expose fcli path for subsequent tasks
                                   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
-                                  fcli action run ci  # Or any other fcli-based custom workflow
+                                  "${'$'}{FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
                               env:
                                 SSC_URL: $(SSC_URL)
                                 SSC_TOKEN: $(SSC_TOKEN)
@@ -1564,8 +1575,8 @@ formatters:
                             targetType: 'inline'
                             script: |
                               npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env bash)
-                              fcli action run ci
+                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
+                              "${'$'}{FCLI_CMD:-fcli}" action run ci
                           env:
                             SSC_URL: $(SSC_URL)
                             SSC_TOKEN: $(SSC_TOKEN)
