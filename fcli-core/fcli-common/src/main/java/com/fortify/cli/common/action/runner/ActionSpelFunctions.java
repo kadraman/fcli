@@ -15,6 +15,7 @@ package com.fortify.cli.common.action.runner;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.date;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.fcli;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.fortify;
+import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.internal;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.txt;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.workflow;
@@ -50,17 +51,25 @@ import org.jsoup.safety.Safelist;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.POJONode;
 import com.formkiq.graalvm.annotations.Reflectable;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionSource;
 import com.fortify.cli.common.action.helper.ActionLoaderHelper.ActionValidationHandler;
 import com.fortify.cli.common.action.schema.ActionSchemaDescriptorFactory;
+import com.fortify.cli.common.ci.CiBranch;
+import com.fortify.cli.common.ci.CiCommit;
+import com.fortify.cli.common.ci.CiCommitId;
+import com.fortify.cli.common.ci.CiCommitMessage;
+import com.fortify.cli.common.ci.CiPerson;
+import com.fortify.cli.common.ci.CiRepository;
+import com.fortify.cli.common.ci.CiRepositoryName;
+import com.fortify.cli.common.ci.LocalRepoInfo;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.json.FortifyTraceNodeHelper;
 import com.fortify.cli.common.json.JSONDateTimeConverter;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.spel.fn.descriptor.SpelFunctionDescriptorsFactory;
+import com.fortify.cli.common.spel.fn.descriptor.annotation.RenderSubFunctionsMode;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction;
 import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionParam;
 import com.fortify.cli.common.util.EnvHelper;
@@ -431,7 +440,15 @@ public class ActionSpelFunctions {
         return String.join(" ", output);
     }
     
-    public static final String opt(String name, String value) {
+    @SpelFunction(cat=workflow, desc = """
+            Returns a formatted option string in the form `"name=value"` if the value is not blank, \
+            or an empty string if the value is blank. This is useful for conditionally including \
+            command-line options based on whether environment variables or other values are set.
+            """,
+            returns="Formatted option string `\"name=value\"` if value is not blank, empty string otherwise")
+    public static final String opt(
+            @SpelFunctionParam(name="name", desc="the option name") String name, 
+            @SpelFunctionParam(name="value", desc="the option value; if blank, function returns empty string") String value) {
         if ( StringUtils.isBlank(value) ) { return ""; }
         return String.format("\"%s=%s\"", name, value);
     }
@@ -456,45 +473,50 @@ public class ActionSpelFunctions {
         var mapper = JsonHelper.getObjectMapper();
         var result = mapper.createArrayNode();
         o.properties()
-                .forEach(p -> result.add(mapper.createObjectNode().put("key", p.getKey()).set("value", p.getValue())));
+                .forEach(p -> {
+                    var entry = mapper.createObjectNode()
+                            .put("key", p.getKey());
+                    // Unwrap JsonNodeWrapper if present to avoid property access issues
+                    var value = p.getValue();
+                    entry.set("value", value);
+                    result.add(entry);
+                });
         return result;
     }
 
     @SpelFunction(cat=fortify, desc = """
-            Instantiates an issue source file resolver, allowing source file paths as reported by \
-            Fortify to be resolved against a locally cloned source code repository. 
+            Creates an issue source file resolver that maps Fortify-reported paths to workspace-relative paths. \
+            Fortify may add or strip leading directories during scanning; this resolver uses longest-suffix \
+            matching to find the correct file in the workspace.
             
-            In some cases, there is a mismatch between source file paths as reported by SSC or FoD \
-            and actual repository source file paths, with Fortify either inserting or stripping leading \
-            directories. When third-party systems like GitHub or GitLab ingest fcli-generated reports, \
-            such mismatches may prevent third-party systems from properly rendering source code snippets \
-            or links.
+            Configuration properties:
+            * `workspaceDir` - Repository root directory (required for path resolution)
+            * `sourceDir` - Directory that was scanned (optional; used to prioritize matches when multiple files share the same name)
             
-            The issue source file resolver can be initialized like this:
+            Example: `${#issueSourceFileResolver({workspaceDir:\"/workspace\", sourceDir:\"/workspace/src\"})}`
             
-            ```
-            - var.set:
-                issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
-            ```
+            For backward compatibility, if only `sourceDir` is provided, it will be used as `workspaceDir`.
             
-            Once initialized, Fortify-reported issue file paths can be matched and relativized against \
-            the given `sourceDir` through either:
-            
-            * SSC: `${issueSourceFileResolver.resolve(issue.fullFileName)}`
-            * FoD: `${issueSourceFileResolver.resolve(issue.primaryLocationFull)}
-            
-            Of course, the same approach can be used to resolve other Fortify-reported source file paths, \
-            for example in trace node entries. See the various fcli built-in `*-report` actions in SSC and \
-            FoD modules for examples.
+            See available methods via SpEL function documentation of the returned IssueSourceFileResolver object.
             """,
-            returns="Issue source file resolver") 
-    public static final POJONode issueSourceFileResolver(
-            @SpelFunctionParam(name="config", desc="configuration; for now, this must contain a single `sourceDir` property") Map<String, String> config) 
+            returns="Issue source file resolver with resolve() and exists() methods",
+            renderSubFunctions=RenderSubFunctionsMode.INLINE) 
+    public static final IssueSourceFileResolver issueSourceFileResolver(
+            @SpelFunctionParam(name="config", desc="configuration; may contain `workspaceDir` (repo root) and/or `sourceDir` (scan directory for prioritization)") Map<String, String> config) 
     {
+        var workspaceDir = config.get("workspaceDir");
         var sourceDir = config.get("sourceDir");
+        
+        // For backward compatibility: if only sourceDir provided (old usage), use it as workspaceDir
+        if (StringUtils.isBlank(workspaceDir) && StringUtils.isNotBlank(sourceDir)) {
+            workspaceDir = sourceDir;
+            sourceDir = null; // Don't use as sourcePath since it's also the workspace
+        }
+        
         var builder = IssueSourceFileResolver.builder()
+                .workspacePath(StringUtils.isBlank(workspaceDir) ? null : Path.of(workspaceDir))
                 .sourcePath(StringUtils.isBlank(sourceDir) ? null : Path.of(sourceDir));
-        return new POJONode(builder.build());
+        return builder.build();
     }
 
     @SpelFunction(cat=fortify, returns="normalized array of trace nodes") 
@@ -511,12 +533,12 @@ public class ActionSpelFunctions {
         return FortifyTraceNodeHelper.normalizeAndMerge(traceNodes);
     }
 
-    @SpelFunction(cat=fcli, returns="An object describing the fcli action YAML schema")
+    @SpelFunction(cat=internal, returns="An object describing the fcli action YAML schema")
     public static final JsonNode actionSchema() {
         return ActionSchemaDescriptorFactory.getActionSchemaDescriptor().asJson();
     }
 
-    @SpelFunction(cat=fcli, returns="An array listing all available SpEL functions")
+    @SpelFunction(cat=internal, returns="An array listing all available SpEL functions")
     public static final JsonNode actionSpelFunctions() {
         return SpelFunctionDescriptorsFactory.getActionSpelFunctionsDescriptors().asJson();
     }
@@ -531,12 +553,12 @@ public class ActionSpelFunctions {
         return String.format("Copyright (c) %s Open Text", Year.now().getValue());
     }
     
-    @SpelFunction(cat=util, desc="""
+    @SpelFunction(cat=internal, desc="""
                 Returns basic information about the local git repository for the given source directory, or null if the
                 directory is not inside a git working tree. Only constant-time lookups are performed (HEAD commit only).
                 Structure:
                 {
-                repository: { workDir, remoteUrl?, name: { short, full? } },
+                repository: { workspaceDir, remoteUrl?, name: { short, full? } },
                 branch: { full?, short? },
                 commit: {
                     id: { full, short },
@@ -545,7 +567,8 @@ public class ActionSpelFunctions {
                     committer: { name, email, when }
                 }
                 }
-                """, returns="Git repository information or null if not a git work dir")
+                """, returns="Git repository information or null if not a git work dir",
+                returnType=LocalRepoInfo.class)
         public static final ObjectNode localRepo(
                 @SpelFunctionParam(name="sourceDir", desc="directory assumed to be inside a git working tree") String sourceDir) {
             if (StringUtils.isBlank(sourceDir)) { return null; }
@@ -555,52 +578,85 @@ public class ActionSpelFunctions {
             if (builder.getGitDir()==null) { return null; }
             try (Repository repo = builder.build()) {
                 var mapper = JsonHelper.getObjectMapper();
-                var root = mapper.createObjectNode();
-                var repoNode = root.putObject("repository");
-                repoNode.put("workDir", repo.getWorkTree().getAbsolutePath());
+                
+                // Repository information
                 var remote = ActionSpelFunctionsJGitHelper.selectRemote(repo);
                 var remoteUrl = remote==null?null:repo.getConfig().getString("remote", remote, "url");
-                if (StringUtils.isNotBlank(remoteUrl)) { repoNode.put("remoteUrl", remoteUrl); }
-                var nameNode = repoNode.putObject("name");
                 var names = ActionSpelFunctionsJGitHelper.deriveRepoNames(dir.getName(), remoteUrl);
-                nameNode.put("short", names[0]);
-                if (names[1]!=null) { nameNode.put("full", names[1]); }
-                var branchNode = root.putObject("branch");
+                var repository = CiRepository.builder()
+                    .workspaceDir(repo.getWorkTree().getAbsolutePath())
+                    .remoteUrl(StringUtils.isBlank(remoteUrl) ? null : remoteUrl)
+                    .name(CiRepositoryName.builder()
+                        .short_(names[0])
+                        .full(names[1])
+                        .build())
+                    .build();
+                
+                // Branch information
+                CiBranch branch = null;
                 try {
                     String fullBranch = repo.getFullBranch();
-                    if (fullBranch!=null) {
-                        branchNode.put("full", fullBranch);
-                        branchNode.put("short", Repository.shortenRefName(fullBranch));
+                    if (fullBranch != null) {
+                        branch = CiBranch.builder()
+                            .full(fullBranch)
+                            .short_(Repository.shortenRefName(fullBranch))
+                            .build();
                     }
                 } catch (Exception e) { }
+                
+                // Commit information
+                CiCommit commit = null;
                 var headId = repo.resolve("HEAD");
-                if (headId!=null) {
+                if (headId != null) {
                     try (var walk = new RevWalk(repo)) {
-                        RevCommit commit = walk.parseCommit(headId);
-                        var commitNode = root.putObject("commit");
-                        var idNode = commitNode.putObject("id");
-                        idNode.put("full", commit.getId().getName());
-                        try { var abbrev = repo.newObjectReader().abbreviate(commit.getId(), 8); idNode.put("short", abbrev.name()); }
-                        catch (Exception ex) { idNode.put("short", commit.getId().getName().substring(0,8)); }
-                        var msgNode = commitNode.putObject("message");
-                        msgNode.put("short", commit.getShortMessage());
-                        msgNode.put("full", commit.getFullMessage());
-                        var authorIdent = commit.getAuthorIdent();
-                        if (authorIdent!=null) {
-                            var authorNode = commitNode.putObject("author");
-                            authorNode.put("name", authorIdent.getName());
-                            authorNode.put("email", authorIdent.getEmailAddress());
-                            authorNode.put("when", authorIdent.getWhenAsInstant().toString());
+                        RevCommit gitCommit = walk.parseCommit(headId);
+                        String shortId;
+                        try {
+                            var abbrev = repo.newObjectReader().abbreviate(gitCommit.getId(), 8);
+                            shortId = abbrev.name();
+                        } catch (Exception ex) {
+                            shortId = gitCommit.getId().getName().substring(0, 8);
                         }
-                        var committerIdent = commit.getCommitterIdent();
-                        if (committerIdent!=null) {
-                            var committerNode = commitNode.putObject("committer");
-                            committerNode.put("name", committerIdent.getName());
-                            committerNode.put("email", committerIdent.getEmailAddress());
-                            committerNode.put("when", committerIdent.getWhenAsInstant().toString());
-                        }
+                        
+                        var authorIdent = gitCommit.getAuthorIdent();
+                        var committerIdent = gitCommit.getCommitterIdent();
+                        
+                        var commitId = CiCommitId.builder()
+                            .full(gitCommit.getId().getName())
+                            .short_(shortId)
+                            .build();
+                        
+                        commit = CiCommit.builder()
+                            .headId(commitId)
+                            .mergeId(commitId)  // Same as headId for local repos
+                            .message(CiCommitMessage.builder()
+                                .short_(gitCommit.getShortMessage())
+                                .full(gitCommit.getFullMessage())
+                                .build())
+                            .author(authorIdent != null ? CiPerson.builder()
+                                .name(authorIdent.getName())
+                                .email(authorIdent.getEmailAddress())
+                                .when(authorIdent.getWhenAsInstant().toString())
+                                .build() : null)
+                            .committer(committerIdent != null ? CiPerson.builder()
+                                .name(committerIdent.getName())
+                                .email(committerIdent.getEmailAddress())
+                                .when(committerIdent.getWhenAsInstant().toString())
+                                .build() : null)
+                            .build();
                     } catch (Exception e) { }
                 }
+                
+                // Build root object
+                var root = mapper.createObjectNode();
+                root.set("repository", mapper.valueToTree(repository));
+                if (branch != null) {
+                    root.set("branch", mapper.valueToTree(branch));
+                }
+                if (commit != null) {
+                    root.set("commit", mapper.valueToTree(commit));
+                }
+                
                 return root;
             } catch (Exception e) { return null; }
         }
@@ -679,6 +735,8 @@ public class ActionSpelFunctions {
             }
 
     }
+    
+
     
     private static final class ActionSpelFunctionsHelper {
         private static final String envOrDefault(String prefix, String suffix, String defaultValue) {

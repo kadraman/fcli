@@ -21,6 +21,13 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.action.helper.ci.ActionCiSpelFunctions;
+import com.fortify.cli.common.action.helper.ci.IActionSpelFunctions;
+import com.fortify.cli.common.action.helper.ci.ado.ActionAdoSpelFunctions;
+import com.fortify.cli.common.action.helper.ci.bitbucket.ActionBitbucketSpelFunctions;
+import com.fortify.cli.common.action.helper.ci.github.ActionGitHubSpelFunctions;
+import com.fortify.cli.common.action.helper.ci.gitlab.ActionGitLabSpelFunctions;
+import com.fortify.cli.common.action.helper.fs.ActionFileSystemSpelFunctions;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry;
 import com.fortify.cli.common.action.model.ActionStepCheckEntry.CheckStatus;
 import com.fortify.cli.common.action.model.FcliActionValidationException;
@@ -28,6 +35,7 @@ import com.fortify.cli.common.action.runner.processor.IActionRequestHelper;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.output.writer.record.IRecordWriter;
 import com.fortify.cli.common.progress.helper.IProgressWriterI18n;
+import com.fortify.cli.common.rest.unirest.UnirestContext;
 import com.fortify.cli.common.spel.IConfigurableSpelEvaluator;
 import com.fortify.cli.common.spel.ISpelEvaluator;
 
@@ -36,6 +44,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 /**
  * This class holds action execution context
@@ -63,6 +72,8 @@ public class ActionRunnerContext implements AutoCloseable {
     /** Factory for creating the single {@link ISpelEvaluator} instance. By using a factory, we can
      *  check for illegal access to the {@link ISpelEvaluator} during configuration phase. */
     @Getter(AccessLevel.NONE) private final ActionConfigSpelEvaluatorFactory spelEvaluatorFactory = new ActionConfigSpelEvaluatorFactory(this);
+    /** Lazy-initialized action variables instance. Created on first access using context's spelEvaluator and parameterValues */
+    @Getter(lazy=true) @Accessors(fluent=false) private final ActionRunnerVars vars = new ActionRunnerVars(getSpelEvaluator(), parameterValues);
     
     public final ActionRunnerContext initialize() {
         config.getActionContextConfigurers().forEach(configurer->configurer.accept(this));
@@ -93,6 +104,10 @@ public class ActionRunnerContext implements AutoCloseable {
         return spelEvaluatorFactory.getSpelEvaluator();
     }
     
+    public final UnirestContext getUnirestContext() {
+        return config.getUnirestContext();
+    }
+    
     @RequiredArgsConstructor
     private static final class ActionConfigSpelEvaluatorFactory extends AbstractSpelEvaluatorFactory {
         private final ActionRunnerContext actionRunnerContext;
@@ -102,6 +117,21 @@ public class ActionRunnerContext implements AutoCloseable {
             configureSpelContext(spelContext, config.getActionConfigSpelEvaluatorConfigurers(), config);
             configureSpelContext(spelContext, config.getActionContextSpelEvaluatorConfigurers(), actionRunnerContext);
             spelContext.setVariable("action", new ActionRunnerContextSpelFunctions(actionRunnerContext));
+            spelContext.setVariable("fs", new ActionFileSystemSpelFunctions());
+            registerCiVariables(spelContext);
+        }
+
+        private void registerCiVariables(SimpleEvaluationContext spelContext) {
+            var ciSpecificSpelFunctions = new IActionSpelFunctions[] {
+                new ActionGitHubSpelFunctions(actionRunnerContext),
+                new ActionGitLabSpelFunctions(actionRunnerContext),
+                new ActionAdoSpelFunctions(actionRunnerContext),
+                new ActionBitbucketSpelFunctions(actionRunnerContext)
+            };
+            spelContext.setVariable("_ci", new ActionCiSpelFunctions(ciSpecificSpelFunctions));
+            for ( var ciSpelFunctions : ciSpecificSpelFunctions ) {
+                spelContext.setVariable(ciSpelFunctions.getType(), ciSpelFunctions);
+            }
         }
     }
     

@@ -2,9 +2,12 @@
 
 author: Fortify
 usage:
-  header: Generate a GitLab SAST report listing FoD SAST vulnerabilities. 
+  header: Integrate FoD SAST results with GitLab. 
   description: |
-    For information on how to import this report into GitLab, see 
+    This action generates and optionally publishes FoD SAST vulnerabilities to GitLab. 
+    With the --publish option, results are automatically uploaded to GitLab pipelines.
+    
+    For manual report uploads, see 
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportssast
 
 config:
@@ -13,21 +16,29 @@ config:
 cli.options:
   file:
     names: --file, -f
-    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gl-fortify-sast.json"
+    description: "Optional output file name (or 'stdout' / 'stderr'). Defaults to gl-fortify-sast.json if --publish not specified"
     required: false
-    default: gl-fortify-sast.json
+  publish:
+    names: --publish
+    description: "Publish report to GitLab Security Dashboard"
+    required: false
+    type: boolean
   release:
     names: --release, --rel
     description: "Required release id or <appName>:[<microserviceName>:]<releaseName>"
+  workspaceDir:
+    names: --workspace-dir
+    required: false
+    description: "Workspace/repository root directory for resolving Fortify source file paths to workspace-relative paths in reports"
   sourceDir:
     names: --source-dir
     required: false
-    description: "(PREVIEW) Optional local repository directory to convert Fortify-reported source file paths to actual repository file paths"
+    description: "Source directory that was scanned - used for prioritizing path matches when multiple files have the same name (e.g., index.js in src/ vs node_modules/)"
   
 steps:
   - var.set:
       rel: ${#fod.release(cli.release)}
-      issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
+      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
   - log.progress: Loading static scan summary
   - rest.call:
       staticScanSummary:
@@ -55,10 +66,20 @@ steps:
           do:
             - var.set:
                 vulnerabilities..: {fmt: vulnerabilities}
-  - out.write:
-      ${cli.file}: {fmt: gitlab-sast-report}
-  - if: ${!{'stdout','stderr'}.contains(cli.file)}
-    log.info: Output written to ${cli.file}
+  - var.set:
+      reportContents: {fmt: gitlab-sast-report}
+      reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gl-fortify-sast.json'}"
+  - if: ${reportFile!=null}
+    do:
+      - out.write:
+          ${reportFile}: ${reportContents}
+      - if: ${!{'stdout','stderr'}.contains(reportFile)}
+        log.info: Output written to ${reportFile}
+  - if: ${cli.publish==true}
+    do:
+      - var.set:
+          gitlabUpload: ${#gitlab.project().uploadSecurityReport('sast', reportContents)}
+      - log.info: Report published to GitLab Security Dashboard
 
 formatters:
   gitlab-sast-report:

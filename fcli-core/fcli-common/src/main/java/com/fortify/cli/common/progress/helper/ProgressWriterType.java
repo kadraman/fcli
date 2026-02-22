@@ -13,8 +13,6 @@
 package com.fortify.cli.common.progress.helper;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
@@ -35,8 +33,6 @@ public enum ProgressWriterType {
     stderr(SimpleStdErrProgressWriter::new),
     single_line(SingleLineProgressWriter::new), 
     ansi(AnsiProgressWriter::new);
-    
-    private static final Logger LOG = LoggerFactory.getLogger(ProgressWriterType.class);
     
     @Override
     public String toString() {
@@ -60,12 +56,11 @@ public enum ProgressWriterType {
     }
     
     private static abstract class AbstractProgressWriter implements IProgressWriter {
+        private static final Logger LOG = LoggerFactory.getLogger(AbstractProgressWriter.class);
         protected final PrintStream stdout;
         protected final PrintStream stderr;
         protected final PrintStream originalStdout;
         protected final PrintStream originalStderr;
-        private final List<String> warnings = new ArrayList<>();
-        private final List<String> info = new ArrayList<>();
 
         protected AbstractProgressWriter() {
             this.originalStdout = System.out;
@@ -81,39 +76,53 @@ public enum ProgressWriterType {
             System.setOut(originalStdout);
             System.setErr(originalStderr);
             clearProgress();
-            warnings.forEach(originalStderr::println);
-            info.forEach(originalStdout::println);
         }
         
         @Override
         public final void writeWarning(String message, Object... args) {
-            var msg = format(message, args);
-            LOG.warn(msg);
-            writeWarning(msg);
+            var formattedMessage = format(message, args);
+            LOG.debug("writeWarning: {}", formattedMessage);
+            clearProgress();
+            originalStderr.println(formattedMessage);
         }
-
-        protected void writeWarning(String message) {
-            warnings.add(message);
+        
+        @Override
+        public final void writeWarningWithException(String message, Throwable cause, Object... args) {
+            var formattedMessage = format(message, args);
+            LOG.debug("writeWarningWithException: {}", formattedMessage, cause);
+            clearProgress();
+            originalStderr.println(formattedMessage);
+            if (cause != null) {
+                originalStderr.println("Cause: " + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+            }
         }
         
         @Override
         public final void writeProgress(String message, Object... args) {
-            var msg = format(message, args);
-            LOG.info(msg);
-            writeProgress(msg);
+            var formattedMessage = format(message, args);
+            LOG.debug("writeProgress: {}", formattedMessage);
+            writeProgress(formattedMessage);
         }
         
         protected abstract void writeProgress(String message);
         
         @Override
         public final void writeInfo(String message, Object... args) {
-            var msg = format(message, args);
-            LOG.info(msg);
-            writeInfo(msg);
+            var formattedMessage = format(message, args);
+            LOG.debug("writeInfo: {}", formattedMessage);
+            clearProgress();
+            originalStdout.println(formattedMessage);
         }
-
-        protected void writeInfo(String message) {
-            info.add(message);
+        
+        @Override
+        public final void writeInfoWithException(String message, Throwable cause, Object... args) {
+            var formattedMessage = format(message, args);
+            LOG.debug("writeInfoWithException: {}", formattedMessage, cause);
+            clearProgress();
+            originalStdout.println(formattedMessage);
+            if (cause != null) {
+                originalStdout.println("Cause: " + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+            }
         }
         
         private final String format(String message, Object... args) {

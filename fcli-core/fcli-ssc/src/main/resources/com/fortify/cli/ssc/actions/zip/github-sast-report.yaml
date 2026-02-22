@@ -16,9 +16,14 @@
 
 author: Fortify
 usage:
-  header: Generate a GitHub Code Scanning report listing SSC SAST vulnerabilities.  
+  header: Integrate SSC SAST results with GitHub Code Scanning.  
   description: |
-    For information on how to import this report into GitHub, see 
+    This action generates and optionally publishes SSC SAST vulnerabilities to GitHub. 
+    With the --publish option, results are automatically uploaded as either SARIF reports 
+    (for GitHub Advanced Security) or Check Runs (for free-tier repositories). The optional 
+    --type option allows you to specify which format to use.
+    
+    For manual SARIF file uploads, see 
     https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
 
 config:
@@ -27,9 +32,23 @@ config:
 cli.options:
   file:
     names: --file, -f
-    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gh-fortify-sast.sarif"
+    description: "Optional output file name (or 'stdout' / 'stderr'). Defaults to gh-fortify-sast.sarif if --publish not specified"
     required: false
-    default: gh-fortify-sast.sarif
+  publish:
+    names: --publish
+    description: "Publish report to GitHub Code Scanning (requires GITHUB_TOKEN environment variable with 'security-events: write' permission)"
+    required: false
+    type: boolean
+  type:
+    names: --type
+    description: "Report type to generate/publish: 'sarif' (GHAS Code Scanning) or 'check-run' (free-tier Check Run). If not specified, tries SARIF first, falls back to Check Run if GHAS unavailable. For best performance, specify the report type that matches your repository's GitHub plan (GHAS vs free tier)."
+    required: false
+  dryrun:
+    names: --dryrun
+    description: "Set to true to load and format all data but output to stdout instead of publishing"
+    type: boolean
+    required: false
+    default: false
   appversion:
     names: --appversion, --av
     description: "Required application version id or <appName>:<versionName>"
@@ -42,16 +61,24 @@ cli.options:
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see `--socket-timeout` option on `fcli ssc session login` command). Default value: 100"
     required: false
     default: "100"
+  workspaceDir:
+    names: --workspace-dir
+    required: false
+    description: "Workspace/repository root directory for resolving Fortify source file paths to workspace-relative paths in reports"
   sourceDir:
     names: --source-dir
     required: false
-    description: "(PREVIEW) Optional local repository directory to convert Fortify-reported source file paths to actual repository file paths"
+    description: "Source directory that was scanned - used for prioritizing path matches when multiple files have the same name (e.g., index.js in src/ vs node_modules/)"
   
 steps:
   - var.set:
       av: ${#ssc.appVersion(cli.appversion)}
       fs: ${#ssc.filterSet(av, cli.filterset)}
-      issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
+      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
+      doOutputSarif: ${cli.type==null || cli.type=='sarif'}
+      doOutputCheckRun: ${cli.type==null || cli.type=='check-run'}
+      dateFmt: YYYY-MM-dd HH:mm
+      issueCount: 0
   - log.progress: Loading latest static scan
   - rest.call:
       artifacts:
@@ -85,21 +112,80 @@ steps:
               uri: /api/v1/issueDetails/${issue.id}
           do:
             - var.set:
+                issueCount: ${issueCount+1}
+                issueCountBySeverity: {fmt: issueCountIncrement}
+            - if: ${doOutputSarif}
+              var.set:
                 ruleCategories.${issue.primaryRuleGuid}: ${issue.issueName}
                 results..: {fmt: results}
-  - log.progress: Processing rule data
-  - records.for-each:
-      if: ${ruleCategories!=null}
-      from: ${#ssc.ruleDescriptionsProcessor(av.id)}
-      record.var-name: rule
-      do:
-        - if: ${#isNotBlank(ruleCategories[rule.id])}
-          var.set:
-            rules..: {fmt: rules}
-  - out.write:
-      ${cli.file}: {fmt: github-sast-report}
-  - if: ${!{'stdout','stderr'}.contains(cli.file)}
-    log.info: Output written to ${cli.file}
+            - if: ${doOutputCheckRun && issueSourceFileResolver.exists(issue.fullFileName, issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber)}
+              var.set:
+                checkRunAnnotations..: {fmt: checkRunAnnotation}
+  - if: ${doOutputSarif && ruleCategories!=null}
+    do:
+      - log.progress: Processing rule data
+      - records.for-each:
+          from: ${#ssc.ruleDescriptionsProcessor(av.id)}
+          record.var-name: rule
+          do:
+            - if: ${#isNotBlank(ruleCategories[rule.id])}
+              var.set:
+                rules..: {fmt: rules}
+  - if: ${doOutputSarif}
+    var.set:
+      reportContents: {fmt: github-sast-report}
+  - if: ${doOutputCheckRun}
+    var.set:
+      checkRunBody: {fmt: checkRunBody}
+  - var.set:
+      reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gh-fortify-sast.sarif'}"
+  - if: ${reportFile!=null}
+    do:
+      - out.write:
+          ${reportFile}: ${reportContents}
+      - if: ${!{'stdout','stderr'}.contains(reportFile)}
+        log.info: Output written to ${reportFile}
+  - if: ${cli.publish==true}
+    do:
+      - if: ${cli.dryrun}
+        do:
+          - if: ${doOutputSarif}
+            do:
+              - log.info: |
+                  
+                  ===== SARIF contents =====
+                  ${reportContents}
+          - if: ${doOutputCheckRun}
+            do:
+              - log.info: |
+                  
+                  ===== Check Run Body =====
+                  ${checkRunBody}
+      - if: ${!cli.dryrun && doOutputSarif}
+        do:
+          - var.set:
+              sarifUploadResponse: ${#github.repo().uploadSarif(reportContents)}
+              sarifUploaded: true
+            on.fail:
+              - if: ${!doOutputCheckRun}
+                throw:
+                  msg: 'Failed to publish SARIF report'
+                  cause: ${lastException}
+              - if: ${lastException.type=='GhasUnavailableException'}
+                log.info: GitHub Advanced Security not available, will try Check Run fallback
+              - if: ${lastException.type!='GhasUnavailableException'}
+                log.warn:
+                  msg: 'SARIF upload failed, will try Check Run fallback'
+                  cause: ${lastException}
+              - var.set:
+                  sarifUploaded: false
+            on.success:
+              - log.info: Report published to GitHub Code Scanning
+      - if: ${!cli.dryrun && doOutputCheckRun && (!doOutputSarif || !sarifUploaded)}
+        do:
+          - var.set:
+              checkRun: ${#github.repo().createCheckRun(checkRunBody)}
+          - log.info: Published as GitHub Check Run
 
 formatters:
   github-sast-report:
@@ -192,3 +278,42 @@ formatters:
                 }] 
             }} 
         }
+        
+  # Check Run formatters for free-tier GitHub reporting
+  checkRunBody:
+    name: fortify-sast
+    status: completed
+    conclusion: ${issueCount==0?'success':'neutral'}
+    details_url: ${#ssc.appversionBrowserUrl(av,fs)}
+    output:
+      title: Fortify SAST Scan Results
+      summary: |
+        ## [${av.project.name} - ${av.name}](${#ssc.appversionBrowserUrl(av,fs)})
+
+        **Summary generated on:** ${#formatDateTime(dateFmt)}
+        **Total Issues in SSC:** ${issueCount}  
+
+        ### Issues by Severity
+        
+        | Critical | High | Medium | Low |
+        |----------|------|--------|-----|
+        | ${issueCountBySeverity?.Critical?:0} | ${issueCountBySeverity?.High?:0} | ${issueCountBySeverity?.Medium?:0} | ${issueCountBySeverity?.Low?:0} |
+        
+        **Note:** Only a subset of issues may be included in the annotations below; for more details and to view all issues, please check the [results in SSC](${#ssc.appversionBrowserUrl(av,fs)}).
+      annotations: ${checkRunAnnotations?:{}}
+      
+  checkRunAnnotation:
+    path: ${issueSourceFileResolver.resolve(issue.fullFileName)}
+    start_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
+    end_line: ${issue.lineNumber==0||issue.lineNumber==null?1:issue.lineNumber}
+    annotation_level: notice # GitHub only allows for 10 warn/fail annotations per check run, so we set all annotations to notice and use severity info in the title instead
+    title: ${issue.issueName} (${issue.friority})
+    message: |
+      ${issue.details?.brief?.trim()?:''}
+      For more details, see: ${#ssc.issueBrowserUrl(issue,fs)}
+      
+  issueCountIncrement:
+    Critical: "${issue.friority=='Critical' ? (issueCountBySeverity?.Critical?:0)+1 : (issueCountBySeverity?.Critical?:0)}"
+    High: "${issue.friority=='High' ? (issueCountBySeverity?.High?:0)+1 : (issueCountBySeverity?.High?:0)}"
+    Medium: "${issue.friority=='Medium' ? (issueCountBySeverity?.Medium?:0)+1 : (issueCountBySeverity?.Medium?:0)}"
+    Low: "${issue.friority=='Low' ? (issueCountBySeverity?.Low?:0)+1 : (issueCountBySeverity?.Low?:0)}"

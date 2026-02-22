@@ -28,8 +28,17 @@ public @interface SpelFunction {
     SpelFunctionCategory cat();
     String desc() default "";
     String returns();
+    Class<?> returnType() default void.class;
+    /**
+     * Controls how functions on the returned object should be rendered in docs/schema.
+     * - AUTO: render as sections if return type has @SpelFunctions annotation (default)
+     * - SECTION: always render as sections (for explicit control)
+     * - INLINE: never render as sections (inline structure)
+     * Example: github.repo() with SECTION creates section "repo" with uploadSarif, etc.
+     */
+    RenderSubFunctionsMode renderSubFunctions() default RenderSubFunctionsMode.AUTO;
     
     public static enum SpelFunctionCategory {
-        txt, date, workflow, fortify, fcli, util
+        txt, date, workflow, fortify, fcli, util, ci, internal
     }
 }

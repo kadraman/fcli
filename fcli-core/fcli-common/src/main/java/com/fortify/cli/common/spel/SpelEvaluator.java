@@ -26,6 +26,7 @@ import org.springframework.expression.AccessException;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.DataBindingPropertyAccessor;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.format.support.DefaultFormattingConversionService;
@@ -134,7 +135,10 @@ public enum SpelEvaluator implements ISpelEvaluator {
     
     private static final SimpleEvaluationContext createJsonGenericContext() {
         SimpleEvaluationContext context = SimpleEvaluationContext
-            .forPropertyAccessors(new JsonPropertyAccessor())
+            .forPropertyAccessors(
+                new JsonPropertyAccessor(),
+                DataBindingPropertyAccessor.forReadOnlyAccess()
+            )
             .withConversionService(createJsonConversionService())
             .withInstanceMethods()
             .build();
@@ -145,7 +149,10 @@ public enum SpelEvaluator implements ISpelEvaluator {
     
     private static final SimpleEvaluationContext createJsonQueryContext() {
         SimpleEvaluationContext context = SimpleEvaluationContext
-            .forPropertyAccessors(new ExistingJsonPropertyAccessor())
+            .forPropertyAccessors(
+                new ExistingJsonPropertyAccessor(),
+                DataBindingPropertyAccessor.forReadOnlyAccess()
+            )
             .withConversionService(createJsonConversionService())
             .withInstanceMethods()
             .build();
@@ -157,6 +164,8 @@ public enum SpelEvaluator implements ISpelEvaluator {
     private static final DefaultFormattingConversionService createJsonConversionService() {
         DefaultFormattingConversionService  conversionService = new DefaultFormattingConversionService();
         conversionService.addConverter(new JsonNodeWrapperToJsonNodeConverter());
+        conversionService.addConverter(new JsonNodeToStringConverter());
+        conversionService.addConverter(new JsonNodeWrapperToStringConverter());
         conversionService.addConverter(new ListToArrayNodeConverter());
         conversionService.addConverter(new ObjectToJsonNodeConverter());
         DateTimeFormatterRegistrar dateTimeRegistrar = new DateTimeFormatterRegistrar();
@@ -170,6 +179,28 @@ public enum SpelEvaluator implements ISpelEvaluator {
         @Override
         public JsonNode convert(Object source) {
             return JsonHelper.getObjectMapper().valueToTree(source);
+        }
+    }
+    
+    private static final class JsonNodeToStringConverter implements Converter<JsonNode, String> {
+        @Override
+        public String convert(JsonNode source) {
+            try {
+                return JsonHelper.getObjectMapper().writeValueAsString(source);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to convert JsonNode to String", e);
+            }
+        }
+    }
+    
+    private static final class JsonNodeWrapperToStringConverter implements Converter<JsonNodeWrapper<?>, String> {
+        @Override
+        public String convert(JsonNodeWrapper<?> source) {
+            try {
+                return JsonHelper.getObjectMapper().writeValueAsString(source.getRealNode());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to convert JsonNodeWrapper to String", e);
+            }
         }
     }
     

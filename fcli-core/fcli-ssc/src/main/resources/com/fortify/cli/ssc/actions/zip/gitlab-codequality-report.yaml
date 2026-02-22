@@ -2,9 +2,12 @@
 
 author: Fortify
 usage:
-  header: Generate a GitLab Code Quality report listing SSC SAST vulnerabilities.
+  header: Integrate SSC SAST results with GitLab Code Quality.
   description: |
-    For information on how to import this report into GitLab, see 
+    This action generates and optionally publishes SSC SAST vulnerabilities to GitLab. 
+    With the --publish option, results are automatically uploaded to GitLab pipelines.
+    
+    For manual report uploads, see 
     https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html#artifactsreportscodequality
 
 config:
@@ -13,9 +16,13 @@ config:
 cli.options:
   file:
     names: --file, -f
-    description: "Optional output file name (or 'stdout' / 'stderr'). Default value: gl-fortify-sast.json"
+    description: "Optional output file name (or 'stdout' / 'stderr'). Defaults to gl-fortify-codequality.json if --publish not specified"
     required: false
-    default: gl-fortify-codequality.json
+  publish:
+    names: --publish
+    description: "Publish report to GitLab merge request"
+    required: false
+    type: boolean
   appversion:
     names: --appversion, --av
     description: "Required application version id or <appName>:<versionName>"
@@ -28,16 +35,20 @@ cli.options:
     description: "Number of vulnerabilities to retrieve at a time. Higher numbers may reduce time required to build the report, at the cost of increased memory usage (on both fcli and SSC), and could potentially negatively affect overall SSC performance or result in read time-outs (see `--socket-timeout` option on `fcli ssc session login` command). Default value: 100"
     required: false
     default: "100"
+  workspaceDir:
+    names: --workspace-dir
+    required: false
+    description: "Workspace/repository root directory for resolving Fortify source file paths to workspace-relative paths in reports"
   sourceDir:
     names: --source-dir
     required: false
-    description: "(PREVIEW) Optional local repository directory to convert Fortify-reported source file paths to actual repository file paths"
+    description: "Source directory that was scanned - used for prioritizing path matches when multiple files have the same name (e.g., index.js in src/ vs node_modules/)"
 
 steps:
   - var.set:
       av: ${#ssc.appVersion(cli.appversion)}
       fs: ${#ssc.filterSet(av, cli.filterset)}
-      issueSourceFileResolver: ${#issueSourceFileResolver({sourceDir:cli.sourceDir})}
+      issueSourceFileResolver: ${#issueSourceFileResolver({workspaceDir:cli.workspaceDir,sourceDir:cli.sourceDir})}
   - log.progress: Loading latest static scan
   - rest.call:
       artifacts:
@@ -69,10 +80,20 @@ steps:
           do:
             - var.set:
                 vulnerabilities..: {fmt: vulnerabilities}
-  - out.write:
-      ${cli.file}: {fmt: gitlab-codequality-report}
-  - if: ${!{'stdout','stderr'}.contains(cli.file)}
-    log.info: Output written to ${cli.file}
+  - var.set:
+      reportContents: {fmt: gitlab-codequality-report}
+      reportFile: "${cli.file!=null ? cli.file : cli.publish==true ? null : 'gl-fortify-codequality.json'}"
+  - if: ${reportFile!=null}
+    do:
+      - out.write:
+          ${reportFile}: ${reportContents}
+      - if: ${!{'stdout','stderr'}.contains(reportFile)}
+        log.info: Output written to ${reportFile}
+  - if: ${cli.publish==true}
+    do:
+      - var.set:
+          gitlabUpload: ${#gitlab.project().uploadCodeQualityReport(reportContents)}
+      - log.info: Report published to GitLab merge request
 
 formatters:
   gitlab-codequality-report:

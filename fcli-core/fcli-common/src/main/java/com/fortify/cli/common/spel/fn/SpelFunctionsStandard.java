@@ -46,6 +46,7 @@ import com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunctionParam;
 import com.fortify.cli.common.util.DateTimePeriodHelper;
 import com.fortify.cli.common.util.DebugHelper;
 import com.fortify.cli.common.util.EnvHelper;
+import com.fortify.cli.common.util.StringHelper;
 import com.fortify.cli.common.variable.FcliVariableHelper;
 
 import lombok.NoArgsConstructor;
@@ -99,20 +100,24 @@ public class SpelFunctionsStandard {
     {
         return StringUtils.abbreviate(s, maxLength);
     }
+
+    @SpelFunction(cat=txt, desc="Indents every line of the input text by prepending the given prefix string.",
+            returns="The input text with each line prefixed by the given indent string, or `null` if the input is `null`")
+    public static final String indent(
+            @SpelFunctionParam(name="input", desc="the text to indent; if a JsonNode, its text value is used; if null, returns null") Object input,
+            @SpelFunctionParam(name="prefix", desc="string to prepend to each line") String prefix)
+    {
+        if (input == null) { return null; }
+        var text = (input instanceof JsonNode j) ? j.asText() : input.toString();
+        return StringHelper.indent(text, prefix);
+    }
     
     @SpelFunction(cat=txt, returns="String consisting of the joined elements, separated by the given delimiter")
     public static final String join(
             @SpelFunctionParam(name="delimiter", desc="the delimiter to be used between each element") String delimiter,
             @SpelFunctionParam(name="input", desc="the elements to join", type = "array") Object source)
     {
-        switch (delimiter) {
-        case "\\n":
-            delimiter = "\n";
-            break;
-        case "\\t":
-            delimiter = "\t";
-            break;
-        }
+        delimiter = delimiter.replace("\\n", "\n").replace("\\t", "\t");
         Stream<?> stream = null;
         if (source instanceof Collection) {
             stream = ((Collection<?>) source).stream();
@@ -286,6 +291,23 @@ public class SpelFunctionsStandard {
             @SpelFunctionParam(name="input", desc="the encrypted string to decrypt") String s)
     {
         return EncryptionHelper.decrypt(s);
+    }
+
+    @SpelFunction(cat=util, returns="JSON string representation of the given object")
+    public static final String jsonStringify(
+            @SpelFunctionParam(name="input", desc="the object to convert to JSON string") Object o,
+            @SpelFunctionParam(name="pretty", desc="whether to pretty-print the JSON", optional=true) Boolean pretty)
+    {
+        try {
+            var mapper = JsonHelper.getObjectMapper();
+            if (Boolean.TRUE.equals(pretty)) {
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+            } else {
+                return mapper.writeValueAsString(o);
+            }
+        } catch (Exception e) {
+            throw new FcliTechnicalException("Error converting object to JSON string", e);
+        }
     }
     
     private static final String toString(Object o) {

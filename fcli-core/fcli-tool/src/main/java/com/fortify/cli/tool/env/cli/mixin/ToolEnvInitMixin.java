@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.util.EnvHelper;
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.helper.Tool;
 
 import lombok.Getter;
@@ -102,14 +103,17 @@ public class ToolEnvInitMixin {
         if (runnerToolCache != null && !runnerToolCache.isEmpty()) {
             String arch = EnvHelper.env("RUNNER_ARCH");
             if (arch == null || arch.isEmpty()) {
-                arch = System.getProperty("os.arch", "x64").toUpperCase();
+                // Use platform-aware arch suffix that distinguishes musl vs glibc
+                arch = PlatformHelper.getToolCacheArchSuffix();
             }
             return runnerToolCache + "/{tool}/{version}/" + arch;
         }
         
         String agentToolsDir = EnvHelper.env("AGENT_TOOLSDIRECTORY");
         if (agentToolsDir != null && !agentToolsDir.isEmpty()) {
-            return agentToolsDir + "/fortify/{tool}/{version}/x64";
+            // Use platform-aware arch suffix that distinguishes musl vs glibc
+            String arch = PlatformHelper.getToolCacheArchSuffix();
+            return agentToolsDir + "/fortify/{tool}/{version}/" + arch;
         }
         
         return null; // No pattern
@@ -157,6 +161,16 @@ public class ToolEnvInitMixin {
             throw new FcliSimpleException("Unknown tool: " + toolName);
         }
         String argument = parts.length > 1 ? parts[1].trim() : null;
+        
+        // Translate fcli:self and fcli:bootstrapped to fcli:<self-path>
+        if (tool == Tool.FCLI && ("self".equals(argument) || "bootstrapped".equals(argument))) {
+            if (StringUtils.isBlank(self)) {
+                String specName = "self".equals(argument) ? "fcli:self" : "fcli:bootstrapped";
+                throw new FcliSimpleException(specName + " requires --self option to be specified");
+            }
+            argument = self;
+        }
+        
         return new ToolSetupSpec(tool, argument);
     }
     

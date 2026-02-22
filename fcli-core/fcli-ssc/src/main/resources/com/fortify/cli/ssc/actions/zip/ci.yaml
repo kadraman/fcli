@@ -14,9 +14,11 @@ usage:
     * Perform post-scan activities, like checking policy outcome, exporting results, ...
     
     Configuration for this fcli action is done through environment variables; the
-    table below lists the environment variables supported by this action.
+    sections below list the environment variables supported by this action.
     
-    ${#include('/ci-envvars-ssc.ci'+(isAsciiDoc?'.adoc':'.txt'))}
+    ${#include('/ci-action-bootstrap'+(isAsciiDoc?'.adoc':'.txt'))}
+    
+    ${#include('/ci-action-core-ssc'+(isAsciiDoc?'.adoc':'.txt'))}
 
 config:
   output: immediate
@@ -46,6 +48,12 @@ steps:
               global.ci.av: ${#env('SSC_APPVERSION')?:global.ci.defaultFortifyRepo}
           - if: ${global.ci.av==null}
             throw: SSC application version must be specified through SSC_APPVERSION environment variable
+            
+  # Validate that workspace and source directories exist before proceeding
+  - if: ${!#fs.isDirectory(global.ci.workspaceDir)}
+    throw: "Workspace directory does not exist or is not accessible: ${global.workspace.dir}"
+  - if: ${!#fs.isDirectory(global.ci.sourceDir)}
+    throw: "Source directory does not exist or is not accessible: ${global.cli.sourceDir}"
             
   - var.set:
       # Configure session name
@@ -116,9 +124,7 @@ steps:
                 - ${#actionCmdSkipFromEnvReason('SETUP', false)} # Skip if DO_SETUP==false
                   
             PACKAGE_ACTION:
-              # Maybe use similar approach as DEBRICKED_SCAN_ACTION, explicitly passing all options?
-              # If we decide to do so, we should do the same in FoD ci action 
-              cmd: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')} "--source-dir=${global.ci.sourceDir}"
+              cmd: ${#actionCmd('PACKAGE_ACTION', 'ssc', 'package')} "--source-dir=${global.ci.sourceDir}" "--av=${global.ci.av}"
               skip.if-reason:
                 - ${sast.skipReason} # Skip if SAST scan is skipped
                   
@@ -218,10 +224,10 @@ steps:
                 - ${postScan.skipReason}                             # Skip if no scans were run
                 - ${#actionCmdSkipFromEnvReason('PR_COMMENT', true)} # Skip unless DO_PR_COMMENT==true or PR_COMMENT_ACTION/EXTRA_OPTS defined
                 - ${#actionCmdSkipNoActionReason('PR_COMMENT', 'ssc', global.ci.ssc_prCommentAction)}
-                # TODO Check whether current run is for a PR
+                - ${global.ci.prNotActiveSkipReason}                 # Skip if not a pull/merge request
                 
             SAST_EXPORT:
-              cmd: ${#actionCmd('SAST_EXPORT', 'ssc', global.ci.ssc_sastExportAction)} "--av=${global.ci.av}" "--source-dir=${global.ci.sourceDir}"
+              cmd: ${#actionCmd('SAST_EXPORT', 'ssc', global.ci.ssc_sastExportAction)} "--av=${global.ci.av}" "--workspace-dir=${global.ci.workspaceDir}" "--source-dir=${global.ci.sourceDir}"
               skip.if-reason:
                 - ${SAST_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
                 - ${#actionCmdSkipFromEnvReason('SAST_EXPORT', false)} # Skip if DO_SAST_EXPORT==false
@@ -230,7 +236,7 @@ steps:
             DEBRICKED_EXPORT:
               cmd: ${#actionCmd('DEBRICKED_EXPORT', 'ssc', global.ci.ssc_scaExportAction)} "--av=${global.ci.av}"
               skip.if-reason:
-                - ${DEBRICKED_WAIT.dependencySkipReason}                    # Skip if SAST_WAIT was skipped or failed
+                - ${DEBRICKED_WAIT.dependencySkipReason}                    # Skip if DEBRICKED_WAIT was skipped or failed
                 - ${#actionCmdSkipFromEnvReason('DEBRICKED_EXPORT', false)} # Skip if DO_DEBRICKED_EXPORT==false
                 - ${#actionCmdSkipNoActionReason('DEBRICKED_EXPORT', 'ssc', global.ci.ssc_scaExportAction)}
           
@@ -270,7 +276,7 @@ formatters:
   
     # Fcli CI Pipeline Summary
     
-    ${ciSummary}
+    ${ciSummary.replaceAll('\r', '')}
     
     # Fcli Security Policy Status
     
