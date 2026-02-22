@@ -746,115 +746,84 @@ formatters:
                       |Uses standardized fcli `ci` action
                       |Review environment variables against this documentation; behavior should be similar but variable names may differ slightly
                       |===
+                    quickstart: |
+                      [source,yaml]
+                      ----
+                      name: $eval{fortifyProductName} Scan
+                      on:
+                        push:
+                          branches: [main]
+                        pull_request:
+                          branches: [main]
+                      
+                      jobs:
+                        fortify:
+                          runs-on: ubuntu-latest
+                          # permissions:               # When overriding default permissions, following are required:
+                          #   contents: read           # Required for checkout action
+                          #   security-events: write   # Required for publishing security reports to GitHub Security tab
+                          #   pull-requests: write     # Required if DO_PR_COMMENT is set to true
+                          steps:
+                            - uses: actions/checkout@v4            # Check out source code
+                            - uses: actions/setup-<build-tool>@vX  # Set up build tool(s) required to build your project
+                            - uses: fortify/github-action@v3       # Run Fortify scans
+                              env:
+                      $eval{#indent(snippets.envVars, '          ')}
+                      ----
+                    tipsTemplateExample: |
+                      Example reusable workflow structure:
+                      [source,yaml]
+                      ----
+                      # .github/workflows/fortify-scan.yml (in your organization's shared workflow repository)
+                      name: Fortify Scan Reusable
+                      on:
+                        workflow_call:
+                          inputs:
+                      $eval{#indent(snippets.workflowInputs, '      ')}
+                      jobs:
+                        scan:
+                          runs-on: ubuntu-latest
+                          steps:
+                            - uses: actions/checkout@v4
+                            - uses: fortify/github-action@v3.0.0 # Centrally managed version
+                              env:
+                      $eval{#indent(snippets.tipsEnvVars, '          ')}
+                      ----
                   fod:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      name: ${productNames.fod} Scan
-                      on:
-                        push:
-                          branches: [main]
-                        pull_request:
-                          branches: [main]
-                      
-                      jobs:
-                        fortify:
-                          runs-on: ubuntu-latest
-                          # permissions:               # When overriding default permissions, following are required:
-                          #   contents: read           # Required for checkout action
-                          #   security-events: write   # Required for publishing security reports to GitHub Security tab
-                          #   pull-requests: write     # Required if DO_PR_COMMENT is set to true
-                          steps:
-                            - uses: actions/checkout@v4            # Check out source code
-                            - uses: actions/setup-<build-tool>@vX  # Set up build tool(s) required to build your project
-                            - uses: fortify/github-action@v3       # Run Fortify scans
-                              env:
-                                FOD_URL: ${'$'}{{ vars.FOD_URL }}
-                                FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
-                                FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
-                                # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
-                                # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
-                      ----
-                    tipsTemplateExample: |
-                      Example reusable workflow structure:
-                      [source,yaml]
-                      ----
-                      # .github/workflows/fortify-scan.yml (in your organization's shared workflow repository)
-                      name: Fortify Scan Reusable
-                      on:
-                        workflow_call:
-                          inputs:
-                            fod-release:
-                              description: 'Optional FoD release, defaults to <repo>:<branch>'
-                              required: false
-                              type: string
-                      jobs:
-                        scan:
-                          runs-on: ubuntu-latest
-                          steps:
-                            - uses: actions/checkout@v4
-                            - uses: fortify/github-action@v3.0.0 # Centrally managed version
-                              env:
-                                FOD_URL: ${'$'}{{ vars.FOD_URL }}
-                                FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
-                                FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
-                                FOD_RELEASE: ${'$'}{{ inputs.fod-release }}
-                                FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                      ----
+                    envVars: |
+                      FOD_URL: ${'$'}{{ vars.FOD_URL }}
+                      FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
+                      FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
+                      # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
+                      # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
+                    workflowInputs: |
+                      fod-release:
+                        description: 'Optional FoD release, defaults to <repo>:<branch>'
+                        required: false
+                        type: string
+                    tipsEnvVars: |
+                      FOD_URL: ${'$'}{{ vars.FOD_URL }}
+                      FOD_CLIENT_ID: ${'$'}{{ secrets.FOD_CLIENT_ID }}
+                      FOD_CLIENT_SECRET: ${'$'}{{ secrets.FOD_CLIENT_SECRET }}
+                      FOD_RELEASE: ${'$'}{{ inputs.fod-release }}
+                      FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
                   ssc:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      name: ${productNames.ssc} Scan
-                      on:
-                        push:
-                          branches: [main]
-                        pull_request:
-                          branches: [main]
-                      
-                      jobs:
-                        fortify:
-                          runs-on: ubuntu-latest
-                          # permissions:               # When overriding default permissions, following are required:
-                          #   contents: read           # Required for checkout action
-                          #   security-events: write   # Required for publishing security reports to GitHub Security tab
-                          #   pull-requests: write     # Required if DO_PR_COMMENT is set to true
-                          steps:
-                            - uses: actions/checkout@v4            # Check out source code
-                            - uses: actions/setup-<build-tool>@vX  # Set up build tool(s) required to build your project
-                            - uses: fortify/github-action@v3       # Run Fortify scans
-                              env:
-                                SSC_URL: ${'$'}{{ vars.SSC_URL }}
-                                SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
-                                SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
-                                # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
-                      ----
-                    tipsTemplateExample: |
-                      Example reusable workflow structure:
-                      [source,yaml]
-                      ----
-                      # .github/workflows/fortify-scan.yml (in your organization's shared workflow repository)
-                      name: Fortify Scan Reusable
-                      on:
-                        workflow_call:
-                          inputs:
-                            ssc-appversion:
-                              description: 'Optional SSC application version, defaults to <repo>:<branch>'
-                              required: false
-                              type: string
-                      jobs:
-                        scan:
-                          runs-on: ubuntu-latest
-                          steps:
-                            - uses: actions/checkout@v4
-                            - uses: fortify/github-action@v3.0.0 # Centrally managed version
-                              env:
-                                SSC_URL: ${'$'}{{ vars.SSC_URL }}
-                                SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
-                                SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
-                                SSC_APPVERSION: ${'$'}{{ inputs.ssc-appversion }}
-                                FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                      ----
+                    envVars: |
+                      SSC_URL: ${'$'}{{ vars.SSC_URL }}
+                      SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
+                      SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
+                      # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
+                    workflowInputs: |
+                      ssc-appversion:
+                        description: 'Optional SSC application version, defaults to <repo>:<branch>'
+                        required: false
+                        type: string
+                    tipsEnvVars: |
+                      SSC_URL: ${'$'}{{ vars.SSC_URL }}
+                      SSC_TOKEN: ${'$'}{{ secrets.SSC_TOKEN }}
+                      SC_SAST_TOKEN: ${'$'}{{ secrets.SC_SAST_TOKEN }}
+                      SSC_APPVERSION: ${'$'}{{ inputs.ssc-appversion }}
+                      FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
     gitlab:
       title: Fortify GitLab Components
       description: Seamless integration of OpenText Fortify Application Security Testing into GitLab CI/CD pipelines
@@ -949,7 +918,7 @@ formatters:
 
                   === Customizing the `<job-name>` Job
 
-                  By default, `<job-name>` will just run `${FCLI} -V` to verify the fcli installation. You'll typically want to define
+                  By default, `<job-name>` will just run `${'$'}{FCLI} -V` to verify the fcli installation. You'll typically want to define
                   a custom `script` section that runs fcli and other commands as needed. For Docker-based runners, you'll usually also
                   want to define the image in which the `script` section is executed:
 
@@ -958,9 +927,9 @@ formatters:
                   <job-name>:
                     image: my-build-tools:v1     # Optional: specify Docker image
                     script:
-                      - ${FCLI} fod session login ...
+                      - ${'$'}{FCLI} fod session login ...
                       - # Your custom fcli commands here
-                      - ${FCLI} fod session logout ...
+                      - ${'$'}{FCLI} fod session logout ...
                   ----
 
                   If needed, you can also customize the `needs`, `variables`, and/or `extends` instructions. If you override `needs`
@@ -1000,7 +969,7 @@ formatters:
                   ----
 
                   Any artifacts that need to be shared with the main `<job-name>` job must be stored under the directory
-                  identified by the `${FORTIFY_DIR}` environment variable.
+                  identified by the `${'$'}{FORTIFY_DIR}` environment variable.
 
                   You can also customize the Docker image used for the preparation job. By default, `alpine:latest` is used:
 
@@ -1032,11 +1001,11 @@ formatters:
 
                   fcli-stable:
                     script:
-                      - ${FCLI} -V
+                      - ${'$'}{FCLI} -V
 
                   fcli-dev:
                     script:
-                      - ${FCLI} -V
+                      - ${'$'}{FCLI} -V
                   ----
 
                   $eval{resourcesSection}
@@ -1059,10 +1028,10 @@ formatters:
                       fcli:
                         image: my-build-tools:v1   # Optional: specify build environment
                         script:
-                          - ${FCLI} -V             # Verify fcli installation
-                          - ${FCLI} fod session login ...
+                          - ${'$'}{FCLI} -V             # Verify fcli installation
+                          - ${'$'}{FCLI} fod session login ...
                           - # Your custom fcli commands here
-                          - ${FCLI} fod session logout ...
+                          - ${'$'}{FCLI} fod session logout ...
                       ----
             ast-scan:
               filePattern: ast-scan-$eval{product}.adoc
@@ -1191,8 +1160,8 @@ formatters:
                       - .my-custom-vars           # Optional: inherit additional variables
                     variables:
                       FOD_URL: https://ams.fortify.com
-                      FOD_CLIENT_ID: ${FOD_CLIENT_ID}     # From GitLab CI/CD variables
-                      FOD_CLIENT_SECRET: ${FOD_CLIENT_SECRET}
+                      FOD_CLIENT_ID: ${'$'}{FOD_CLIENT_ID}     # From GitLab CI/CD variables
+                      FOD_CLIENT_SECRET: ${'$'}{FOD_CLIENT_SECRET}
                       # Additional scan configuration...
                   ----
 
@@ -1231,89 +1200,45 @@ formatters:
                       fortify-ast-scan:
                         image: maven:3-openjdk-17   # Docker image with build tools
                         variables:
-                          # FOD_URL, FOD_CLIENT_ID, FOD_CLIENT_SECRET must be set for FoD scans
-                          # SSC_URL, SSC_TOKEN, SC_SAST_TOKEN must be set for SSC scans
+                      $eval{#indent(snippets.envVars, '    ')}
+                      ----
+                    tipsTemplateExample: |
+                      Example custom component or template structure:
+                      [source,yaml]
+                      ----
+                      # In your organization's shared component/template repository
+                      include:
+                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1.0.1  # Pinned version
+                          inputs:
+                            job-name: fortify-ast-scan
+                            stage: security
+                            fcli-version: v3.15.0  # Pinned fcli version
+
+                      fortify-ast-scan:
+                        variables:
+                      $eval{#indent(snippets.tipsEnvVars, '    ')}
+                        extends: .my-shared-config  # Additional organization-wide settings
                       ----
                   fod:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      include:
-                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1
-                          inputs:
-                            job-name: fortify-ast-scan
-                            stage: test
-                            fcli-version: v3
-
-                      stages: [test]
-
-                      fortify-ast-scan:
-                        image: maven:3-openjdk-17   # Docker image with build tools
-                        variables:
-                          FOD_URL: ${FOD_URL}                         # From GitLab CI/CD variables
-                          FOD_CLIENT_ID: ${FOD_CLIENT_ID}             # From GitLab CI/CD variables
-                          FOD_CLIENT_SECRET: ${FOD_CLIENT_SECRET}     # From GitLab CI/CD variables
-                          # FOD_RELEASE: MyApp:main                   # Optional: defaults to repo:branch
-                      ----
-                    tipsTemplateExample: |
-                      Example custom component or template structure:
-                      [source,yaml]
-                      ----
-                      # In your organization's shared component/template repository
-                      include:
-                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1.0.1  # Pinned version
-                          inputs:
-                            job-name: fortify-ast-scan
-                            stage: security
-                            fcli-version: v3.15.0  # Pinned fcli version
-
-                      fortify-ast-scan:
-                        variables:
-                          FOD_URL: ${FOD_URL}
-                          FOD_CLIENT_ID: ${FOD_CLIENT_ID}
-                          FOD_CLIENT_SECRET: ${FOD_CLIENT_SECRET}
-                        extends: .my-shared-config  # Additional organization-wide settings
-                      ----
+                    envVars: |
+                      FOD_URL: ${'$'}{FOD_URL}                         # From GitLab CI/CD variables
+                      FOD_CLIENT_ID: ${'$'}{FOD_CLIENT_ID}             # From GitLab CI/CD variables
+                      FOD_CLIENT_SECRET: ${'$'}{FOD_CLIENT_SECRET}     # From GitLab CI/CD variables
+                      # FOD_RELEASE: MyApp:main                   # Optional: defaults to repo:branch
+                    tipsEnvVars: |
+                      FOD_URL: ${'$'}{FOD_URL}
+                      FOD_CLIENT_ID: ${'$'}{FOD_CLIENT_ID}
+                      FOD_CLIENT_SECRET: ${'$'}{FOD_CLIENT_SECRET}
                   ssc:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      include:
-                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1
-                          inputs:
-                            job-name: fortify-ast-scan
-                            stage: test
-                            fcli-version: v3
-
-                      stages: [test]
-
-                      fortify-ast-scan:
-                        image: maven:3-openjdk-17   # Docker image with build tools
-                        variables:
-                          SSC_URL: ${SSC_URL}                   # From GitLab CI/CD variables
-                          SSC_TOKEN: ${SSC_TOKEN}               # From GitLab CI/CD variables
-                          SC_SAST_TOKEN: ${SC_SAST_TOKEN}       # From GitLab CI/CD variables
-                          # SSC_APPVERSION: MyApp:main          # Optional: defaults to repo:branch
-                      ----
-                    tipsTemplateExample: |
-                      Example custom component or template structure:
-                      [source,yaml]
-                      ----
-                      # In your organization's shared component/template repository
-                      include:
-                        - component: $CI_SERVER_FQDN/Fortify/components/ast-scan/linux@1.0.1  # Pinned version
-                          inputs:
-                            job-name: fortify-ast-scan
-                            stage: security
-                            fcli-version: v3.15.0  # Pinned fcli version
-
-                      fortify-ast-scan:
-                        variables:
-                          SSC_URL: ${SSC_URL}
-                          SSC_TOKEN: ${SSC_TOKEN}
-                          SC_SAST_TOKEN: ${SC_SAST_TOKEN}
-                        extends: .my-shared-config  # Additional organization-wide settings
-                      ----
+                    envVars: |
+                      SSC_URL: ${'$'}{SSC_URL}                   # From GitLab CI/CD variables
+                      SSC_TOKEN: ${'$'}{SSC_TOKEN}               # From GitLab CI/CD variables
+                      SC_SAST_TOKEN: ${'$'}{SC_SAST_TOKEN}       # From GitLab CI/CD variables
+                      # SSC_APPVERSION: MyApp:main          # Optional: defaults to repo:branch
+                    tipsEnvVars: |
+                      SSC_URL: ${'$'}{SSC_URL}
+                      SSC_TOKEN: ${'$'}{SSC_TOKEN}
+                      SC_SAST_TOKEN: ${'$'}{SC_SAST_TOKEN}
     ado:
       title: Fortify Azure DevOps
       description: Script-based integration of OpenText Fortify Application Security Testing into Azure DevOps pipelines
@@ -1417,153 +1342,117 @@ formatters:
                       making it easy to standardize your security scanning across platforms. The primary difference is
                       the bootstrap mechanism - Azure DevOps uses `@fortify/setup` via `npx` instead of platform-specific
                       actions or components.
+                    quickstart: |
+                      [source,yaml]
+                      ----
+                      trigger:
+                        branches:
+                          include:
+                            - main
+                      pr:
+                        branches:
+                          include:
+                            - main
+                      
+                      variables:
+                        - group: fortify  # Variable group containing $eval{snippets.variablesGroupComment}
+                      
+                      jobs:
+                        - job: fortify
+                          pool:
+                            vmImage: 'ubuntu-latest'
+                          steps:
+                            - checkout: self                       # Check out source code
+                            - task: # ... setup build tool(s)      # Set up build tool(s) required to build your project
+                            - task: Bash@3 # Or PowerShell@2, using the PowerShell variant of the script below
+                              displayName: 'Run Fortify AST scan'
+                              inputs:
+                                targetType: 'inline'
+                                # Bash variant
+                                script: |
+                                  # Bootstrap fcli
+                                  npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
+                                  # Add fcli to PATH and set related environment variables for subsequent steps in current script
+                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
+                                  # Alternatively, to make fcli ALSO available for subsequent tasks:
+                                  # source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado --output-as=shell)
+                                  # Alternatively, to make fcli ONLY available for subsequent tasks:
+                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
+                                  "${'$'}{FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
+                                # PowerShell variant
+                                # script: |
+                                #   # Bootstrap fcli
+                                #   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
+                                #   # Add fcli to PATH and set related environment variables for subsequent steps in current script
+                                #   npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
+                                #   # Alternatively, to make fcli ALSO available for subsequent tasks:
+                                #   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado --output-as=pwsh | Out-String | Invoke-Expression
+                                #   # Alternatively, to make fcli ONLY available for subsequent tasks:
+                                #   # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
+                                #   & "${'$'}{env:FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
+                              env:
+                      $eval{#indent(snippets.envVars, '          ')}
+                      ----
+                    tipsTemplateExample: |
+                      Example template structure:
+                      [source,yaml]
+                      ----
+                      # fortify-scan-template.yml (in your organization's shared template repository)
+                      parameters:
+                      $eval{#indent(snippets.tipsTemplateParameters, '  ')}
+                      steps:
+                        - task: Bash@3
+                          displayName: 'Run Fortify AST scan'
+                          inputs:
+                            targetType: 'inline'
+                            script: |
+                              npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
+                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
+                              "${'$'}{FCLI_CMD:-fcli}" action run ci
+                          env:
+                      $eval{#indent(snippets.tipsTemplateEnvVars, '      ')}
+                      ----
                   fod:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      trigger:
-                        branches:
-                          include:
-                            - main
-                      pr:
-                        branches:
-                          include:
-                            - main
-                      
-                      variables:
-                        - group: fortify  # Variable group containing FOD_URL, FOD_CLIENT_ID, FOD_CLIENT_SECRET
-                      
-                      jobs:
-                        - job: fortify
-                          pool:
-                            vmImage: 'ubuntu-latest'
-                          steps:
-                            - checkout: self                       # Check out source code
-                            - task: # ... setup build tool(s)      # Set up build tool(s) required to build your project
-                            - task: Bash@3
-                              displayName: 'Run Fortify AST scan'
-                              inputs:
-                                targetType: 'inline'
-                                script: |
-                                  # Bootstrap fcli and Fortify tools
-                                  npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                                  # Add fcli to PATH
-                                  # - For bash tasks
-                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
-                                  # - For PowerShell tasks
-                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
-                                  # - To expose fcli path for subsequent tasks
-                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
-                                  "${'$'}{FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
-                              env:
-                                FOD_URL: $(FOD_URL)
-                                FOD_CLIENT_ID: $(FOD_CLIENT_ID)
-                                FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
-                                # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
-                                # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
-                                FORTIFY_SETUP_VERSION: v2.1      # Or v2 for latest features, v2.1.1 for stability
-                      ----
-                    tipsTemplateExample: |
-                      Example template structure:
-                      [source,yaml]
-                      ----
-                      # fortify-scan-template.yml (in your organization's shared template repository)
-                      parameters:
-                        - name: fodRelease
-                          displayName: 'Optional FoD release, defaults to <repo>:<branch>'
-                          type: string
-                          default: ''
-
-                      steps:
-                        - task: Bash@3
-                          displayName: 'Run Fortify AST scan'
-                          inputs:
-                            targetType: 'inline'
-                            script: |
-                              npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
-                              "${'$'}{FCLI_CMD:-fcli}" action run ci
-                          env:
-                            FOD_URL: $(FOD_URL)
-                            FOD_CLIENT_ID: $(FOD_CLIENT_ID)
-                            FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
-                            FOD_RELEASE: ${'$'}{{ parameters.fodRelease }}
-                            FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                            FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
-                      ----
+                    variablesGroupComment: FOD_URL, FOD_CLIENT_ID, FOD_CLIENT_SECRET
+                    envVars: |
+                      FOD_URL: $(FOD_URL)
+                      FOD_CLIENT_ID: $(FOD_CLIENT_ID)
+                      FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
+                      # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
+                      # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
+                      FORTIFY_SETUP_VERSION: v2.1      # Or v2 for latest features, v2.1.1 for stability
+                    tipsTemplateParameters: |
+                      - name: fodRelease
+                        displayName: 'Optional FoD release, defaults to <repo>:<branch>'
+                        type: string
+                        default: ''
+                    tipsTemplateEnvVars: |
+                      FOD_URL: $(FOD_URL)
+                      FOD_CLIENT_ID: $(FOD_CLIENT_ID)
+                      FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
+                      FOD_RELEASE: ${'$'}{{ parameters.fodRelease }}
+                      FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
+                      FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
                   ssc:
-                    quickstart: |
-                      [source,yaml]
-                      ----
-                      trigger:
-                        branches:
-                          include:
-                            - main
-                      pr:
-                        branches:
-                          include:
-                            - main
-                      
-                      variables:
-                        - group: fortify  # Variable group containing SSC_URL, SSC_TOKEN, SC_SAST_TOKEN
-                      
-                      jobs:
-                        - job: fortify
-                          pool:
-                            vmImage: 'ubuntu-latest'
-                          steps:
-                            - checkout: self                       # Check out source code
-                            - task: # ... setup build tool(s)      # Set up build tool(s) required to build your project
-                            - task: Bash@3
-                              displayName: 'Run Fortify AST scan'
-                              inputs:
-                                targetType: 'inline'
-                                script: |
-                                  # Bootstrap fcli and Fortify tools
-                                  npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                                  # Add fcli to PATH
-                                  # - For bash tasks
-                                  source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
-                                  # - For PowerShell tasks
-                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env pwsh | Out-String | Invoke-Expression
-                                  # - To expose fcli path for subsequent tasks
-                                  # npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env ado
-                                  "${'$'}{FCLI_CMD:-fcli}" action run ci  # Or any other fcli-based custom workflow
-                              env:
-                                SSC_URL: $(SSC_URL)
-                                SSC_TOKEN: $(SSC_TOKEN)
-                                SC_SAST_TOKEN: $(SC_SAST_TOKEN)
-                                # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
-                                FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.1 for stability
-                      ----
-                    tipsTemplateExample: |
-                      Example template structure:
-                      [source,yaml]
-                      ----
-                      # fortify-scan-template.yml (in your organization's shared template repository)
-                      parameters:
-                        - name: sscAppVersion
-                          displayName: 'Optional SSC application version, defaults to <repo>:<branch>'
-                          type: string
-                          default: ''
-
-                      steps:
-                        - task: Bash@3
-                          displayName: 'Run Fortify AST scan'
-                          inputs:
-                            targetType: 'inline'
-                            script: |
-                              npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env init --tools=fcli:bootstrapped
-                              source <(npx @fortify/setup@$(FORTIFY_SETUP_VERSION) env shell)
-                              "${'$'}{FCLI_CMD:-fcli}" action run ci
-                          env:
-                            SSC_URL: $(SSC_URL)
-                            SSC_TOKEN: $(SSC_TOKEN)
-                            SC_SAST_TOKEN: $(SC_SAST_TOKEN)
-                            SSC_APPVERSION: ${'$'}{{ parameters.sscAppVersion }}
-                            FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                            FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
-                      ----
+                    variablesGroupComment: SSC_URL, SSC_TOKEN, SC_SAST_TOKEN
+                    envVars: |
+                      SSC_URL: $(SSC_URL)
+                      SSC_TOKEN: $(SSC_TOKEN)
+                      SC_SAST_TOKEN: $(SC_SAST_TOKEN)
+                      # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
+                      FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.1 for stability
+                    tipsTemplateParameters: |
+                      - name: sscAppVersion
+                        displayName: 'Optional SSC application version, defaults to <repo>:<branch>'
+                        type: string
+                        default: ''
+                    tipsTemplateEnvVars: |
+                      SSC_URL: $(SSC_URL)
+                      SSC_TOKEN: $(SSC_TOKEN)
+                      SC_SAST_TOKEN: $(SC_SAST_TOKEN)
+                      SSC_APPVERSION: ${'$'}{{ parameters.sscAppVersion }}
+                      FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
+                      FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
   
   # ============================================================================
   # BOOTSTRAP COMPONENT ENV VAR DESCRIPTIONS
