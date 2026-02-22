@@ -1334,7 +1334,7 @@ formatters:
                     bootstrapNotes: |
                       NOTE: `@fortify/setup` is automatically configured through the `FCLI_BOOTSTRAP_*` environment variables documented in this section. For simplicity and to avoid pipelines from interfering with each other, it is recommended to not use the `@fortify/setup bootstrap-config` command in CI pipelines.
 
-                      NOTE: This integration requires `@fortify/setup` v2.1.1 or later, which in turn requires at least fcli v3.14.3 to function correctly.
+                      NOTE: This integration requires `@fortify/setup` v2.1.2 or later, and fcli v3.15.0 or later.
 
                       NOTE: Environment variables listed in the subsequent sections are for fcli ${fcliVersion}; if your bootstrap settings install another fcli version, please refer to to the fcli actionRef:generic:ci action documentation for that version.
                     migrationNote: |
@@ -1420,7 +1420,7 @@ formatters:
                       FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
                       # FOD_RELEASE: MyApp:main        # Optional: defaults to repo:branch
                       # FCLI_BOOTSTRAP_VERSION: v3.15  # Optional if you prefer stability over latest
-                      FORTIFY_SETUP_VERSION: v2.1      # Or v2 for latest features, v2.1.1 for stability
+                      FORTIFY_SETUP_VERSION: v2.1      # Or v2 for latest features, v2.1.2 for stability
                     tipsTemplateParameters: |
                       - name: fodRelease
                         displayName: 'Optional FoD release, defaults to <repo>:<branch>'
@@ -1432,7 +1432,7 @@ formatters:
                       FOD_CLIENT_SECRET: $(FOD_CLIENT_SECRET)
                       FOD_RELEASE: ${'$'}{{ parameters.fodRelease }}
                       FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                      FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
+                      FORTIFY_SETUP_VERSION: v2.1.2    # Centrally managed version
                   ssc:
                     variablesGroupComment: SSC_URL, SSC_TOKEN, SC_SAST_TOKEN
                     envVars: |
@@ -1440,7 +1440,7 @@ formatters:
                       SSC_TOKEN: $(SSC_TOKEN)
                       SC_SAST_TOKEN: $(SC_SAST_TOKEN)
                       # SSC_APPVERSION: MyApp:main  # Optional: defaults to repo:branch
-                      FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.1 for stability
+                      FORTIFY_SETUP_VERSION: v2.1   # Or v2 for latest features, v2.1.2 for stability
                     tipsTemplateParameters: |
                       - name: sscAppVersion
                         displayName: 'Optional SSC application version, defaults to <repo>:<branch>'
@@ -1452,7 +1452,7 @@ formatters:
                       SC_SAST_TOKEN: $(SC_SAST_TOKEN)
                       SSC_APPVERSION: ${'$'}{{ parameters.sscAppVersion }}
                       FCLI_BOOTSTRAP_VERSION: v3.15.0  # Centrally managed version
-                      FORTIFY_SETUP_VERSION: v2.1.1    # Centrally managed version
+                      FORTIFY_SETUP_VERSION: v2.1.2    # Centrally managed version
   
   # ============================================================================
   # BOOTSTRAP COMPONENT ENV VAR DESCRIPTIONS
