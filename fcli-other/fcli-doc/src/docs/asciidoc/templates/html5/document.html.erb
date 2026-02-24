@@ -662,7 +662,9 @@ unless noheader %>
 </div><%
 end %>
 <div id="content">
+<% if (attr?(:jekyll) && !attr?('jekyll-no-raw-body')) %>{% raw %}<% end %>
 <%= content %>
+<% if (attr?(:jekyll) && !attr?('jekyll-no-raw-body')) %>{% endraw %}<% end %>
 </div><%
 unless !footnotes? || attr?(:nofootnotes) %>
 <div id="footnotes">
