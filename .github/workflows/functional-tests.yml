@@ -8,6 +8,8 @@ on:
         required: true
         type: number
 
+permissions: read-all
+
 jobs:
   ft-core:
     strategy:
