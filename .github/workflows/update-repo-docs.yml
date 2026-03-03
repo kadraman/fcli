@@ -6,7 +6,7 @@ on:
     - cron: '5 4 * * *'
   push:
     branches:
-      - develop
+      - dev/v3.x
       
 jobs:
   update-repo-docs:
