@@ -2,9 +2,16 @@ name: Build and release
 on:
   workflow_dispatch:
   pull_request:
+    branches:
+      - 'dev/v3.x'
+      - 'rel/v3.x'
+      - 'feat/v3.x/aviator/*'
   push:
     branches:
-      - '**'
+      - 'dev/v3.x'
+      - 'rel/v3.x'
+      - 'feat/**'
+      - 'poc/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
