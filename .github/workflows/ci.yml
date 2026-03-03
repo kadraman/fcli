@@ -48,20 +48,6 @@ jobs:
           skip-github-pull-request: true
           target-branch: ${{ github.ref_name }}
           release-type: simple
-      - name: PROD - Define release info
-        if: steps.create_prod_release.outputs.release_created
-        run: |
-          tag=${{steps.create_prod_release.outputs.tag_name}}
-          version=${{steps.create_prod_release.outputs.version}}
-          major=${{steps.create_prod_release.outputs.major}}
-          minor=${{steps.create_prod_release.outputs.minor}}
-          patch=${{steps.create_prod_release.outputs.patch}}  
-          echo "release_created=true" >> $GITHUB_OUTPUT
-          echo "tag_name=${tag}" >> $GITHUB_OUTPUT
-          echo "version=${version}" >> $GITHUB_OUTPUT
-          echo "major=${major}" >> $GITHUB_OUTPUT
-          echo "minor=${minor}" >> $GITHUB_OUTPUT
-          echo "patch=${patch}" >> $GITHUB_OUTPUT
 
   build:
     name: Build
@@ -77,7 +63,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Import create-release outputs
+      - name: PROD - Define release info
         if: needs.create-release.outputs.release_created
         run: |
           echo DO_BUILD=true >> $GITHUB_ENV
@@ -146,14 +132,14 @@ jobs:
           path: build/dist/**/*
           
     outputs:
-      do_release: ${{ needs.create-release.outputs.release_created == 'true' || env.DO_RELEASE == 'true' }}
-      do_prod_release: ${{ needs.create-release.outputs.release_created == 'true' || env.DO_PROD_RELEASE == 'true' }}
+      do_release: ${{ env.DO_RELEASE }}
+      do_prod_release: ${{ env.DO_PROD_RELEASE }}
       do_dev_release: ${{ env.DO_DEV_RELEASE }}
-      release_tag: ${{ needs.create-release.outputs.tag_name || env.RELEASE_TAG }}
-      release_version: ${{ needs.create-release.outputs.version || env.RELEASE_VERSION }}
-      version_major: ${{ needs.create-release.outputs.major || env.VERSION_MAJOR }}
-      version_minor: ${{ needs.create-release.outputs.minor || env.VERSION_MINOR }}
-      version_patch: ${{ needs.create-release.outputs.patch || env.VERSION_PATCH }}
+      release_tag: ${{ env.RELEASE_TAG }}
+      release_version: ${{ env.RELEASE_VERSION }}
+      version_major: ${{ env.VERSION_MAJOR }}
+      version_minor: ${{ env.VERSION_MINOR }}
+      version_patch: ${{ env.VERSION_PATCH }}
       branch: ${{ env.BRANCH }}
 
   native_linux:
