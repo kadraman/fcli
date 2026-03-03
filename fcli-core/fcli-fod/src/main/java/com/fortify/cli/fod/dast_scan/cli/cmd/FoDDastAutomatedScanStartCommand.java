@@ -54,7 +54,7 @@ public class FoDDastAutomatedScanStartCommand extends AbstractFoDScanStartComman
             // get current setup to ensure the scan has been configured
             var setup = FoDScanDastAutomatedHelper.getSetupDescriptor(unirest, relId);
             if (setup == null) {
-                throw new FcliSimpleException("DAST Automated scan is not configured for release '" + releaseDescriptor.getReleaseName() + "'. Please run the 'fod dast-scan setup' command to configure the scan before starting.");
+                throw new FcliSimpleException("DAST Automated scan is not configured for release '" + releaseDescriptor.getReleaseName() + "'. Please run one of the 'fod dast-scan setup-xxx' commands to configure the scan before starting.");
             }
 
             // handle any in-progress or active scans according to the configured action

@@ -49,7 +49,7 @@ public class FoDMicroserviceCreateCommand extends AbstractFoDJsonNodeOutputComma
     public JsonNode getJsonNode(UnirestInstance unirest) {
         FoDAppDescriptor appDescriptor = qualifiedMicroserviceNameResolver.getAppDescriptor(unirest, true);
         FoDQualifiedMicroserviceNameDescriptor qualifiedMicroserviceNameDescriptor = qualifiedMicroserviceNameResolver.getQualifiedMicroserviceNameDescriptor();
-        // if the application is not microservice enabled, return the application descriptor with an additional field indicating that the microservice was not created due to the application not being microservice enabled
+        // throw an exception if the application is not microservice-enabled
         if (!appDescriptor.isHasMicroservices()) {
             throw new FcliSimpleException("Cannot create microservice for non-microservice application "+appDescriptor.getApplicationName());
         }
