@@ -13,6 +13,7 @@
 package com.fortify.cli.fod._common.scan.helper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,10 +53,13 @@ public class FoDScanDescriptor extends JsonNodeHolder {
     private Date completedDateTime;
 
     public Map<Integer, String> attributesAsMap() {
+        if (attributes == null || attributes.isEmpty()) {
+            return Collections.emptyMap();
+        }
         Map<Integer, String> attrMap = new HashMap<>();
         for (FoDAttributeDescriptor attr : attributes) {
             attrMap.put(attr.getId(), attr.getValue());
         }
-        return  attrMap;
+        return Collections.unmodifiableMap(attrMap);
     }
 }

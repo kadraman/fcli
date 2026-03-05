@@ -28,7 +28,7 @@ import picocli.CommandLine.Option;
 @Command(name = OutputHelperMixins.Download.CMD_NAME)
 public class FoDOssScanDownloadCommand extends AbstractFoDScanDownloadCommand {
     @Getter @Mixin private OutputHelperMixins.Download outputHelper;
-    @Option(names="--format", required = false)
+    @Option(names="--format", required = false, defaultValue = "CycloneDX")
     private FoDEnums.SBOMFormat format;
 
     @Override
@@ -37,7 +37,7 @@ public class FoDOssScanDownloadCommand extends AbstractFoDScanDownloadCommand {
         GetRequest req = unirest.get(path)
             .routeParam("scanId", scanDescriptor.getScanId());
         if ( format != null ) {
-            req = req.queryString("format", format.name());
+            req = req.queryString("format", format.getValue());
         }
         return req.accept("application/octet-stream");
     }
