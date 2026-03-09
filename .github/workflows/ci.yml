@@ -11,6 +11,7 @@ on:
       - 'dev/v3.x'
       - 'rel/v3.x'
       - 'feat/**'
+      - 'fix/**'
       - 'poc/**'
 
 concurrency:
