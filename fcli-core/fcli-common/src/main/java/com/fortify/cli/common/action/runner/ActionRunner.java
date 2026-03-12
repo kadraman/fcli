@@ -126,9 +126,9 @@ public class ActionRunner {
 
     private IRecordWriter createCheckStatusWriter() {
         var recordWriterConfig = RecordWriterConfig.builder()
-                .style(RecordWriterStyle.apply(RecordWriterStyleElement.md_border))
-                .writerSupplier(()->new OutputStreamWriter(new NonClosingPrintStream(false, "System.out", System.out)))
-                .build();
+            .style(RecordWriterStyle.apply(RecordWriterStyleElement.md_border))
+            .writerSupplier(()->new OutputStreamWriter(new NonClosingPrintStream(false, "System.out", System.out)))
+            .build();
         var recordWriter = RecordWriterFactory.table.createWriter(recordWriterConfig);
         return recordWriter;
     }
