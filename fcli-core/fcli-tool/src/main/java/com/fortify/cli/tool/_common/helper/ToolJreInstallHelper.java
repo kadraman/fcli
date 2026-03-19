@@ -60,6 +60,7 @@ public class ToolJreInstallHelper {
             return JreInstallResult.builder()
                 .jreSource(JreSource.EMBEDDED)
                 .jrePath(config.embeddedJrePath.toAbsolutePath().normalize().toString())
+                .requiresEmbeddedJreInstall(true)
                 .build();
         }
         
