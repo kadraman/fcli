@@ -86,6 +86,14 @@ public final class ActionConfig implements IActionElement {
         log file. Map keys define environment variables names, map values define masking configuration.    
         """)
     @JsonProperty(value = "mask.env-vars", required = false) private LinkedHashMap<String, ActionInputMask> envVarMasks;
+
+    @JsonPropertyDescription("""
+        Optional boolean: When true, sensitive files created by this action during execution (for example session files)
+        will be encrypted with a randomly generated, in-memory password that is only available for the
+        duration of the action execution. Pre-existing secured files remain decryptable using the standard
+        fcli encryption key.
+        """)
+    @JsonProperty(value = "sensitive-files.ephemeral-encrypt", required = false) private Boolean ephemeralEncrypt;
     
     @Override
     public void postLoad(Action action) {}

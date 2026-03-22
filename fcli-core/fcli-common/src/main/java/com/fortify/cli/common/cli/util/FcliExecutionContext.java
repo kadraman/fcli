@@ -15,7 +15,14 @@
  */
 package com.fortify.cli.common.cli.util;
 
+import java.nio.file.Path;
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fortify.cli.common.crypto.helper.EncryptionHelper;
 import com.fortify.cli.common.json.JsonHelper;
 import com.fortify.cli.common.rest.unirest.UnirestContext;
 
@@ -25,6 +32,10 @@ import com.fortify.cli.common.rest.unirest.UnirestContext;
 public final class FcliExecutionContext {
     private final ObjectNode globalValues = JsonHelper.getObjectMapper().createObjectNode();
     private final UnirestContext unirestContext = new UnirestContext();
+    // Encryption helper used for encrypt/decrypt in this execution. Default to global DEFAULT.
+    private volatile EncryptionHelper encryptionHelper = EncryptionHelper.DEFAULT;
+    // Set of absolute file paths that were saved using ephemeral encryption during this execution
+    private final Set<Path> ephemeralEncryptedFiles = ConcurrentHashMap.newKeySet();
 
     public ObjectNode getGlobalValues() { return globalValues; }
     public UnirestContext getUnirestContext() { return unirestContext; }
@@ -37,5 +48,46 @@ public final class FcliExecutionContext {
                 globalValues.size(),
                 Integer.toHexString(System.identityHashCode(unirestContext)),
                 unirestContext.getCachedInstanceCount());
+    }
+
+    /**
+     * Enable ephemeral encryption for this execution. If already enabled, this is a no-op.
+     * Generates a secure random password and configures an EncryptionHelper instance for this context.
+     * @return true if ephemeral encryption is enabled (either already or newly)
+     */
+    public boolean enableEphemeralEncryption() {
+        if ( encryptionHelper!=EncryptionHelper.DEFAULT ) { return true; }
+        synchronized(this) {
+            var rnd = new byte[32];
+            new SecureRandom().nextBytes(rnd);
+            String pwd = Base64.getUrlEncoder().withoutPadding().encodeToString(rnd);
+            encryptionHelper = new EncryptionHelper(pwd);
+        }
+        return true;
+    }
+
+    public boolean isEphemeralEncryptionEnabled() { return encryptionHelper!=EncryptionHelper.DEFAULT; }
+    public EncryptionHelper getEncryptionHelper() { return encryptionHelper; }
+
+    public void registerEphemeralEncryptedFile(Path absolutePath) { if ( absolutePath!=null ) { ephemeralEncryptedFiles.add(absolutePath); } }
+    public boolean isEphemeralEncryptedFile(Path absolutePath) { return absolutePath!=null && ephemeralEncryptedFiles.contains(absolutePath); }
+
+    /**
+     * Save encrypted contents to the given absolute path using the appropriate EncryptionHelper for this context.
+     * If ephemeral encryption is enabled for this context, the file will be registered as ephemeral-encrypted.
+     */
+    public void saveEncrypted(Path absolutePath, String plainContents) {
+        // Use the context's configured helper (either DEFAULT or ephemeral instance)
+        encryptionHelper.save(plainContents, absolutePath);
+        if ( isEphemeralEncryptionEnabled() ) { registerEphemeralEncryptedFile(absolutePath); }
+    }
+
+    /**
+     * Read and decrypt the contents of the given absolute path using the appropriate EncryptionHelper for this path.
+     */
+    public String readEncrypted(Path absolutePath) {
+        if ( absolutePath==null ) { return null; }
+        var helper = isEphemeralEncryptedFile(absolutePath) ? getEncryptionHelper() : EncryptionHelper.DEFAULT;
+        return helper.read(absolutePath);
     }
 }
