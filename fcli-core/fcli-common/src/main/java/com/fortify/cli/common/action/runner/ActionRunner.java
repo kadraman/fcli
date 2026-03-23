@@ -62,7 +62,7 @@ public class ActionRunner {
             try {
                 new ActionStepProcessorSteps(ctx, vars, config.getAction().getSteps()).process();
             } finally {
-                overallCheckstatus = processAndPrintCheckStatuses(ctx.getCheckStatuses());
+                overallCheckstatus = processAndPrintCheckStatuses(ctx);
             }
             // Retrieve exit code set by action's exit step (if any)
             exitCode = ctx.getExitCode();
@@ -98,7 +98,9 @@ public class ActionRunner {
         }
     }
     
-    private final CheckStatus processAndPrintCheckStatuses(Map<ActionStepCheckEntry, CheckStatus> checkStatuses) {
+    private final CheckStatus processAndPrintCheckStatuses(ActionRunnerContext ctx) {
+        ctx.getProgressWriter().clearProgress();
+        var checkStatuses = ctx.getCheckStatuses();
         if ( checkStatuses.isEmpty() ) { return CheckStatus.SKIP; }
         try ( var recordWriter = createCheckStatusWriter(); ) {
             checkStatuses.entrySet().stream()
