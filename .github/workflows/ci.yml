@@ -248,7 +248,7 @@ jobs:
     needs: build
     runs-on: windows-2022
     steps:
-      - uses: fortify/3rdparty-actions/actions/setup-graalvm/v1@main
+      - uses: fortify/3rdparty-actions/actions/graalvm/setup-graalvm/v1@main
         with:
           distribution: ${{ env.graal_distribution }}
           java-version: ${{ env.graal_java_version }}
