@@ -10,7 +10,7 @@ javaPlatform { allowDependencies() }
 dependencies {
     api(platform("com.fasterxml.jackson:jackson-bom:2.21.2"))
     api(platform("org.springframework:spring-framework-bom:7.0.6"))
-    api(platform("io.modelcontextprotocol.sdk:mcp-bom:0.17.0"))
+    api(platform("io.modelcontextprotocol.sdk:mcp-bom:1.1.1"))
     constraints {
         api("info.picocli:picocli:4.7.5")
         api("info.picocli:picocli-codegen:4.7.5")
@@ -25,9 +25,9 @@ dependencies {
         api("com.github.freva:ascii-table:1.9.0")
         api("com.google.code.findbugs:jsr305:3.0.2")
         api("org.jasypt:jasypt:1.9.3:lite")
-        api("org.junit.jupiter:junit-jupiter-api:5.14.1")
-        api("org.junit.jupiter:junit-jupiter-params:5.14.1")
-        api("org.junit.jupiter:junit-jupiter-engine:5.14.1")
+        api("org.junit.jupiter:junit-jupiter-api:6.0.3")
+        api("org.junit.jupiter:junit-jupiter-params:6.0.3")
+        api("org.junit.jupiter:junit-jupiter-engine:6.0.3")
         api("org.apache.commons:commons-lang3:3.20.0")
         api("org.apache.commons:commons-compress:1.28.0")
         api("org.jsoup:jsoup:1.22.1")
