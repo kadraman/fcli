@@ -22,6 +22,7 @@ import com.fortify.cli.common.log.MaskValue;
 import com.fortify.cli.common.util.FcliBuildProperties;
 import com.fortify.cli.common.util.FcliDockerHelper;
 import com.fortify.cli.common.util.JavaHelper;
+import com.fortify.cli.common.util.NonClosingPrintStream;
 
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -116,8 +117,8 @@ public final class FcliExecutionStrategy implements IExecutionStrategy {
             this.orgOut = FcliExecutionOutputContext.getOriginalOut();
             this.orgErr = FcliExecutionOutputContext.getOriginalErr();
             // Instead of globally replacing System.out/err, set per-thread delegates
-            FcliExecutionOutputContext.setThreadOut(new com.fortify.cli.common.util.NonClosingPrintStream("System.out", orgOut));
-            FcliExecutionOutputContext.setThreadErr(new com.fortify.cli.common.util.NonClosingPrintStream("System.err", orgErr));
+            FcliExecutionOutputContext.setThreadOut(new NonClosingPrintStream("System.out", orgOut));
+            FcliExecutionOutputContext.setThreadErr(new NonClosingPrintStream("System.err", orgErr));
         }
 
         @Override

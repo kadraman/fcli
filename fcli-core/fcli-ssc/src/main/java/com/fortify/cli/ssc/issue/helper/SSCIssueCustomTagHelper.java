@@ -15,6 +15,7 @@ package com.fortify.cli.ssc.issue.helper;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,7 +214,7 @@ public class SSCIssueCustomTagHelper {
         private String guid;
         private String name;
         private SSCCustomTagValueType valueType;
-        private List<ValueListItem> valueList = new java.util.ArrayList<>();
+        private List<ValueListItem> valueList = new ArrayList<>();
     }
     
     @Getter @Setter

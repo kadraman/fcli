@@ -596,7 +596,7 @@ public class FoDEnums {
          * Comparison for the enum name is case-insensitive. If no match is found an empty
          * Optional is returned.
          */
-        public static java.util.Optional<String> resolveValue(String input) {
+        public static Optional<String> resolveValue(String input) {
             return IFoDEnumValueSupplier.resolveEnumValue(input, values());
         }
     }
@@ -628,7 +628,7 @@ public class FoDEnums {
          * or the user-facing value (e.g. "Pending Review") to the canonical user-facing value.
          * Comparison for the enum name is case-insensitive. Returns an empty Optional when no match.
          */
-        public static java.util.Optional<String> resolveValue(String input) {
+        public static Optional<String> resolveValue(String input) {
             return IFoDEnumValueSupplier.resolveEnumValue(input, values());
         }
     }
@@ -652,7 +652,7 @@ public class FoDEnums {
          * or the user-facing value (e.g. "CycloneDX") to the canonical user-facing value.
          * Comparison for the enum name is case-insensitive. Returns an empty Optional when no match.
          */
-        public static java.util.Optional<String> resolveValue(String input) {
+        public static Optional<String> resolveValue(String input) {
             return IFoDEnumValueSupplier.resolveEnumValue(input, values());
         }
     }

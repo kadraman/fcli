@@ -18,6 +18,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -41,6 +43,7 @@ import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.rest.unirest.UnirestHelper;
 import com.fortify.cli.common.util.DateTimePeriodHelper;
 import com.fortify.cli.common.util.DateTimePeriodHelper.Period;
+import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.FcliBuildProperties;
 import com.fortify.cli.common.util.FcliDataHelper;
 import com.fortify.cli.common.util.FileUtils;
@@ -114,7 +117,7 @@ public final class ToolDefinitionsHelper {
         if (StringUtils.isNotBlank(source)) {
             return source;
         }
-        String envValue = com.fortify.cli.common.util.EnvHelper.env("TOOL_DEFINITIONS");
+        String envValue = EnvHelper.env("TOOL_DEFINITIONS");
         return StringUtils.isNotBlank(envValue) ? envValue : DEFAULT_TOOL_DEFINITIONS_URL;
     }
 
@@ -228,7 +231,7 @@ public final class ToolDefinitionsHelper {
         Path existingStateZip = null;
         if (Files.exists(dest) && dest.equals(DEFINITIONS_STATE_ZIP)) {
             existingStateZip = DEFINITIONS_STATE_DIR.resolve(".tool-definitions.yaml.zip.old");
-            Files.move(dest, existingStateZip, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            Files.move(dest, existingStateZip, StandardCopyOption.REPLACE_EXISTING);
         }
 
         try {
@@ -242,7 +245,7 @@ public final class ToolDefinitionsHelper {
         } catch (Exception e) {
             // On error, restore the old file if we moved it
             if (existingStateZip != null && Files.exists(existingStateZip)) {
-                Files.move(existingStateZip, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Files.move(existingStateZip, dest, StandardCopyOption.REPLACE_EXISTING);
             }
             throw e;
         }
@@ -281,7 +284,7 @@ public final class ToolDefinitionsHelper {
     }
 
     private static void createMergedZipFile(Path dest, String source, Path existingStateZip) throws IOException {
-        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(dest))) {
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(dest))) {
             for (String yamlFileName : getRequiredYamlFileNames()) {
                 copyYamlFileFromFirstAvailableSource(yamlFileName, source, existingStateZip, zos);
             }
@@ -289,7 +292,7 @@ public final class ToolDefinitionsHelper {
     }
 
     private static void copyYamlFileFromFirstAvailableSource(String yamlFileName, String userSource,
-            Path existingStateZip, java.util.zip.ZipOutputStream zos) throws IOException {
+            Path existingStateZip, ZipOutputStream zos) throws IOException {
         // Try user-provided source first
         if (StringUtils.isNotBlank(userSource) && copyYamlFromZipToZip(Path.of(userSource), yamlFileName, zos)) {
             return;
@@ -312,7 +315,7 @@ public final class ToolDefinitionsHelper {
      * @return true if the file was found and copied, false if not found
      * @throws IOException if an I/O error occurs during reading or writing
      */
-    private static boolean copyYamlFromZipToZip(Path zipPath, String yamlFileName, java.util.zip.ZipOutputStream zos)
+    private static boolean copyYamlFromZipToZip(Path zipPath, String yamlFileName, ZipOutputStream zos)
             throws IOException {
         if (!Files.exists(zipPath)) {
             return false;
@@ -349,7 +352,7 @@ public final class ToolDefinitionsHelper {
      * @throws IOException if an I/O error occurs during reading or writing
      */
     private static boolean copyYamlFromResourceZipToZip(String resourceZip, String yamlFileName,
-            java.util.zip.ZipOutputStream zos) throws IOException {
+            ZipOutputStream zos) throws IOException {
         try (InputStream is = FileUtils.getResourceInputStream(resourceZip);
                 ZipInputStream zis = new ZipInputStream(is)) {
             ZipEntry entry;
