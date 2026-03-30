@@ -103,7 +103,7 @@ public final class SSCQParamGenerator implements IServerSideQueryParamValueGener
                     .replaceAll("(\\.\\*)+$", "");
             // If remaining pattern has regex special chars, cannot translate to q-param
             if ( stripped.matches(".*[.\\[\\](){}*+?^$|\\\\].*") ) {
-                LOG.debug("Skipping OperatorMatches with complex regex pattern: {}", pattern);
+                LOG.trace("Skipping OperatorMatches with complex regex pattern: {}", pattern);
                 return;
             }
             boolean hasWildcard = hasLeadingWildcard || hasTrailingWildcard;
