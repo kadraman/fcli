@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.session.cli.cmd.AbstractSessionListCommand;
+import com.fortify.cli.common.session.cli.mixin.ValidateSessionOptionMixin;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionDescriptor;
 import com.fortify.cli.ssc._common.session.helper.SSCAndScanCentralSessionHelper;
 import com.fortify.cli.ssc.access_control.helper.SSCTokenHelper;
@@ -24,20 +25,17 @@ import com.fortify.cli.ssc.access_control.helper.SSCTokenHelper;
 import lombok.Getter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
 
 @Command(name = OutputHelperMixins.List.CMD_NAME, sortOptions = false)
 public class SSCSessionListCommand extends AbstractSessionListCommand<SSCAndScanCentralSessionDescriptor> {
     @Mixin @Getter private OutputHelperMixins.List outputHelper;
-    @Option(names = {"--validate"}, required = false) private boolean validate;
+    @Mixin private ValidateSessionOptionMixin validateSessionOption;
     @Getter private SSCAndScanCentralSessionHelper sessionHelper = SSCAndScanCentralSessionHelper.instance();
 
     @Override
     public JsonNode getJsonNode() {
         var result = (ArrayNode)super.getJsonNode();
-        if ( validate ) {
-            result.forEach(this::validateSession);
-        }
+        validateSessionOption.validateIfNeeded(result, this::validateSession);
         return result;
     }
 
