@@ -20,9 +20,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -47,10 +44,7 @@ import kong.unirest.UnirestInstance;
 import picocli.CommandLine.Help.Ansi;
 
 public class SSCTokenHelper {
-    private static final Logger LOG = LoggerFactory.getLogger(SSCTokenHelper.class);
     private static final DateTimeFormatter EXPIRY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
-
-    public static record SessionValidationResult(boolean valid, SSCTokenData tokenData) {}
 
     public static final JsonNode transformTokenRecord(JsonNode tokenRecord) {
         if ( tokenRecord instanceof ObjectNode && tokenRecord.has("terminalDate") ) {
@@ -110,31 +104,6 @@ public class SSCTokenHelper {
     public static final SSCTokenData getTokenData(IUrlConfig urlConfig, char[] token) {
         try ( var unirest = UnirestHelper.createUnirestInstance() ) {
             return getTokenData(unirest, urlConfig, token);
-        }
-    }
-
-    public static final SessionValidationResult validateSession(IUrlConfig urlConfig, char[] token) {
-        try ( var unirest = UnirestHelper.createUnirestInstance() ) {
-            configureUnirest(unirest, urlConfig, token);
-            try {
-                var tokenData = unirest.post("/api/v1/userSession/tokenData")
-                        .body(JsonHelper.getObjectMapper().createObjectNode())
-                        .asObject(SSCTokenGetOrCreateResponse.class)
-                        .getBody().getData();
-                tokenData.setToken(token);
-                return new SessionValidationResult(true, tokenData);
-            } catch ( UnexpectedHttpResponseException e ) {
-                if ( e.getStatus()==401 || e.getStatus()==403 ) {
-                    return new SessionValidationResult(false, null);
-                } else if ( e.getStatus()==404 ) {
-                    return validateSessionByInfo(unirest, token);
-                } else {
-                    return new SessionValidationResult(false, null);
-                }
-            }
-        } catch ( Exception e ) {
-            LOG.debug("Error validating SSC session token status", e);
-            return new SessionValidationResult(false, null);
         }
     }
 
@@ -212,7 +181,7 @@ public class SSCTokenHelper {
     private static SSCTokenData getTokenData(UnirestInstance unirest, IUrlConfig urlConfig, char[] token) {
         configureUnirest(unirest, urlConfig, token);
         try {
-            var result = unirest.post("/api/v1/userSession/tokenData")
+            var result = unirest.post(SSCUrls.USER_SESSION_TOKEN_DATA)
                     .body(JsonHelper.getObjectMapper().createObjectNode())
                     .asObject(SSCTokenGetOrCreateResponse.class)
                     .getBody().getData();
@@ -231,22 +200,6 @@ public class SSCTokenHelper {
                 throw new FcliSimpleException("Error connecting to SSC for token validation.", e);
             }
 
-        }
-    }
-
-    private static SessionValidationResult validateSessionByInfo(UnirestInstance unirest, char[] token) {
-        try {
-            unirest.get(SSCUrls.USER_SESSION_INFO)
-                    .asObject(JsonNode.class)
-                    .getBody();
-            var tokenData = new SSCTokenData();
-            tokenData.setToken(token);
-            return new SessionValidationResult(true, tokenData);
-        } catch ( UnexpectedHttpResponseException e ) {
-            return new SessionValidationResult(false, null);
-        } catch ( Exception e ) {
-            LOG.debug("Error validating SSC session by user session info endpoint", e);
-            return new SessionValidationResult(false, null);
         }
     }
     
