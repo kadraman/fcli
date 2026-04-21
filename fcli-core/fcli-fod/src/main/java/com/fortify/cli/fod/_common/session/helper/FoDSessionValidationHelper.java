@@ -13,9 +13,14 @@
 package com.fortify.cli.fod._common.session.helper;
 
 import com.fortify.cli.common.exception.FcliSimpleException;
+import com.fortify.cli.common.http.proxy.helper.ProxyHelper;
 import com.fortify.cli.common.rest.unirest.UnexpectedHttpResponseException;
 import com.fortify.cli.common.rest.unirest.UnirestHelper;
 import com.fortify.cli.common.rest.unirest.config.IUrlConfig;
+import com.fortify.cli.common.rest.unirest.config.UnirestJsonHeaderConfigurer;
+import com.fortify.cli.common.rest.unirest.config.UnirestUnexpectedHttpResponseConfigurer;
+import com.fortify.cli.common.rest.unirest.config.UnirestUrlConfigConfigurer;
+import com.fortify.cli.fod._common.rest.FoDUrls;
 import com.fortify.cli.fod._common.session.helper.oauth.FoDTokenCreateResponse;
 
 import kong.unirest.UnirestInstance;
@@ -25,9 +30,13 @@ public class FoDSessionValidationHelper {
 
     public static SessionStatus checkTokenStatus(IUrlConfig urlConfig, String accessToken) {
         try ( UnirestInstance unirest = UnirestHelper.createUnirestInstance() ) {
+            UnirestUnexpectedHttpResponseConfigurer.configure(unirest);
+            UnirestUrlConfigConfigurer.configure(unirest, urlConfig);
+            ProxyHelper.configureProxy(unirest, "fod", urlConfig.getUrl());
+            UnirestJsonHeaderConfigurer.configure(unirest);
             unirest.config().setDefaultHeader("Authorization", "Bearer " + accessToken);
             try {
-                unirest.get("/api/v3/me").asString();
+                unirest.get(FoDUrls.LOOKUP_ITEMS).queryString("limit", 1).asString();
                 var tokenData = new FoDTokenCreateResponse();
                 tokenData.setAccessToken(accessToken);
                 return new SessionStatus(true, tokenData);
