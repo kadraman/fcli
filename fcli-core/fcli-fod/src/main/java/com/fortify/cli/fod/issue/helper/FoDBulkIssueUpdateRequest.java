@@ -48,11 +48,6 @@ public class FoDBulkIssueUpdateRequest {
 
     @JsonIgnore
     public final FoDBulkIssueUpdateRequest validate(Consumer<List<String>> validationMessageConsumer) {
-        var messages = new ArrayList<String>();
-        validateRequired(messages, vulnerabilityIds, "Vulnerability Ids not specified");
-        if ( !messages.isEmpty() ) {
-            validationMessageConsumer.accept(messages);
-        }
         return this;
     }
 
