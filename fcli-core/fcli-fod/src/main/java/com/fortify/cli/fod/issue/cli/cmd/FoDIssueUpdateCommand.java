@@ -71,7 +71,7 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
     private VulnSelectionArgs vulnSelection;
 
     static class VulnSelectionArgs {
-        @Option(names = {"--vuln-ids"}, required = true, split=",")
+        @Option(names = {"--vuln-ids", "--issue-ids"}, required = true, split=",")
         ArrayList<String> vulnIds;
         @Option(names = {"--include-all", "--all"}, required = true)
         boolean includeAllVulnerabilities;
