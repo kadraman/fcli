@@ -87,16 +87,11 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
         ArrayList<String> effectiveVulnIds;
 
         if (vulnSelection.includeAllVulnerabilities) {
-            var allIds = FoDIssueHelper.getVulnIdsForRelease(unirest, releaseDescriptor.getReleaseId(), null);
-            effectiveVulnIds = new ArrayList<>(allIds);
+            effectiveVulnIds = new ArrayList<>(FoDIssueHelper.getAllVulnNumericIdsForRelease(unirest, releaseDescriptor.getReleaseId()));
             totalCount = effectiveVulnIds.size();
             issueUpdateCount = totalCount;
             if (effectiveVulnIds.isEmpty()) {
-                return objectMapper.createObjectNode()
-                    .put("totalCount", 0)
-                    .put("skippedCount", 0)
-                    .put("errorCount", 0)
-                    .put("updateCount", 0);
+                return createNoOpResponse(totalCount, skippedCount, issueUpdateCount);
             }
         } else {
             var vulnFilterResult = FoDIssueHelper.filterRequestedVulnIds(unirest, releaseDescriptor.getReleaseId(), vulnSelection.vulnIds);
@@ -107,6 +102,9 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
             if (!vulnFilterResult.skipped().isEmpty()) {
                 LOG.debug("Skipped vulnerabilities: {}", vulnFilterResult.skipped());
                 vulnFilterResult.skipped().forEach(vid -> LOG.warn("Vulnerability {} not found in release {}, skipping", vid, releaseDescriptor.getReleaseId()));
+            }
+            if (effectiveVulnIds.isEmpty()) {
+                return createNoOpResponse(totalCount, skippedCount, issueUpdateCount);
             }
         }
 
@@ -122,6 +120,18 @@ public class FoDIssueUpdateCommand extends AbstractFoDJsonNodeOutputCommand impl
             .put("totalCount", totalCount)
             .put("skippedCount", skippedCount)
             .put("errorCount", lastErrorCount)
+            .put("updateCount", issueUpdateCount);
+    }
+
+    private JsonNode createNoOpResponse(int totalCount, int skippedCount, int issueUpdateCount) {
+        lastTotalCount = totalCount;
+        lastSkippedCount = skippedCount;
+        lastErrorCount = 0;
+        lastUpdateCount = issueUpdateCount;
+        return objectMapper.createObjectNode()
+            .put("totalCount", totalCount)
+            .put("skippedCount", skippedCount)
+            .put("errorCount", 0)
             .put("updateCount", issueUpdateCount);
     }
 
