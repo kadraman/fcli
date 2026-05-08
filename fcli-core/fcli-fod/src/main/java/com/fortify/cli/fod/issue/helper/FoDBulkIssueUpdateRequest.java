@@ -44,12 +44,15 @@ public class FoDBulkIssueUpdateRequest {
     private String severity;
     private String comment;
     private ArrayList<String> vulnerabilityIds;
+    private Boolean includeAllVulnerabilities;
     private JsonNode attributes;
 
     @JsonIgnore
     public final FoDBulkIssueUpdateRequest validate(Consumer<List<String>> validationMessageConsumer) {
         var messages = new ArrayList<String>();
-        validateRequired(messages, vulnerabilityIds, "Vulnerability Ids not specified");
+        if (!Boolean.TRUE.equals(includeAllVulnerabilities)) {
+            validateRequired(messages, vulnerabilityIds, "Vulnerability Ids not specified");
+        }
         if ( !messages.isEmpty() ) {
             validationMessageConsumer.accept(messages);
         }
