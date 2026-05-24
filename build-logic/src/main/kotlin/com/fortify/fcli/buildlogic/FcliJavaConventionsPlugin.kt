@@ -179,7 +179,8 @@ class FcliJavaConventionsPlugin: Plugin<Project> {
             description = "Generate GraalVM resource-config.json"
             dependsOn(ensureGeneratedDirs)
             dependsOn(generateZipResources, buildTimeActions)
-            inputs.dir("src/main/resources")
+            val srcResDir = project.file("src/main/resources")
+            if (srcResDir.isDirectory) { inputs.dir(srcResDir) }
             inputs.dir(generatedZipResourcesDir)
             inputs.dir(generatedActionOutputResourcesDir)
             val outputDirProvider = generatedResourceConfigDir.map { it.dir("META-INF/native-image/fcli-generated/${project.name}") }
@@ -194,7 +195,9 @@ class FcliJavaConventionsPlugin: Plugin<Project> {
                     }
                 }
                 val srcBase = project.layout.projectDirectory.dir("src/main/resources").asFile
-                addFiles(srcBase, project.fileTree(srcBase) { exclude("**/i18n/**", "META-INF/**", "**/zip/**") })
+                if (srcBase.isDirectory) {
+                    addFiles(srcBase, project.fileTree(srcBase) { exclude("**/i18n/**", "META-INF/**", "**/zip/**") })
+                }
                 val genZipBase = generatedZipResourcesDir.get().asFile
                 addFiles(genZipBase, project.fileTree(genZipBase))
                 val genActionBase = generatedActionOutputResourcesDir.get().asFile

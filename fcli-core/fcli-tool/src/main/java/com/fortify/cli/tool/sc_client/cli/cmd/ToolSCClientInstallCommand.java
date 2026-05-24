@@ -25,6 +25,8 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.output.cli.mixin.OutputHelperMixins;
 import com.fortify.cli.common.rest.unirest.UnirestHelper;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionArtifactDescriptor;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionsHelper;
 import com.fortify.cli.common.util.FileUtils;
 import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.tool._common.cli.cmd.AbstractToolInstallCommand;
@@ -34,8 +36,6 @@ import com.fortify.cli.tool._common.helper.ToolInstaller.BinScriptType;
 import com.fortify.cli.tool._common.helper.ToolInstaller.DigestMismatchAction;
 import com.fortify.cli.tool._common.helper.ToolInstaller.ToolInstallationResult;
 import com.fortify.cli.tool._common.helper.ToolJreInstallHelper;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionArtifactDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionsHelper;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -43,7 +43,7 @@ import picocli.CommandLine.ScopeType;
  * @author Ruud Senden
  */
 @Command(name = "fcli", 
-    resourceBundle = "com.fortify.cli.common.i18n.FortifyCLIMessages",
+    resourceBundle = "com.fortify.cli.app.i18n.FortifyCLIMessages",
     versionProvider = FortifyCLIVersionProvider.class,
     subcommands = {
             GenericActionCommands.class,

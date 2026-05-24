@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import com.fortify.cli.ai_assist.extensions.helper.AiAssistExtensionsSourceHandler.DigestMismatchAction;
 import com.fortify.cli.common.exception.FcliSimpleException;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionRootDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionVersionDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionsHelper;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionRootDescriptor;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionVersionDescriptor;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionsHelper;
 
 /**
  * Public API for AI assistant extensions operations: setup, uninstall, and
