@@ -12,6 +12,7 @@
  */
 package com.fortify.cli.common.cli.util;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -20,8 +21,11 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fortify.cli.common.exception.FcliBugException;
 import com.fortify.cli.common.log.LogMaskHelper;
 import com.fortify.cli.common.output.transform.mask.MaskingPrintStream;
+
+import picocli.CommandLine.Help.Ansi;
 
 /**
  * Central manager for fcli stdio delegation, masking, and progress streams.
@@ -43,8 +47,9 @@ import com.fortify.cli.common.output.transform.mask.MaskingPrintStream;
  * <p>{@link #getProgressOut()} / {@link #getProgressErr()} return masked streams
  * for progress/status output. They default to the masked originals, but can be
  * overridden via {@link #setProgressOut} / {@link #setProgressErr} (the provided
- * stream is auto-wrapped with masking). RPC/MCP servers use these to redirect
- * progress away from the JSON-RPC response channel.</p>
+ * stream is auto-wrapped with masking; pass {@code null} to suppress output entirely).
+ * RPC/MCP servers use these to redirect progress away from the JSON-RPC response channel.
+ * Both setters must only be called from the install thread (before worker threads start).</p>
  *
  * @author Ruud Senden
  */
@@ -57,7 +62,9 @@ public final class StdioHelper {
     private static final ThreadLocal<Deque<PrintStream>> errStack = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<Consumer<String>> progressCallback = new ThreadLocal<>();
 
+    private static volatile Thread installThread;
     private static volatile boolean installed = false;
+    private static volatile Ansi ansi = Ansi.AUTO;
     private static PrintStream rawOut = System.out;
     private static PrintStream rawErr = System.err;
     private static PrintStream maskedOut = System.out;
@@ -71,8 +78,12 @@ public final class StdioHelper {
      */
     public static synchronized void install() {
         if ( installed ) return;
+        // Detect ANSI capability before replacing streams: the delegating/masking
+        // wrappers installed below can interfere with terminal-based ANSI probing.
+        ansi = Ansi.AUTO.enabled() ? Ansi.ON : Ansi.OFF;
         rawOut = System.out;
         rawErr = System.err;
+        installThread = Thread.currentThread();
         LOG.trace("Installing delegating streams; rawOut={}, rawErr={}",
                 System.identityHashCode(rawOut), System.identityHashCode(rawErr));
         System.setOut(new DelegatingPrintStream(() -> {
@@ -106,6 +117,13 @@ public final class StdioHelper {
     }
 
     /**
+     * Return the resolved ANSI mode, detected before streams were replaced.
+     * Returns {@link Ansi#ON} if the terminal supports ANSI, {@link Ansi#OFF}
+     * otherwise. Before {@link #install()} is called, returns {@link Ansi#AUTO}.
+     */
+    public static Ansi getAnsi() { return ansi; }
+
+    /**
      * Return the raw, unmasked {@code System.out} captured before installation.
      * <p><strong>Only for protocol I/O</strong> (JSON-RPC in RPC/MCP servers).
      * All other code should use {@code System.out} or {@link #getProgressOut()}.</p>
@@ -134,8 +152,13 @@ public final class StdioHelper {
     /**
      * Override the progress output stream (e.g. to redirect progress away from
      * the RPC channel). The provided stream is auto-wrapped with masking.
+     * Pass {@code null} to suppress all progress output (e.g. for HTTP MCP servers).
+     * <p><strong>Must only be called from the install thread</strong> (i.e. at startup,
+     * before worker threads are spawned). Calling from any other thread throws
+     * {@link FcliBugException}.</p>
      */
     public static void setProgressOut(PrintStream ps) {
+        checkInstallThread("setProgressOut");
         LOG.trace("setProgressOut: {}", System.identityHashCode(ps));
         progressOut = wrapWithMasking(ps);
     }
@@ -143,8 +166,13 @@ public final class StdioHelper {
     /**
      * Override the progress error stream (e.g. to redirect progress away from
      * the RPC channel). The provided stream is auto-wrapped with masking.
+     * Pass {@code null} to suppress all progress error output (e.g. for HTTP MCP servers).
+     * <p><strong>Must only be called from the install thread</strong> (i.e. at startup,
+     * before worker threads are spawned). Calling from any other thread throws
+     * {@link FcliBugException}.</p>
      */
     public static void setProgressErr(PrintStream ps) {
+        checkInstallThread("setProgressErr");
         LOG.trace("setProgressErr: {}", System.identityHashCode(ps));
         progressErr = wrapWithMasking(ps);
     }
@@ -211,7 +239,14 @@ public final class StdioHelper {
         return ps;
     }
 
+    private static void checkInstallThread(String method) {
+        if (installThread != null && Thread.currentThread() != installThread) {
+            throw new FcliBugException(method + " must only be called from the install thread");
+        }
+    }
+
     private static PrintStream wrapWithMasking(PrintStream ps) {
+        if (ps == null) return new PrintStream(OutputStream.nullOutputStream());
         return ps instanceof MaskingPrintStream ? ps : new MaskingPrintStream(ps, StdioHelper::mask);
     }
 

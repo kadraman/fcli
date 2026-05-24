@@ -12,6 +12,7 @@
  */
 package com.fortify.cli.app._main.cli.cmd;
 
+import com.fortify.cli.ai_assist._main.cli.cmd.AiAssistCommands;
 import com.fortify.cli.app.FortifyCLIVersionProvider;
 import com.fortify.cli.aviator._main.cli.cmd.AviatorCommands;
 import com.fortify.cli.common.cli.cmd.AbstractContainerCommand;
@@ -46,6 +47,7 @@ import picocli.CommandLine.ScopeType;
     versionProvider = FortifyCLIVersionProvider.class,
     subcommands = {
             GenericActionCommands.class,
+            AiAssistCommands.class,
             AviatorCommands.class,
             ConfigCommands.class,
             FoDCommands.class,
