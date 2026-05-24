@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 class GuardrailsCommandTest {
     @Test
-    void buildRulepackArgsAddsRulesSwitch() {
+    void buildRulepackArgsAddsRulepackSwitch() {
         var args = GuardrailsCommand.buildRulepackArgs(Path.of("/tmp/rules.zip"));
-        assertEquals(List.of("-rules", "/tmp/rules.zip"), args);
+        assertEquals(List.of("--rulepack", "/tmp/rules.zip"), args);
     }
 }
