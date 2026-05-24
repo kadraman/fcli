@@ -20,6 +20,7 @@ import com.fortify.cli.common.util.DisableTest.TestType;
 import com.fortify.cli.config._main.cli.cmd.ConfigCommands;
 import com.fortify.cli.fod._main.cli.cmd.FoDCommands;
 import com.fortify.cli.generic_action._main.cli.cmd.GenericActionCommands;
+import com.fortify.cli.guardrails._main.cli.cmd.GuardrailsCommand;
 import com.fortify.cli.license._main.cli.cmd.LicenseCommands;
 import com.fortify.cli.sc_dast._main.cli.cmd.SCDastCommands;
 import com.fortify.cli.sc_sast._main.cli.cmd.SCSastCommands;
@@ -52,6 +53,7 @@ import picocli.CommandLine.ScopeType;
             SCDastCommands.class,
             SCSastCommands.class,
             SSCCommands.class,
+            GuardrailsCommand.class,
             ToolCommands.class,
             LicenseCommands.class,
             UtilCommands.class
