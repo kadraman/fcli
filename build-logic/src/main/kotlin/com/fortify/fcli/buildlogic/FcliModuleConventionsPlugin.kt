@@ -6,15 +6,13 @@ import org.gradle.api.Project
 class FcliModuleConventionsPlugin: Plugin<Project> {
     override fun apply(project: Project) = project.run {
         plugins.apply("fcli.java-conventions")
-        afterEvaluate {
-            fun addIfNotSelf(propName: String) {
-                val ref = findProperty(propName) as String?
-                if (ref != null && ref != path) {
-                    dependencies.add("implementation", project(ref))
-                }
+        fun addIfNotSelf(propName: String) {
+            val ref = findProperty(propName) as String?
+            if (ref != null && ref != path) {
+                dependencies.add("implementation", project(ref))
             }
-            addIfNotSelf("fcliCommonRef")
-            addIfNotSelf("fcliCommonThirdpartyRef")
         }
+        addIfNotSelf("fcliCommonRef")
+        addIfNotSelf("fcliCommonThirdpartyRef")
     }
 }

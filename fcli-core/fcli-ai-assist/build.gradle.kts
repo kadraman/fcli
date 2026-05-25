@@ -9,4 +9,10 @@ dependencies {
     implementation(project(commonToolRef))
     implementation(project(fodRef))
     implementation(project(sscRef))
+    implementation("io.modelcontextprotocol.sdk:mcp-core") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
+    implementation("io.modelcontextprotocol.sdk:mcp-json-jackson2") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
 }

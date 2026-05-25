@@ -21,6 +21,7 @@ references@ for (r in refs) {
 dependencies {
     runtimeOnly("org.slf4j:jcl-over-slf4j")
     runtimeOnly("org.fusesource.jansi:jansi")
+    annotationProcessor("info.picocli:picocli-codegen")
 }
 
 // Picocli reflect config generation
