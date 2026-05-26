@@ -1,10 +1,10 @@
-name: Functional Tests
+name: Verify Release
 
 on:
   workflow_dispatch:
     inputs: 
       runId: # Accessible through ${{ inputs.runId }}
-        description: 'Required "Build and release"" workflow run id (see id in browser URL for selected run) from which to get artifacts to be tested'
+        description: 'Required "Build and release" workflow run id (see id in browser URL for selected run) from which to get artifacts to be tested'
         required: true
         type: number
 
@@ -13,25 +13,11 @@ permissions:
   actions: read
 
 jobs:
-  ft-core:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        type: [java, jar, native]
-    
-    runs-on: ${{ matrix.os }}
+  check-run-id:
+    runs-on: ubuntu-latest
 
     steps:
-      # Java is required for running the functional tests
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          
       - name: Validate run-id belongs to this repo
-        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           run_info=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
@@ -45,27 +31,45 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.runId }}
 
-      - name: Get artifacts from specified workflow
-        if: github.event_name == 'workflow_dispatch'
+  ft-core:
+    needs: check-run-id
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        type: [jar, native]
+    
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # Java is required for running the functional tests
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download release artifact
         uses: actions/download-artifact@v8
         with:
           run-id: ${{ inputs.runId }}
-          name: combined-artifacts
+          name: ${{ matrix.type == 'jar' && 'fcli-jar' || matrix.os == 'ubuntu-latest' && 'fcli-linux' || matrix.os == 'windows-latest' && 'fcli-windows' || 'fcli-mac' }}
           path: ./artifacts
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: List artifact contents
-        shell: bash
-        run: find ./artifacts
+
+      - name: Download fcli-ftest.jar
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.runId }}
+          name: fcli-ftest-jar
+          path: ./artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Run Tests
         shell: bash
         run: |
-          mv artifacts/release-assets/* .
-          mv artifacts/fcli-ftest.jar .
+          find ./artifacts -type f -exec mv {} . \;
           case "${{ matrix.type }}" in
-            "java" )
-              java -jar fcli-ftest.jar -Dft.fcli=build -Dft.run=core,config,tool ;;
             "jar" )
               java -jar fcli-ftest.jar -Dft.fcli=fcli.jar -Dft.run=core,config,tool ;;
             "native" )
@@ -93,8 +97,10 @@ jobs:
         with:
           name: test-log-${{ matrix.os }}-${{ matrix.type }}
           path: test-*.log
+          retention-days: 2
           
   ft-product:
+    needs: check-run-id
     strategy:
       fail-fast: false
       matrix:
@@ -109,36 +115,27 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          
-      - name: Validate run-id belongs to this repo
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          run_info=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}")
-          owner=$(echo "$run_info" | jq -r .repository.full_name)
-          if [ "$owner" != "${GITHUB_REPOSITORY}" ]; then
-            echo "Provided run id does not belong to this repository; aborting." >&2
-            exit 1
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_ID: ${{ inputs.runId }}
 
-      - name: Get artifacts from specified workflow
-        if: github.event_name == 'workflow_dispatch'
+      - name: Download fcli-linux.tgz
         uses: actions/download-artifact@v8
         with:
           run-id: ${{ inputs.runId }}
-          name: combined-artifacts
+          name: fcli-linux
+          path: ./artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download fcli-ftest.jar
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.runId }}
+          name: fcli-ftest-jar
           path: ./artifacts
           github-token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Run Tests
         shell: bash
         run: |
-          mv artifacts/release-assets/* .
-          mv artifacts/fcli-ftest.jar .
+          find ./artifacts -type f -exec mv {} . \;
           tar -zxvf fcli-linux.tgz
           # Although we only run the current matrix entry type, we pass connection
           # options for all session types, as some SC-SAST/SC-DAST tests may also
@@ -163,7 +160,7 @@ jobs:
       - name: Rename test log
         if: always()
         shell: bash
-        run: mv test.log "test-${{ matrix.os }}-${{ matrix.type }}.log"
+        run: mv test.log "test-${{ matrix.type }}.log"
         
       - name: Publish test logs
         if: always()
@@ -171,5 +168,6 @@ jobs:
         with:
           name: test-log-${{ matrix.type }}
           path: test-*.log
+          retention-days: 2
           
                    
