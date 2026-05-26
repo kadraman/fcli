@@ -30,9 +30,9 @@ import com.fortify.cli.common.crypto.helper.SignatureHelper.SignatureStatus;
 import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.exception.FcliTechnicalException;
 import com.fortify.cli.common.rest.unirest.UnirestHelper;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionArtifactDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionVersionDescriptor;
-import com.fortify.cli.tool.definitions.helper.ToolDefinitionsHelper;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionArtifactDescriptor;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionVersionDescriptor;
+import com.fortify.cli.common.tool.definitions.helper.ToolDefinitionsHelper;
 
 /**
  * Resolves and provides access to extension source contents.

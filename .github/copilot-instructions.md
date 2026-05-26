@@ -6,9 +6,43 @@ Fcli is a modular CLI tool for interacting with Fortify products (FoD, SSC, Scan
 
 **Key characteristics:**
 - Built with Java 17, Gradle, and Picocli for command structure
-- Multi-module Gradle project: `fcli-core/*` (product modules), `fcli-other/*` (supporting modules)
+- Multi-module Gradle project: `fcli-core/*` (core modules), `fcli-other/*` (supporting modules)
 - Module references defined in `gradle.properties` via `*Ref` properties
 - Unified output framework (JSON/CSV/XML/YAML/table), session management, and YAML-based action automation
+
+## Module Structure
+
+### Common modules (`fcli-core/fcli-common-*`)
+- **fcli-common-thirdparty** — Patched third-party classes (picocli `CommandLine`/`AutoComplete`, Spring `JsonPropertyAccessor`). **Do not modify these files unless explicitly requested** — they are vendored patches of upstream libraries with specific behavioral fixes.
+- **fcli-common-core** — Core CLI framework: output, JSON/REST, SpEL, sessions, HTTP, crypto, logging, progress, exceptions. Depends on fcli-common-thirdparty.
+- **fcli-common-ci** — CI platform integration (GitHub Actions, GitLab CI, ADO, Bitbucket). Depends on fcli-common-core (via module-conventions auto-dependency).
+- **fcli-common-action** — Action engine: YAML action model, runner, schema, CLI commands, concurrent utilities. Depends on fcli-common-ci.
+- **fcli-common-tool** — Tool definitions API (6 files). Depends on fcli-common-core (via module-conventions auto-dependency).
+
+### Product modules (`fcli-core/fcli-*`)
+- **fcli-fod** — Fortify on Demand. Depends on fcli-common-action, fcli-aviator-common.
+- **fcli-ssc** — Software Security Center. Depends on fcli-common-action.
+- **fcli-sc-sast** / **fcli-sc-dast** — ScanCentral SAST/DAST. Depend on fcli-ssc.
+- **fcli-tool** — Tool installation/management. Depends on fcli-common-tool.
+- **fcli-aviator-common** — FPR parsing, auditing, protobuf/gRPC. Depends on fcli-common-core (hardcoded).
+- **fcli-aviator** — Aviator CLI. Depends on fcli-aviator-common, fcli-ssc, fcli-fod.
+- **fcli-ai-assist** — AI assistant / MCP server. Depends on fcli-common-action, fcli-common-tool, fcli-fod, fcli-ssc. Only module with MCP SDK dependency.
+- **fcli-action** / **fcli-config** / **fcli-license** / **fcli-util** — Smaller product modules.
+
+### Assembly & supporting
+- **fcli-app** — Shadow jar assembly. Depends on all product modules. Only module with `picocli-codegen` annotation processor.
+- **fcli-other/fcli-bom** — Dependency version management (BOM).
+- **fcli-other/fcli-doc** — Documentation generation (AsciiDoc).
+- **fcli-other/fcli-functional-test** — Functional test suite.
+
+### Build conventions (in `build-logic/`)
+- **FcliJavaConventionsPlugin** (`fcli.java-conventions`) — Applied to all modules. Configures Java 17, Lombok, library dependencies, GraalVM resource-config generation (conditional — only for modules with resources), action zip packaging (auto-discovered).
+- **FcliModuleConventionsPlugin** (`fcli.module-conventions`) — Applied to product modules. Extends java-conventions; auto-adds `fcliCommonRef` and `fcliCommonThirdpartyRef` as dependencies (skipping self).
+
+### Dependency rules
+- `fcli.module-conventions` auto-adds fcli-common-core and fcli-common-thirdparty; other common module deps must be declared explicitly
+- MCP SDK is scoped to fcli-ai-assist only (not in the convention plugin)
+- `picocli-codegen` annotation processor is scoped to fcli-app only
 
 ## Development Workflow
 

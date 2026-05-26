@@ -7,7 +7,10 @@ plugins {
 
 // Inter-project dependencies
 val refs = listOf(
-    "fcliCommonRef","fcliActionRef","fcliAiAssistRef","fcliAviatorRef","fcliConfigRef","fcliFoDRef","fcliSSCRef","fcliSCSastRef","fcliSCDastRef","fcliToolRef","fcliLicenseRef","fcliUtilRef"
+    "fcliCommonRef","fcliCommonThirdpartyRef","fcliCommonCiRef","fcliCommonActionRef","fcliCommonToolRef",
+    "fcliActionRef","fcliAiAssistRef","fcliAviatorRef","fcliConfigRef",
+    "fcliFoDRef","fcliSSCRef","fcliSCSastRef","fcliSCDastRef",
+    "fcliToolRef","fcliLicenseRef","fcliUtilRef"
 )
 references@ for (r in refs) {
     val p = project.findProperty(r) as String? ?: continue@references
@@ -18,6 +21,7 @@ references@ for (r in refs) {
 dependencies {
     runtimeOnly("org.slf4j:jcl-over-slf4j")
     runtimeOnly("org.fusesource.jansi:jansi")
+    annotationProcessor("info.picocli:picocli-codegen")
 }
 
 // Picocli reflect config generation

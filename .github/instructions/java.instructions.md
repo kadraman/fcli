@@ -17,8 +17,11 @@ applyTo: 'fcli/**/*.java'
 ## Architecture Overview
 
 **Module structure:**
-- Multi-module Gradle project: `fcli-core/*` (product modules), `fcli-other/*` (supporting modules)
+- Multi-module Gradle project: `fcli-core/*` (core modules), `fcli-other/*` (supporting modules)
 - Module references defined in `gradle.properties` via `*Ref` properties (e.g., `fcliFoDRef=:fcli-core:fcli-fod`)
+- Common modules: `fcli-common-core` (framework), `fcli-common-thirdparty` (patched vendor code — do not modify unless explicitly requested), `fcli-common-ci` (CI platforms), `fcli-common-action` (action engine), `fcli-common-tool` (tool definitions API)
+- Product modules use `fcli.module-conventions` plugin which auto-adds fcli-common-core and fcli-common-thirdparty; other common deps must be declared explicitly
+- See `copilot-instructions.md` for full module structure and dependency rules
 
 **Key components:**
 - **Commands:** `AbstractContainerCommand` (command groups), `AbstractRunnableCommand` (leaf commands implementing `Callable<Integer>`)
