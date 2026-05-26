@@ -198,7 +198,7 @@ jobs:
         run: native-image ${{ env.native_image_opts }} --static --libc=musl -Djansi.disable=true --initialize-at-build-time=com.fortify.cli.common.util.JAnsiConfig -H:ExcludeResources="org/fusesource/jansi/internal/native/.*" -jar ./artifacts/release-assets/fcli.jar fcli
 
       - name: Compress native fcli
-        uses: fortify/3rdparty-actions/actions/svenstaro/upx-action/v2@main
+        uses: fortify/3rdparty-actions/actions/crazy-max/ghaction-upx/v4@main
         with:
           files: fcli
 
@@ -354,7 +354,7 @@ jobs:
           else
             ref="${GITHUB_REF}"
           fi
-          gh workflow run functional-tests.yml --ref "${ref}" -f runId=${GITHUB_RUN_ID}
+          gh workflow run verify-release.yml --ref "${ref}" -f runId=${GITHUB_RUN_ID}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUILD_BRANCH: ${{ needs.build.outputs.branch }}
