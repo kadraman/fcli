@@ -28,10 +28,21 @@ import kong.unirest.jackson.JacksonObjectMapper;
  */
 public class UnirestHelper {
     public static final File download(String fcliModule, String url, File dest) {
+        var parsedUrl = parseRemoteUrl(url);
         try (var unirest = createUnirestInstance()) {
-            ProxyHelper.configureProxy(unirest, fcliModule, url);
-            unirest.get(url).asFile(dest.getAbsolutePath(), StandardCopyOption.REPLACE_EXISTING).getBody();
+            ProxyHelper.configureProxy(unirest, fcliModule, parsedUrl.getRequestUrl());
+            var request = unirest.get(parsedUrl.getRequestUrl());
+            parsedUrl.getHeaders().forEach(request::headerReplace);
+            request.asFile(dest.getAbsolutePath(), StandardCopyOption.REPLACE_EXISTING).getBody();
             return dest;
+        }
+    }
+
+    private static RemoteUrlAuthHelper.ParsedRemoteUrl parseRemoteUrl(String url) {
+        try {
+            return RemoteUrlAuthHelper.parse(url);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid URL: "+url, e);
         }
     }
 
