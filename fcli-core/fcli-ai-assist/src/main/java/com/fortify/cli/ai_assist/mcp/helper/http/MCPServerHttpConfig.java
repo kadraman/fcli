@@ -118,6 +118,7 @@ public class MCPServerHttpConfig {
     public abstract static class ConnectionConfig implements IConnectionConfig {
         private static final DateTimePeriodHelper PERIOD_HELPER = DateTimePeriodHelper.byRange(Period.SECONDS, Period.MINUTES);
 
+        private List<String> headers = new ArrayList<>();
         private Boolean insecureModeEnabled = false;
         private String socketTimeout;
         private String connectTimeout;

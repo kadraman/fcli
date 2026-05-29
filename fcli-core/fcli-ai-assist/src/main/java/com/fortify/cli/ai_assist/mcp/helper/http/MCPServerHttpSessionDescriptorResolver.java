@@ -442,6 +442,11 @@ public final class MCPServerHttpSessionDescriptorResolver {
         public Boolean getInsecureModeEnabled() {
             return config.getInsecureModeEnabled();
         }
+
+        @Override
+        public java.util.List<String> getHeaders() {
+            return config.getHeaders();
+        }
     }
 
     private static final class HttpMcpSscCredentialsConfig implements ISSCAndScanCentralCredentialsConfig {
