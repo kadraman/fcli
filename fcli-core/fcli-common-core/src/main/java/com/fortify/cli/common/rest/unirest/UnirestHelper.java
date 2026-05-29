@@ -16,6 +16,7 @@ import java.io.File;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.http.proxy.helper.ProxyHelper;
 import com.fortify.cli.common.json.JsonHelper;
 
@@ -42,7 +43,7 @@ public class UnirestHelper {
         try {
             return RemoteUrlAuthHelper.parse(url);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid URL: "+url, e);
+            throw new FcliSimpleException("Invalid URL: "+url, e);
         }
     }
 

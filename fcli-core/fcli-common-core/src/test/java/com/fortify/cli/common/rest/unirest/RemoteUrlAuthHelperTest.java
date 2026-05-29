@@ -60,6 +60,28 @@ public class RemoteUrlAuthHelperTest {
     }
 
     @Test
+    public void testParseNoUserInfoPreservesPercentEncodedPath() throws Exception {
+        // Regression test: URLs with percent-encoded characters in the path (e.g. Adoptium JRE
+        // download URLs like .../jdk-17.0.9%2B9/...) must not be double-encoded to %252B.
+        var url = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jre_x64_linux_hotspot_17.0.9_9.tar.gz";
+        var parsed = RemoteUrlAuthHelper.parse(url);
+
+        assertEquals(url, parsed.getRequestUrl());
+        assertTrue(parsed.getHeaders().isEmpty());
+    }
+
+    @Test
+    public void testParseUserInfoPreservesPercentEncodedPath() throws Exception {
+        // Regression test: stripping userinfo from URLs with percent-encoded path must not
+        // double-encode those sequences (%2B → %252B).
+        var parsed = RemoteUrlAuthHelper.parse(
+            "https://user:pass@github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/file.tar.gz"
+        );
+
+        assertEquals("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/file.tar.gz", parsed.getRequestUrl());
+    }
+
+    @Test
     public void testParseFileUrlUnchanged() throws Exception {
         var parsed = RemoteUrlAuthHelper.parse("file:/tmp/action.yaml");
 

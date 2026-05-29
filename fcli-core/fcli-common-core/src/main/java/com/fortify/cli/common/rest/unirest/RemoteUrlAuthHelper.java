@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fortify.cli.common.exception.FcliSimpleException;
 import com.fortify.cli.common.log.LogMaskHelper;
 import com.fortify.cli.common.log.LogMaskSource;
 import com.fortify.cli.common.log.LogSensitivityLevel;
@@ -59,10 +60,8 @@ public final class RemoteUrlAuthHelper {
             var uri = url.toURI();
             var headers = parseHeaders(uri.getRawUserInfo());
             return new ParsedRemoteUrl(removeUserInfo(uri), headers);
-        } catch ( URISyntaxException | IllegalArgumentException e ) {
-            var mue = new MalformedURLException("Invalid URL: "+source);
-            mue.initCause(e);
-            throw mue;
+        } catch ( URISyntaxException e ) {
+            throw new FcliSimpleException("Invalid URL: "+source, e);
         }
     }
 
@@ -95,13 +94,17 @@ public final class RemoteUrlAuthHelper {
                 rawAuthority = rawAuthority.substring(atSignIndex + 1);
             }
         }
-        return new URI(
-            uri.getScheme(),
-            rawAuthority,
-            uri.getRawPath(),
-            uri.getRawQuery(),
-            uri.getRawFragment()
-        ).toString();
+        // Build the URI string from raw (already-encoded) components to avoid double-encoding.
+        // The multi-arg URI constructors treat their arguments as decoded and would re-encode
+        // any percent-encoded sequences (e.g. %2B → %252B), breaking URLs that already contain
+        // percent-encoded characters such as Adoptium JRE download URLs (jdk-17.0.9%2B9/...).
+        var sb = new StringBuilder();
+        if ( uri.getScheme() != null ) { sb.append(uri.getScheme()).append(':'); }
+        if ( rawAuthority != null ) { sb.append("//").append(rawAuthority); }
+        if ( uri.getRawPath() != null ) { sb.append(uri.getRawPath()); }
+        if ( uri.getRawQuery() != null ) { sb.append('?').append(uri.getRawQuery()); }
+        if ( uri.getRawFragment() != null ) { sb.append('#').append(uri.getRawFragment()); }
+        return sb.toString();
     }
 
     private static Map<String, String> parseHeaders(String rawUserInfo) {
@@ -135,24 +138,24 @@ public final class RemoteUrlAuthHelper {
 
     private static Map<String, String> parseHeaderAssignments(String assignments) {
         if ( StringUtils.isBlank(assignments) ) {
-            throw new IllegalArgumentException("No headers specified in URL userinfo");
+            throw new FcliSimpleException("No headers specified in URL userinfo");
         }
         var result = new LinkedHashMap<String, String>();
         for ( var assignment : assignments.split("&") ) {
             if ( StringUtils.isBlank(assignment) ) { continue; }
             var separatorIndex = assignment.indexOf('=');
             if ( separatorIndex <= 0 ) {
-                throw new IllegalArgumentException("Invalid header assignment in URL userinfo: "+assignment);
+                throw new FcliSimpleException("Invalid header assignment in URL userinfo: "+assignment);
             }
             var name = decode(assignment.substring(0, separatorIndex));
             var value = decode(assignment.substring(separatorIndex + 1));
             if ( StringUtils.isBlank(name) ) {
-                throw new IllegalArgumentException("Header name must not be blank in URL userinfo");
+                throw new FcliSimpleException("Header name must not be blank in URL userinfo");
             }
             result.put(name, value);
         }
         if ( result.isEmpty() ) {
-            throw new IllegalArgumentException("No valid headers specified in URL userinfo");
+            throw new FcliSimpleException("No valid headers specified in URL userinfo");
         }
         return Collections.unmodifiableMap(result);
     }

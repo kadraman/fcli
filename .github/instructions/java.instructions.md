@@ -28,6 +28,9 @@ Always use `headerReplace(name, value)` — never `accept()`, `contentType()`, o
 
 ## Exception Handling
 
+- New/updated code should throw only fcli-domain exceptions (`Fcli*Exception`), module-domain exceptions (for example `Aviator*Exception` in Aviator modules), or picocli exceptions (`ParameterException` and related) when integrating with command parsing.
+- Avoid throwing standard Java runtime exceptions (`IllegalArgumentException`, `IllegalStateException`, `RuntimeException`, and similar) for user-facing or command-flow errors.
+
 | Scenario | Exception |
 |----------|-----------|
 | Invalid/missing user input | `FcliSimpleException` |
