@@ -41,7 +41,7 @@ public final class RemoteUrlAuthHelper {
      * Pattern for masking URL userinfo auth values through {@link com.fortify.cli.common.log.MaskValue}.
      * Captures password for basic auth URLs and token/header value payload for bearer/header(s) formats.
      */
-    public static final String URL_USERINFO_AUTH_VALUE_MASK_PATTERN = "https?://(?:[^:@/]+:|bearer:|headers?:)([^@]*)@.*";
+    public static final String URL_USERINFO_AUTH_VALUE_MASK_PATTERN = "https?://(?:(?:[^:@/]+:|bearer:|headers?:)([^@]*)@)?.*";
 
     private static final String PREFIX_BEARER = "bearer:";
     private static final String PREFIX_HEADER = "header:";

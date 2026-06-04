@@ -85,4 +85,17 @@ class InitializationExecutionStrategyTest {
         assertNotNull(DummyPositionalMaskCommand.maskedValueObservedInCall);
         assertFalse(DummyPositionalMaskCommand.maskedValueObservedInCall.contains("positionalMaskSecret12345"));
     }
+
+    @Test
+    void strategyDoesNotMaskPositionalRemoteUrlWithoutUserinfo() {
+        var source = "https://untrusted-root.badssl.com/";
+        DummyPositionalMaskCommand.maskedValueObservedInCall = null;
+        var cmd = new CommandLine(new DummyPositionalMaskCommand());
+        FcliExecutionStrategyFactory.configureCommandLine(cmd);
+        LogMaskHelper.INSTANCE.setLogMaskLevel(LogMaskLevel.high);
+        int exitCode = cmd.execute(source);
+        assertEquals(0, exitCode);
+        assertNotNull(DummyPositionalMaskCommand.maskedValueObservedInCall);
+        assertEquals(source, DummyPositionalMaskCommand.maskedValueObservedInCall);
+    }
 }
