@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import com.fortify.cli.common.action.runner.ActionProductContextProviders;
 import com.fortify.cli.common.http.ssl.truststore.helper.TrustStoreConfigDescriptor;
 import com.fortify.cli.common.http.ssl.truststore.helper.TrustStoreConfigHelper;
+import com.fortify.cli.common.http.ssl.truststore.helper.TrustedUrlTrustStoreHelper;
 import com.fortify.cli.common.i18n.helper.LanguageHelper;
 import com.fortify.cli.common.util.EnvHelper;
 import com.fortify.cli.common.util.PlatformHelper;
@@ -105,21 +106,23 @@ public final class FortifyCLIStaticInitializer {
     private List<X509TrustManager> initializePlatformTrustStore(TrustStoreConfigDescriptor descriptor) {
         List<X509TrustManager> managers = new ArrayList<>();
         addTrustManagerFromKeyStore(managers, null); // null = use javax.net.ssl.trustStore system props
+        int managerCountBeforeAdditionalStores = managers.size();
 
-        if (isOsTrustStoreDisabled(descriptor)) {
+        if ( !isOsTrustStoreDisabled(descriptor) ) {
+            KeyStore platformKeyStore = loadPlatformKeyStore();
+            if (platformKeyStore != null) {
+                addTrustManagerFromKeyStore(managers, platformKeyStore);
+            }
+        } else {
             log.debug("OS trust store merge disabled");
-            return managers;
         }
 
-        KeyStore platformKeyStore = loadPlatformKeyStore();
-        if (platformKeyStore == null) {
-            return managers; // No OS trust store available on this platform or in this runtime
+        KeyStore trustedUrlsKeyStore = TrustedUrlTrustStoreHelper.getTrustedUrlsKeyStore();
+        if (trustedUrlsKeyStore != null) {
+            addTrustManagerFromKeyStore(managers, trustedUrlsKeyStore);
         }
 
-        int managerCountBeforePlatformStore = managers.size();
-        addTrustManagerFromKeyStore(managers, platformKeyStore);
-
-        if (managers.size() == managerCountBeforePlatformStore) {
+        if (managers.size() == managerCountBeforeAdditionalStores) {
             return managers; // Nothing new to add; skip installing a composite context
         }
 
@@ -127,9 +130,9 @@ public final class FortifyCLIStaticInitializer {
             SSLContext ctx = SSLContext.getInstance("TLS");
             ctx.init(null, new TrustManager[]{new CompositeX509TrustManager(managers)}, null);
             SSLContext.setDefault(ctx);
-            log.info("Composite SSL context installed: configured trust store + OS trust store");
+            log.info("Composite SSL context installed: configured trust store + OS trust store + trusted URLs");
         } catch (GeneralSecurityException e) {
-            log.warn("Could not install composite SSL context with OS trust store: " + e.getMessage());
+            log.warn("Could not install composite SSL context with additional trust stores: " + e.getMessage());
         }
 
         return managers;
