@@ -87,6 +87,11 @@ public final class TrustedUrlTrustStoreHelper {
             .filter(Objects::nonNull);
     }
 
+    public static Stream<TrustedUrlCertificateDescriptor> clearTrustedUrls() {
+        return listTrustedUrls()
+            .peek(d->FcliDataHelper.deleteFile(getDescriptorPath(d.getKey()), true));
+    }
+
     public static KeyStore getTrustedUrlsKeyStore() {
         var descriptors = listTrustedUrls().toList();
         if ( descriptors.isEmpty() ) {

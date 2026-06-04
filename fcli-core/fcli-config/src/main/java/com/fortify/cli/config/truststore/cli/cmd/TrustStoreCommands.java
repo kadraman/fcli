@@ -21,6 +21,7 @@ import picocli.CommandLine.Command;
         subcommands = {
             TrustStoreAddTrustedUrlCommand.class,
             TrustStoreClearCommand.class,
+            TrustStoreClearTrustedUrlsCommand.class,
             TrustStoreGetCommand.class,
             TrustStoreListTrustedUrlsCommand.class,
             TrustStoreRemoveTrustedUrlCommand.class,
