@@ -54,6 +54,9 @@ import lombok.NoArgsConstructor;
 public final class TrustedUrlTrustStoreHelper {
     private static final int DEFAULT_HTTPS_PORT = 443;
     private static final int CONNECT_TIMEOUT_MILLIS = 10_000;
+    private static final String TLS_CONTEXT_PROTOCOL = "TLS";
+    private static final String TLS_V1_2 = "TLSv1.2";
+    private static final String TLS_V1_3 = "TLSv1.3";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneOffset.UTC);
     private static final Path TRUSTED_URLS_PATH = FcliDataHelper.getFcliStatePath().resolve("ssl/trusted-urls");
 
@@ -151,9 +154,10 @@ public final class TrustedUrlTrustStoreHelper {
 
     private static List<X509Certificate> fetchServerCertificateChain(String host, int port) {
         try {
-            var context = SSLContext.getInstance("TLS");
+            var context = SSLContext.getInstance(TLS_CONTEXT_PROTOCOL);
             context.init(null, new TrustManager[]{TRUST_ALL_MANAGER}, null);
             try ( var socket = (SSLSocket)context.getSocketFactory().createSocket() ) {
+                configureEnabledProtocols(socket);
                 socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MILLIS);
                 socket.setSoTimeout(CONNECT_TIMEOUT_MILLIS);
                 socket.startHandshake();
@@ -163,6 +167,21 @@ public final class TrustedUrlTrustStoreHelper {
         } catch ( GeneralSecurityException | IOException e ) {
             throw new FcliSimpleException("Unable to retrieve certificates from https://"+host+":"+port, e);
         }
+    }
+
+    private static void configureEnabledProtocols(SSLSocket socket) {
+        var supportedProtocols = List.of(socket.getSupportedProtocols());
+        var enabledProtocols = new ArrayList<String>(2);
+        if ( supportedProtocols.contains(TLS_V1_3) ) {
+            enabledProtocols.add(TLS_V1_3);
+        }
+        if ( supportedProtocols.contains(TLS_V1_2) ) {
+            enabledProtocols.add(TLS_V1_2);
+        }
+        if ( enabledProtocols.isEmpty() ) {
+            throw new FcliSimpleException("No supported TLSv1.2 or TLSv1.3 protocol available");
+        }
+        socket.setEnabledProtocols(enabledProtocols.toArray(String[]::new));
     }
 
     private static List<X509Certificate> extractCertificateChain(SSLSession session) throws CertificateException {
