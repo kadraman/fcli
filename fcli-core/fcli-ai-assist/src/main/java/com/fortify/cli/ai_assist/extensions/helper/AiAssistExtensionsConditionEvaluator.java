@@ -123,7 +123,8 @@ public final class AiAssistExtensionsConditionEvaluator {
             var dirPath = Path.of(dir);
             for (var ext : extensions) {
                 var candidate = dirPath.resolve(command + ext);
-                if (Files.isRegularFile(candidate)) {
+                if (Files.isRegularFile(candidate)
+                        && (PlatformHelper.isWindows() || Files.isExecutable(candidate))) {
                     return true;
                 }
             }
