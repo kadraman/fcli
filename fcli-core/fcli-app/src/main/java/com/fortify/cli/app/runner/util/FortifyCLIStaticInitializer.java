@@ -40,8 +40,10 @@ import org.slf4j.LoggerFactory;
 import com.fortify.cli.common.action.runner.ActionProductContextProviders;
 import com.fortify.cli.common.http.ssl.truststore.helper.TrustStoreConfigDescriptor;
 import com.fortify.cli.common.http.ssl.truststore.helper.TrustStoreConfigHelper;
+import com.fortify.cli.common.http.ssl.truststore.helper.TrustedUrlTrustStoreHelper;
 import com.fortify.cli.common.i18n.helper.LanguageHelper;
 import com.fortify.cli.common.util.EnvHelper;
+import com.fortify.cli.common.util.PlatformHelper;
 import com.fortify.cli.fod.action.helper.FoDActionProductContextProvider;
 import com.fortify.cli.ssc.action.helper.SSCActionProductContextProvider;
 import com.fortify.cli.tool._common.helper.ToolUninstaller;
@@ -60,7 +62,7 @@ import lombok.NoArgsConstructor;
 public final class FortifyCLIStaticInitializer {
     private final Logger log = LoggerFactory.getLogger(getClass());
     @Getter(lazy = true)
-    private static final FortifyCLIStaticInitializer instance = new FortifyCLIStaticInitializer(); 
+    private static final FortifyCLIStaticInitializer instance = new FortifyCLIStaticInitializer();
     
     public void initialize() {
         ToolUninstaller.deleteAllPending();
@@ -97,36 +99,43 @@ public final class FortifyCLIStaticInitializer {
 
         // Merge OS platform trust store (e.g. Windows Certificate Store / macOS Keychain)
         // with the configured trust store so enterprise CAs are trusted automatically.
-        initializePlatformTrustStore(descriptor);
+        List<X509TrustManager> trustManagers = initializePlatformTrustStore(descriptor);
+        logAcceptedIssuers(trustManagers);
     }
 
-    private void initializePlatformTrustStore(TrustStoreConfigDescriptor descriptor) {
-        if (isOsTrustStoreDisabled(descriptor)) {
-            log.debug("OS trust store merge disabled");
-            return;
-        }
-        KeyStore platformKeyStore = loadPlatformKeyStore();
-        if (platformKeyStore == null) {
-            return; // No OS trust store available on this platform or in this runtime
-        }
-
+    private List<X509TrustManager> initializePlatformTrustStore(TrustStoreConfigDescriptor descriptor) {
         List<X509TrustManager> managers = new ArrayList<>();
         addTrustManagerFromKeyStore(managers, null); // null = use javax.net.ssl.trustStore system props
-        int managerCountBeforePlatformStore = managers.size();
-        addTrustManagerFromKeyStore(managers, platformKeyStore);
+        int managerCountBeforeAdditionalStores = managers.size();
 
-        if (managers.size() == managerCountBeforePlatformStore) {
-            return; // Nothing new to add; skip installing a composite context
+        if ( !isOsTrustStoreDisabled(descriptor) ) {
+            KeyStore platformKeyStore = loadPlatformKeyStore();
+            if (platformKeyStore != null) {
+                addTrustManagerFromKeyStore(managers, platformKeyStore);
+            }
+        } else {
+            log.debug("OS trust store merge disabled");
+        }
+
+        KeyStore trustedUrlsKeyStore = TrustedUrlTrustStoreHelper.getTrustedUrlsKeyStore();
+        if (trustedUrlsKeyStore != null) {
+            addTrustManagerFromKeyStore(managers, trustedUrlsKeyStore);
+        }
+
+        if (managers.size() == managerCountBeforeAdditionalStores) {
+            return managers; // Nothing new to add; skip installing a composite context
         }
 
         try {
             SSLContext ctx = SSLContext.getInstance("TLS");
             ctx.init(null, new TrustManager[]{new CompositeX509TrustManager(managers)}, null);
             SSLContext.setDefault(ctx);
-            log.info("Composite SSL context installed: configured trust store + OS trust store");
+            log.info("Composite SSL context installed: configured trust store + OS trust store + trusted URLs");
         } catch (GeneralSecurityException e) {
-            log.warn("Could not install composite SSL context with OS trust store: " + e.getMessage());
+            log.warn("Could not install composite SSL context with additional trust stores: " + e.getMessage());
         }
+
+        return managers;
     }
 
     private boolean isOsTrustStoreDisabled(TrustStoreConfigDescriptor descriptor) {
@@ -150,20 +159,37 @@ public final class FortifyCLIStaticInitializer {
         }
     }
 
+    private void logAcceptedIssuers(List<X509TrustManager> trustManagers) {
+        if ( !log.isTraceEnabled() ) {
+            return;
+        }
+
+        trustManagers.stream()
+                .map(X509TrustManager::getAcceptedIssuers)
+                .filter(Objects::nonNull)
+                .flatMap(Arrays::stream)
+                .forEach(cert ->
+                    log.trace("Loaded trusted cert - Subject: {}, Issuer: {}",
+                        cert.getSubjectX500Principal().getName(),
+                        cert.getIssuerX500Principal().getName()));
+    }
+
     private KeyStore loadPlatformKeyStore() {
-        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-        String type;
-        if (os.contains("win")) {
-            type = "Windows-ROOT";
-        } else if (os.contains("mac")) {
-            type = "KeychainStore";
+        if (PlatformHelper.isWindows()) {
+            return loadSingleKeyStore("Windows-ROOT");
+        } else if (PlatformHelper.isMac()) {
+            return loadSingleKeyStore("KeychainStore");
         } else {
+            log.debug("No OS trust store loaded for platform: {}", PlatformHelper.getOSString());
             return null; // Linux has no standard Java-accessible OS trust store
         }
+    }
+
+    private KeyStore loadSingleKeyStore(String type) {
         try {
             KeyStore ks = KeyStore.getInstance(type);
             ks.load(null, null);
-            log.debug("Loaded OS trust store: " + type);
+            log.debug("Loaded OS trust store: {}", type);
             return ks;
         } catch (Exception | LinkageError e) {
             // Provider may be unavailable in GraalVM native images built on a different OS
@@ -219,25 +245,29 @@ public final class FortifyCLIStaticInitializer {
     }
 
     private static final class CompositeX509TrustManager extends X509ExtendedTrustManager {
+        private static final Logger log = LoggerFactory.getLogger(CompositeX509TrustManager.class);
         private final List<X509TrustManager> delegates;
 
         CompositeX509TrustManager(List<X509TrustManager> delegates) {
             this.delegates = List.copyOf(delegates);
+            log.debug("CompositeX509TrustManager created with {} delegate(s)", delegates.size());
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            tryEach(tm -> tm.checkClientTrusted(chain, authType));
+            tryEach("checkClientTrusted", chain, tm -> tm.checkClientTrusted(chain, authType));
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            tryEach(tm -> tm.checkServerTrusted(chain, authType));
+            log.debug("checkServerTrusted(chain[{}], authType={})", chain.length, authType);
+            logChain(chain);
+            tryEach("checkServerTrusted", chain, tm -> tm.checkServerTrusted(chain, authType));
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-            tryEach(tm -> {
+            tryEach("checkClientTrusted(socket)", chain, tm -> {
                 if (tm instanceof X509ExtendedTrustManager ext) { ext.checkClientTrusted(chain, authType, socket); }
                 else { tm.checkClientTrusted(chain, authType); }
             });
@@ -245,7 +275,7 @@ public final class FortifyCLIStaticInitializer {
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-            tryEach(tm -> {
+            tryEach("checkClientTrusted(engine)", chain, tm -> {
                 if (tm instanceof X509ExtendedTrustManager ext) { ext.checkClientTrusted(chain, authType, engine); }
                 else { tm.checkClientTrusted(chain, authType); }
             });
@@ -253,7 +283,9 @@ public final class FortifyCLIStaticInitializer {
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-            tryEach(tm -> {
+            log.debug("checkServerTrusted(chain[{}], authType={}, socket)", chain.length, authType);
+            logChain(chain);
+            tryEach("checkServerTrusted(socket)", chain, tm -> {
                 if (tm instanceof X509ExtendedTrustManager ext) { ext.checkServerTrusted(chain, authType, socket); }
                 else { tm.checkServerTrusted(chain, authType); }
             });
@@ -261,7 +293,9 @@ public final class FortifyCLIStaticInitializer {
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-            tryEach(tm -> {
+            log.debug("checkServerTrusted(chain[{}], authType={}, engine)", chain.length, authType);
+            logChain(chain);
+            tryEach("checkServerTrusted(engine)", chain, tm -> {
                 if (tm instanceof X509ExtendedTrustManager ext) { ext.checkServerTrusted(chain, authType, engine); }
                 else { tm.checkServerTrusted(chain, authType); }
             });
@@ -276,15 +310,31 @@ public final class FortifyCLIStaticInitializer {
                 .toArray(X509Certificate[]::new);
         }
 
-        private void tryEach(TrustCheckFactory check) throws CertificateException {
+        private void logChain(X509Certificate[] chain) {
+            if (log.isDebugEnabled()) {
+                for (int i = 0; i < chain.length; i++) {
+                    log.debug("  cert[{}]: subject={}, issuer={}", i,
+                            chain[i].getSubjectX500Principal().getName(),
+                            chain[i].getIssuerX500Principal().getName());
+                }
+            }
+        }
+
+        private void tryEach(String method, X509Certificate[] chain, TrustCheckFactory check) throws CertificateException {
             CertificateException last = null;
-            for (X509TrustManager tm : delegates) {
-                try { check.check(tm); return; }
-                catch (CertificateException e) { last = e; }
+            for (int i = 0; i < delegates.size(); i++) {
+                X509TrustManager tm = delegates.get(i);
+                try {
+                    check.check(tm);
+                    log.debug("{}: accepted by delegate[{}] {}", method, i, tm.getClass().getName());
+                    return;
+                } catch (CertificateException e) {
+                    log.debug("{}: rejected by delegate[{}] {}: {}", method, i, tm.getClass().getName(), e.getMessage());
+                    last = e;
+                }
             }
-            if (last != null) {
-                throw last;
-            }
+            log.debug("{}: all {} delegate(s) rejected the certificate chain", method, delegates.size());
+            if (last != null) { throw last; }
             throw new CertificateException("No trust manager accepted the certificate chain");
         }
 
