@@ -152,6 +152,7 @@ public class AiAssistMCPStartHttpCommand extends AbstractRunnableCommand impleme
 
     private void buildAndStartServer(MCPServerHttpConfig config,
             JdkHttpServerMcpStatelessTransport transport, McpSpecs specs) {
+        var tlsConfigured = config.getServer().getTls() != null;
         var serverBuilder = McpServer.sync(transport)
                 .serverInfo("fcli", FcliBuildProperties.INSTANCE.getFcliVersion())
                 .requestTimeout(Duration.ofSeconds(120))
@@ -164,6 +165,9 @@ public class AiAssistMCPStartHttpCommand extends AbstractRunnableCommand impleme
         var mcpServer = serverBuilder.build();
         log.debug("Initialized HTTP MCP server instance: {}", mcpServer);
         transport.start();
+        if (!tlsConfigured) {
+            log.warn("Starting HTTP MCP server without TLS certificates. Use this mode for testing only; use HTTPS with certificates in production");
+        }
         log.info("Fcli HTTP MCP server running on port {} for product {}", config.getServer().getPort(), config.getProduct());
         System.err.println("Fcli HTTP MCP server running on port " + config.getServer().getPort() + " endpoint /mcp. Hit Ctrl-C to exit.");
     }
