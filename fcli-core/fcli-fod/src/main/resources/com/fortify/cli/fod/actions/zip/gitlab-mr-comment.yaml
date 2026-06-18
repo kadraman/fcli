@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-2.8.0.json
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
 
 # For now, this template uses latest release state to generate MR comments.
 
@@ -51,9 +51,9 @@ cli.options:
     default: ${#env('CI_API_V4_URL')}
   gitlab-token:
     names: --gitlab-token
-    description: "Required GitLab token. Defaults to GITLAB_TOKEN, falls back to GITLAB_API_TOKEN. CI_JOB_TOKEN is supported if configured with appropriate permissions."
+    description: "Required GitLab token. Defaults to GITLAB_TOKEN, falls back to GITLAB_API_TOKEN, then CI_JOB_TOKEN."
     required: true
-    default: "${#ifBlank(#env('GITLAB_TOKEN'), #env('GITLAB_API_TOKEN'))}"
+    default: "${#ifBlank(#env('GITLAB_TOKEN'), #ifBlank(#env('GITLAB_API_TOKEN'), #env('CI_JOB_TOKEN')))}"
     mask:
       sensitivity: high
   project-id:

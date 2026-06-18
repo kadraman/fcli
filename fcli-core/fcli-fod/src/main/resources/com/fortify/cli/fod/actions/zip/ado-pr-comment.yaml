@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-2.8.0.json
+# yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-dev-2.x.json
 
 # For now, this template uses latest release state to generate PR comments.
 
@@ -23,11 +23,14 @@ usage:
     creating new PR comments that show the issue delta compared to the
     previous scan for this PR.
 
-    You will need to provide an Azure DevOps personal access token (PAT)
-    via the ADO_TOKEN environment variable or --ado-token option, with
-    permissions to read and write pull request threads. The organization
-    URL, project, repository ID, and pull request ID can be automatically
-    populated from Azure DevOps CI environment variables.
+    Authentication defaults to "Authorization: Bearer <token>" using
+    ADO_TOKEN/SYSTEM_ACCESSTOKEN or --ado-token, which is suitable for
+    Azure DevOps pipeline access tokens. If you want to use a PAT with
+    Basic auth, provide the full Authorization header through
+    ADO_AUTHORIZATION or --ado-authorization (for example,
+    "Basic <base64(:PAT)>"). The organization URL, project, repository ID,
+    and pull request ID can be automatically populated from Azure DevOps CI
+    environment variables.
 
 config:
   rest.target.default: fod
@@ -46,16 +49,16 @@ cli.options:
   ado-organization-url:
     names: --ado-organization-url
     description: "Azure DevOps organization URL. Auto-detected from ADO CI environment; provide for local testing. Default: System.TeamFoundationCollectionUri or ADO_ORGANIZATION_URL."
-    required: false
+    required: true
     default: "${#env('System.TeamFoundationCollectionUri')!=null?#env('System.TeamFoundationCollectionUri'):#env('ADO_ORGANIZATION_URL')}"
   ado-token:
     names: --ado-token
-    description: "Azure DevOps access token. Auto-detected from ADO CI environment; provide for local testing. Default: ADO_TOKEN or SYSTEM_ACCESSTOKEN."
+    description: "Azure DevOps token used with Bearer auth by default. Auto-detected from ADO CI environment; provide for local testing. Default: ADO_TOKEN or SYSTEM_ACCESSTOKEN."
     required: false
     default: "${#isNotBlank(#env('ADO_TOKEN'))?#env('ADO_TOKEN'):#env('SYSTEM_ACCESSTOKEN')}"
   ado-authorization:
     names: --ado-authorization
-    description: "Optional full Authorization header value. Default: ADO_AUTHORIZATION environment variable. If not set, this action uses Bearer with --ado-token."
+    description: "Optional full Authorization header value (for example, Basic <base64(:PAT)>). Default: ADO_AUTHORIZATION environment variable. If not set, this action uses Bearer with --ado-token."
     required: false
     default: ${#env('ADO_AUTHORIZATION')}
   project:
@@ -66,12 +69,12 @@ cli.options:
   repository-id:
     names: --repository-id
     description: "Repository ID or name. Auto-detected from ADO CI environment; provide for local testing. Default: Build.Repository.ID or ADO_REPOSITORY_ID."
-    required: false
+    required: true
     default: "${#env('Build.Repository.ID')!=null?#env('Build.Repository.ID'):#env('ADO_REPOSITORY_ID')}"
   pr-id:
     names: --pr-id
     description: "Pull request ID. Auto-detected from ADO CI environment; provide for local testing. Default: System.PullRequest.PullRequestId or ADO_PR_ID."
-    required: false
+    required: true
     default: "${#env('System.PullRequest.PullRequestId')!=null?#env('System.PullRequest.PullRequestId'):#env('ADO_PR_ID')}"
   dryrun:
     names: --dryrun
