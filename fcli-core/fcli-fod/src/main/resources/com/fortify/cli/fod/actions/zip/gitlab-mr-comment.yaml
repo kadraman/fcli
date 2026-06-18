@@ -1,8 +1,6 @@
 # yaml-language-server: $schema=https://fortify.github.io/fcli/schemas/action/fcli-action-schema-2.8.0.json
 
 # For now, this template uses latest release state to generate MR comments.
-# It is named "gitlab-pr-comment" (rather than gitlab-mr-comment) for consistency
-# and so it can be picked up automatically by default for GitLab CI environments.
 
 author: Fortify
 usage:
@@ -16,7 +14,7 @@ usage:
     For best results, this fcli action should only be run on GitLab
     merge_request_event. Upon MR creation, a new FoD release should
     be created, copying state from the FoD release that represents the
-    branch into which the PR will be merged, and a new scan should be
+    branch into which the MR will be merged, and a new scan should be
     run on the current MR branch before invoking this fcli action.
 
     This will ensure that scan results for the current MR will be
@@ -106,10 +104,10 @@ steps:
       hasIssueStatusChanges: ${newIssues!=null || removedIssues!=null}
 
   - if: ${cli.dryrun && hasIssueStatusChanges}
-    log.info: ${noteRequestBody}
+    log.info: {msg: "${noteRequestBody}"}
 
   - if: ${cli.dryrun && !hasIssueStatusChanges}
-    log.info: No issue status changes detected; skipping MR note.
+    log.info: {msg: "No issue status changes detected; skipping MR note."}
 
   - if: ${!cli.dryrun && hasIssueStatusChanges}
     rest.call:
@@ -120,7 +118,7 @@ steps:
         body: ${noteRequestBody}
 
   - if: ${!cli.dryrun && !hasIssueStatusChanges}
-    log.info: No issue status changes detected; not posting MR note.
+    log.info: {msg: "No issue status changes detected; not posting MR comment."}
 
 formatters:
   noteRequestBody:
