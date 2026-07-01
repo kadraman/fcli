@@ -7,11 +7,13 @@
 
 * fcli action framework: Add base64 & HTTP-related SpEL functions ([2ac1546](https://github.com/fortify/fcli/commit/2ac1546c7689850558b509ea370d24e98cff34d6))
 * fcli actions framework: Add various SpEL functions related to `git` and CI systems ([25adc0e](https://github.com/fortify/fcli/commit/25adc0e39a2ef548cb3b8fe4bc91c510279aa8eb))
+* FoD `ci` action: Add `DO_AVIATOR_REMEDIATIONS` to support pushing Aviator remediations to the remote repository and (if running on GitHub) raising a PR
 * FoD `ci` action: Enhance `DO_PR_COMMENT` to support Azure DevOps and GitLab ([7caeb12](https://github.com/fortify/fcli/commit/7caeb12ade9dbb5bc676899f2a64a972100f6350))
 * FoD: Add `ado-pr-comment` built-in action to generate Fortify comments on Azure DevOps pull requests ([7caeb12](https://github.com/fortify/fcli/commit/7caeb12ade9dbb5bc676899f2a64a972100f6350))
 * FoD: Add `github-remediations-pr` built-in action for raising a GitHub Pull Request with Aviator remediations ([25adc0e](https://github.com/fortify/fcli/commit/25adc0e39a2ef548cb3b8fe4bc91c510279aa8eb))
 * FoD: Add `gitlab-mr-comment` built-in action to generate Fortify comments on GitLab merge requests ([7caeb12](https://github.com/fortify/fcli/commit/7caeb12ade9dbb5bc676899f2a64a972100f6350))
 * FoD: Add `push-remediations` built-in action for applying Aviator remediations and pushing these changes onto new remote branch ([25adc0e](https://github.com/fortify/fcli/commit/25adc0e39a2ef548cb3b8fe4bc91c510279aa8eb))
+* SSC `ci` action: Add `DO_AVIATOR_REMEDIATIONS` to support pushing Aviator remediations to the remote repository and (if running on GitHub) raising a PR
 * SSC: Add `github-remediations-pr` built-in action for raising a GitHub Pull Request with Aviator remediations ([25adc0e](https://github.com/fortify/fcli/commit/25adc0e39a2ef548cb3b8fe4bc91c510279aa8eb))
 * SSC: Add `push-remediations` built-in action for applying Aviator remediations and pushing these changes onto new remote branch ([25adc0e](https://github.com/fortify/fcli/commit/25adc0e39a2ef548cb3b8fe4bc91c510279aa8eb))
 
