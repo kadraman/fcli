@@ -14,9 +14,12 @@ package com.fortify.cli.common.spel.fn;
 
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.date;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.fcli;
+import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.http;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.txt;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -195,7 +198,7 @@ public class SpelFunctionsStandard {
         return UUID.randomUUID().toString();
     }
 
-    @SpelFunction(cat=util, desc = "Builds an HTTP Basic Authorization header value from username and password.",
+    @SpelFunction(cat=http, desc = "Builds an HTTP Basic Authorization header value from username and password.",
             returns="Authorization header value in the format `Basic <base64(username:password)>`")
     public static final String basicAuth(
             @SpelFunctionParam(name="username", desc="the username to include in the basic auth credential pair") String username,
@@ -206,15 +209,41 @@ public class SpelFunctionsStandard {
         return "Basic " + encoded;
     }
 
-    @SpelFunction(cat=util, desc = "Builds an HTTP Bearer Authorization header value from the given token.",
+    @SpelFunction(cat=http, desc = "Builds an HTTP Bearer Authorization header value from the given token.",
         returns="Authorization header value in the format `Bearer <token>`")
     public static final String bearerAuth(
-        @SpelFunctionParam(name="token", desc="the bearer token") String token)
+            @SpelFunctionParam(name="token", desc="the bearer token") String token)
     {
         return "Bearer " + StringUtils.defaultString(token);
     }
 
-    @SpelFunction(cat=util, returns="Base64-encoded representation of the input string using UTF-8, or `null` if input is `null`")
+    @SpelFunction(cat=http, returns="URI-component encoded string using UTF-8, or `null` if input is `null`")
+    public static final String urlEncode(
+            @SpelFunctionParam(name="input", desc="the string to URI-component encode") String s)
+    {
+        if (s == null) {
+            return null;
+        }
+        return URLEncoder.encode(s, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("%7E", "~");
+    }
+
+    @SpelFunction(cat=http, returns="UTF-8 decoded string from URI-component encoded input, or `null` if input is `null`")
+    public static final String urlDecode(
+            @SpelFunctionParam(name="input", desc="the URI-component encoded string to decode") String s)
+    {
+        if (s == null) {
+            return null;
+        }
+        try {
+            return URLDecoder.decode(s.replace("+", "%2B"), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new FcliSimpleException("Invalid URI-encoded input passed to #urlDecode");
+        }
+    }
+
+    @SpelFunction(cat=http, returns="Base64-encoded representation of the input string using UTF-8, or `null` if input is `null`")
     public static final String base64Encode(
             @SpelFunctionParam(name="input", desc="the string to encode as Base64") String s)
     {
@@ -224,7 +253,7 @@ public class SpelFunctionsStandard {
         return Base64.getEncoder().encodeToString(s.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SpelFunction(cat=util, returns="UTF-8 decoded string from the given Base64 input, or `null` if input is `null`")
+    @SpelFunction(cat=http, returns="UTF-8 decoded string from the given Base64 input, or `null` if input is `null`")
     public static final String base64Decode(
             @SpelFunctionParam(name="input", desc="the Base64-encoded string to decode") String s)
     {
