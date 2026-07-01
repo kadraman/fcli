@@ -17,11 +17,13 @@ import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.txt;
 import static com.fortify.cli.common.spel.fn.descriptor.annotation.SpelFunction.SpelFunctionCategory.util;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -191,6 +193,17 @@ public class SpelFunctionsStandard {
     @SpelFunction(cat=util, returns="A randomly generated UUID string in standard 36-character format") 
     public static final String uuid() {
         return UUID.randomUUID().toString();
+    }
+
+    @SpelFunction(cat=util, desc = "Builds an HTTP Basic Authorization header value from username and password.",
+            returns="Authorization header value in the format `Basic <base64(username:password)>`")
+    public static final String basicAuth(
+            @SpelFunctionParam(name="username", desc="the username to include in the basic auth credential pair") String username,
+            @SpelFunctionParam(name="password", desc="the password to include in the basic auth credential pair") String password)
+    {
+        var pair = StringUtils.defaultString(username) + ":" + StringUtils.defaultString(password);
+        var encoded = Base64.getEncoder().encodeToString(pair.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + encoded;
     }
 
     @SpelFunction(cat=txt, desc = """
