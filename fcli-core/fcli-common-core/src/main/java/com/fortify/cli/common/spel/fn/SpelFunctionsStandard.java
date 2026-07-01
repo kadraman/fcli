@@ -243,7 +243,7 @@ public class SpelFunctionsStandard {
         }
     }
 
-    @SpelFunction(cat=http, returns="Base64-encoded representation of the input string using UTF-8, or `null` if input is `null`")
+    @SpelFunction(cat=util, returns="Base64-encoded representation of the input string using UTF-8, or `null` if input is `null`")
     public static final String base64Encode(
             @SpelFunctionParam(name="input", desc="the string to encode as Base64") String s)
     {
@@ -253,7 +253,7 @@ public class SpelFunctionsStandard {
         return Base64.getEncoder().encodeToString(s.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SpelFunction(cat=http, returns="UTF-8 decoded string from the given Base64 input, or `null` if input is `null`")
+    @SpelFunction(cat=util, returns="UTF-8 decoded string from the given Base64 input, or `null` if input is `null`")
     public static final String base64Decode(
             @SpelFunctionParam(name="input", desc="the Base64-encoded string to decode") String s)
     {
